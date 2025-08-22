@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CarouMate: AI Carousel Generator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Lato&family=Lobster&family=Lora:wght@400;500;600&family=Merriweather&family=Montserrat&family=Open+Sans&family=Oswald&family=PT+Serif&family=Playfair+Display&family=Poppins&family=Raleway&family=Roboto&family=Roboto+Mono&family=Source+Code+Pro&family=Nunito&family=Work+Sans&family=Rubik&family=Bebas+Neue&family=Anton&family=DM+Sans&family=Barlow&family=Cabin&family=Titillium+Web&family=Cormorant+Garamond&family=EB+Garamond&family=Bitter&family=Crimson+Text&family=Spectral&family=Zilla+Slab&family=Cardo&family=Pacifico&family=Caveat&family=Dancing+Script&family=Permanent+Marker&family=Alfa+Slab+One&family=Righteous&family=Satisfy&family=Abril+Fatface&family=Space+Mono&family=IBM+Plex+Mono&family=Indie+Flower&family=Patrick+Hand&family=Playpen+Sans&family=Bree+Serif&family=Chewy&family=Balsamiq+Sans&display=swap" rel="stylesheet">
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+              serif: ['Lora', 'serif'],
+              mono: ['Roboto Mono', 'monospace'],
+              lato: ['Lato', 'sans-serif'],
+              lobster: ['Lobster', 'cursive'],
+              merriweather: ['Merriweather', 'serif'],
+              montserrat: ['Montserrat', 'sans-serif'],
+              'open-sans': ['Open Sans', 'sans-serif'],
+              oswald: ['Oswald', 'sans-serif'],
+              'pt-serif': ['PT Serif', 'serif'],
+              'playfair-display': ['Playfair Display', 'serif'],
+              poppins: ['Poppins', 'sans-serif'],
+              raleway: ['Raleway', 'sans-serif'],
+              roboto: ['Roboto', 'sans-serif'],
+              'source-code-pro': ['Source Code Pro', 'monospace'],
+              // Added Fonts
+              nunito: ['Nunito', 'sans-serif'],
+              'work-sans': ['Work Sans', 'sans-serif'],
+              rubik: ['Rubik', 'sans-serif'],
+              'bebas-neue': ['Bebas Neue', 'cursive'],
+              anton: ['Anton', 'sans-serif'],
+              'dm-sans': ['DM Sans', 'sans-serif'],
+              barlow: ['Barlow', 'sans-serif'],
+              cabin: ['Cabin', 'sans-serif'],
+              'titillium-web': ['Titillium Web', 'sans-serif'],
+              'cormorant-garamond': ['Cormorant Garamond', 'serif'],
+              'eb-garamond': ['EB Garamond', 'serif'],
+              bitter: ['Bitter', 'serif'],
+              'crimson-text': ['Crimson Text', 'serif'],
+              spectral: ['Spectral', 'serif'],
+              'zilla-slab': ['Zilla Slab', 'serif'],
+              cardo: ['Cardo', 'serif'],
+              pacifico: ['Pacifico', 'cursive'],
+              caveat: ['Caveat', 'cursive'],
+              'dancing-script': ['Dancing Script', 'cursive'],
+              'permanent-marker': ['Permanent Marker', 'cursive'],
+              'alfa-slab-one': ['Alfa Slab One', 'cursive'],
+              righteous: ['Righteous', 'cursive'],
+              satisfy: ['Satisfy', 'cursive'],
+              'abril-fatface': ['Abril Fatface', 'cursive'],
+              'space-mono': ['Space Mono', 'monospace'],
+              'ibm-plex-mono': ['IBM Plex Mono', 'monospace'],
+              'indie-flower': ['Indie Flower', 'cursive'],
+              'patrick-hand': ['Patrick Hand', 'cursive'],
+              // New user-requested fonts
+              'playpen-sans': ['Playpen Sans', 'cursive'],
+              'bree-serif': ['Bree Serif', 'serif'],
+              chewy: ['Chewy', 'cursive'],
+              'balsamiq-sans': ['Balsamiq Sans', 'cursive'],
+            },
+            colors: {
+              primary: {
+                '50': '#eff6ff',
+                '100': '#dbeafe',
+                '200': '#bfdbfe',
+                '300': '#93c5fd',
+                '400': '#60a5fa',
+                '500': '#3b82f6',
+                '600': '#2563eb',
+                '700': '#1d4ed8',
+                '800': '#1e40af',
+                '900': '#1e3a8a',
+                '950': '#172554',
+              },
+            }
+          }
+        }
+      }
+    </script>
+    <script>
+      // Prevents FOUC (Flash of Unstyled Content) for dark mode
+      if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    </script>
+  <script type="importmap">
+{
+  "imports": {
+    "react/": "https://esm.sh/react@^19.1.1/",
+    "react": "https://esm.sh/react@^19.1.1",
+    "react-dom/": "https://esm.sh/react-dom@^19.1.1/",
+    "@google/genai": "https://esm.sh/@google/genai@^1.15.0",
+    "html2canvas": "https://esm.sh/html2canvas@^1.4.1",
+    "jszip": "https://esm.sh/jszip@^3.10.1"
+  }
+}
+</script>
+</head>
+  <body class="bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100">
+    <div id="root"></div>
+  </body>
+</html>
