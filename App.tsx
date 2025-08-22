@@ -34,7 +34,7 @@ const translations = {
     dashboardSubtitle: 'Your creative workspace.',
     newCarouselButton: 'Create New Carousel',
     statsTotalCarousels: 'Total Carousels',
-    statsDownloads: 'Downloads (This Month)',
+    statsDownloads: 'Downloads',
     statsMostUsedCategory: 'Most Used Category',
     historyTitle: 'Your History',
     historyEditButton: 'Edit',
@@ -120,7 +120,7 @@ const translations = {
     dashboardSubtitle: 'Ruang kerja kreatif Anda.',
     newCarouselButton: 'Buat Carousel Baru',
     statsTotalCarousels: 'Total Carousel',
-    statsDownloads: 'Unduhan (Bulan Ini)',
+    statsDownloads: 'Unduhan',
     statsMostUsedCategory: 'Kategori Paling Banyak Digunakan',
     historyTitle: 'Riwayat Anda',
     historyEditButton: 'Ubah',
@@ -188,6 +188,10 @@ const translations = {
 type TFunction = (key: string, params?: { [key: string]: any }) => string;
 
 const SETTINGS_STORAGE_KEY = 'caroumate-settings';
+const USER_STORAGE_KEY = 'caroumate-user';
+const HISTORY_STORAGE_KEY = 'caroumate-history';
+const DOWNLOADS_STORAGE_KEY = 'caroumate-downloads';
+
 
 const defaultSettings: AppSettings = {
     aiModel: AIModel.GEMINI_2_5_FLASH,
@@ -398,9 +402,41 @@ export default function App() {
     };
 
     const [language, setLanguage] = useState<Language>('en');
-    const [view, setView] = useState<AppView>('LOGIN');
-    const [user, setUser] = useState<UserProfile | null>(null);
-    const [carouselHistory, setCarouselHistory] = useState<Carousel[]>([]);
+    
+    // --- State Initialization from localStorage ---
+    const [user, setUser] = useState<UserProfile | null>(() => {
+        try {
+            const savedUser = localStorage.getItem(USER_STORAGE_KEY);
+            return savedUser ? JSON.parse(savedUser) : null;
+        } catch { return null; }
+    });
+    
+    const [view, setView] = useState<AppView>(() => {
+        try {
+            const savedUser = localStorage.getItem(USER_STORAGE_KEY);
+            if (savedUser) {
+                const user: UserProfile = JSON.parse(savedUser);
+                if (user.profileComplete) return 'DASHBOARD';
+                return 'PROFILE_SETUP';
+            }
+        } catch {}
+        return 'LOGIN';
+    });
+    
+    const [carouselHistory, setCarouselHistory] = useState<Carousel[]>(() => {
+        try {
+            const savedHistory = localStorage.getItem(HISTORY_STORAGE_KEY);
+            return savedHistory ? JSON.parse(savedHistory) : [];
+        } catch { return []; }
+    });
+    
+    const [downloadCount, setDownloadCount] = useState<number>(() => {
+        try {
+            const savedCount = localStorage.getItem(DOWNLOADS_STORAGE_KEY);
+            return savedCount ? JSON.parse(savedCount) : 0;
+        } catch { return 0; }
+    });
+
     const [currentCarousel, setCurrentCarousel] = useState<Carousel | null>(null);
     const [selectedSlideId, setSelectedSlideId] = useState<string | null>(null);
     const [isGenerating, setIsGenerating] = useState(false);
@@ -420,6 +456,23 @@ export default function App() {
             return defaultSettings;
         }
     });
+
+    // --- Data Persistence Effects ---
+    useEffect(() => {
+        try {
+            if (user) {
+                localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
+            } else {
+                localStorage.removeItem(USER_STORAGE_KEY);
+            }
+        } catch (error) { console.error("Could not save user profile:", error); }
+    }, [user]);
+
+    useEffect(() => {
+        try {
+            localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(carouselHistory));
+        } catch (error) { console.error("Could not save carousel history:", error); }
+    }, [carouselHistory]);
     
     const handleLanguageChange = () => {
         setLanguage(lang => lang === 'en' ? 'id' : 'en');
@@ -453,7 +506,12 @@ export default function App() {
     
     const handleLogout = () => {
         setUser(null);
+        setCarouselHistory([]);
+        setDownloadCount(0);
         setView('LOGIN');
+        localStorage.removeItem(USER_STORAGE_KEY);
+        localStorage.removeItem(HISTORY_STORAGE_KEY);
+        localStorage.removeItem(DOWNLOADS_STORAGE_KEY);
     };
 
     const handleProfileSetup = (profile: Omit<UserProfile, 'profileComplete'>) => {
@@ -600,6 +658,11 @@ export default function App() {
             document.body.removeChild(link);
             URL.revokeObjectURL(link.href);
 
+            // Update and persist download count
+            const newCount = downloadCount + 1;
+            setDownloadCount(newCount);
+            localStorage.setItem(DOWNLOADS_STORAGE_KEY, JSON.stringify(newCount));
+
         } catch (error) {
             console.error("Failed to download carousel:", error);
             setError("Sorry, there was an issue creating the download file.");
@@ -630,12 +693,31 @@ export default function App() {
     const selectedSlide = useMemo(() => {
         return currentCarousel?.slides.find(s => s.id === selectedSlideId);
     }, [currentCarousel, selectedSlideId]);
+    
+    const mostUsedCategory = useMemo(() => {
+        if (carouselHistory.length === 0) return 'N/A';
+        const categoryCounts = carouselHistory.reduce((acc, carousel) => {
+            acc[carousel.category] = (acc[carousel.category] || 0) + 1;
+            return acc;
+        }, {} as Record<string, number>);
+
+        return Object.entries(categoryCounts).reduce((a, b) => a[1] > b[1] ? a : b)[0];
+    }, [carouselHistory]);
 
     const renderContent = () => {
         switch (view) {
             case 'LOGIN': return <LoginScreen onLogin={handleLogin} t={t} />;
             case 'PROFILE_SETUP': return <ProfileSetupModal onSetupComplete={handleProfileSetup} t={t} />;
-            case 'DASHBOARD': return <Dashboard onNewCarousel={startNewCarousel} history={carouselHistory} onEdit={handleEditCarousel} t={t} />;
+            case 'DASHBOARD': return (
+                <Dashboard
+                    onNewCarousel={startNewCarousel}
+                    history={carouselHistory}
+                    onEdit={handleEditCarousel}
+                    t={t}
+                    downloadCount={downloadCount}
+                    mostUsedCategory={mostUsedCategory}
+                />
+            );
             case 'GENERATOR': return (
                 <Generator
                     user={user!}
@@ -751,7 +833,14 @@ const ProfileSetupModal: React.FC<{ onSetupComplete: (profile: Omit<UserProfile,
 };
 
 
-const Dashboard: React.FC<{ onNewCarousel: () => void; history: Carousel[]; onEdit: (id: string) => void; t: TFunction; }> = ({ onNewCarousel, history, onEdit, t }) => (
+const Dashboard: React.FC<{
+    onNewCarousel: () => void;
+    history: Carousel[];
+    onEdit: (id: string) => void;
+    t: TFunction;
+    downloadCount: number;
+    mostUsedCategory: string;
+}> = ({ onNewCarousel, history, onEdit, t, downloadCount, mostUsedCategory }) => (
     <div className="container mx-auto p-4 sm:p-6 lg:p-8">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8">
             <div>
@@ -764,11 +853,11 @@ const Dashboard: React.FC<{ onNewCarousel: () => void; history: Carousel[]; onEd
             </button>
         </div>
         
-        {/* Stats Section - Mocked */}
+        {/* Stats Section */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md"><h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">{t('statsTotalCarousels')}</h4><p className="text-3xl font-bold text-gray-800 dark:text-gray-200">{history.length}</p></div>
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md"><h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">{t('statsDownloads')}</h4><p className="text-3xl font-bold text-gray-800 dark:text-gray-200">12</p></div>
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md"><h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">{t('statsMostUsedCategory')}</h4><p className="text-3xl font-bold text-gray-800 dark:text-gray-200">Marketing</p></div>
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md"><h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">{t('statsDownloads')}</h4><p className="text-3xl font-bold text-gray-800 dark:text-gray-200">{downloadCount}</p></div>
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md"><h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">{t('statsMostUsedCategory')}</h4><p className="text-3xl font-bold text-gray-800 dark:text-gray-200">{mostUsedCategory}</p></div>
         </div>
 
         {/* History Section */}
