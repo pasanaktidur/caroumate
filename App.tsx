@@ -85,7 +85,7 @@ const translations = {
     // SettingsModal
     settingsTitle: 'Settings',
     aiModelLabel: 'AI Model',
-    aiModelHint: "Select the AI model. 'gemini-2.5-pro' is more powerful for complex topics, while 'gemini-2.5-flash' is faster and more cost-effective.",
+    aiModelHint: "The application uses 'gemini-2.5-flash', a fast and cost-effective model for generating content.",
     apiKeyLabel: 'API Key',
     apiKeyDefaultOption: 'Use CarouMate API (Default)',
     apiKeyCustomOption: 'Use Custom Google AI API Key',
@@ -171,7 +171,7 @@ const translations = {
     // SettingsModal
     settingsTitle: 'Pengaturan',
     aiModelLabel: 'Model AI',
-    aiModelHint: "Pilih model AI. 'gemini-2.5-pro' lebih kuat untuk topik yang kompleks, sedangkan 'gemini-2.5-flash' lebih cepat dan hemat biaya.",
+    aiModelHint: "Aplikasi ini menggunakan 'gemini-2.5-flash', model yang cepat dan hemat biaya untuk menghasilkan konten.",
     apiKeyLabel: 'Kunci API',
     apiKeyDefaultOption: 'Gunakan API CarouMate (Default)',
     apiKeyCustomOption: 'Gunakan Kunci API Google AI Kustom',
@@ -1186,9 +1186,9 @@ const SettingsModal: React.FC<{
                     {/* AI Model */}
                     <div>
                         <label htmlFor="aiModel" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('aiModelLabel')}</label>
-                        <select id="aiModel" name="aiModel" value={localSettings.aiModel} onChange={handleChange} className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-white dark:bg-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md">
-                            {Object.values(AIModel).map(model => <option key={model} value={model}>{model}</option>)}
-                        </select>
+                        <div className="mt-1 block w-full px-3 py-2 bg-gray-100 dark:bg-gray-700/50 text-gray-500 dark:text-gray-400 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm">
+                            {localSettings.aiModel}
+                        </div>
                         <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">{t('aiModelHint')}</p>
                     </div>
 

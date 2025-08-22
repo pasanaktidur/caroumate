@@ -18,7 +18,6 @@ export enum DesignStyle {
 
 export enum AIModel {
     GEMINI_2_5_FLASH = 'gemini-2.5-flash',
-    GEMINI_2_5_PRO = 'gemini-2.5-pro',
 }
 
 export enum ContentNiche {

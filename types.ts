@@ -38,7 +38,6 @@ export type AppView = 'LOGIN' | 'PROFILE_SETUP' | 'DASHBOARD' | 'GENERATOR';
 
 export enum AIModel {
     GEMINI_2_5_FLASH = 'gemini-2.5-flash', // Fast and cost-effective for most tasks.
-    GEMINI_2_5_PRO = 'gemini-2.5-pro', // Most capable model for complex reasoning.
 }
 
 export interface AppSettings {
