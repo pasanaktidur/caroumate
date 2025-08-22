@@ -85,7 +85,7 @@ const translations = {
     // SettingsModal
     settingsTitle: 'Settings',
     aiModelLabel: 'AI Model',
-    aiModelHint: "Choose the AI model. 'Flash' is faster and more cost-effective, while 'Pro' may yield higher quality results for complex topics.",
+    aiModelHint: "Choose the AI model. 'gemini-2.5-flash' is fast and cost-effective for most tasks.",
     apiKeyLabel: 'API Key',
     apiKeyDefaultOption: 'Use CarouMate API (Default)',
     apiKeyCustomOption: 'Use Custom Google AI API Key',
@@ -171,7 +171,7 @@ const translations = {
     // SettingsModal
     settingsTitle: 'Pengaturan',
     aiModelLabel: 'Model AI',
-    aiModelHint: "Pilih model AI. 'Flash' lebih cepat dan hemat biaya, sementara 'Pro' mungkin memberikan hasil berkualitas lebih tinggi untuk topik yang kompleks.",
+    aiModelHint: "Pilih model AI. 'gemini-2.5-flash' cepat dan hemat biaya untuk sebagian besar tugas.",
     apiKeyLabel: 'Kunci API',
     apiKeyDefaultOption: 'Gunakan API CarouMate (Default)',
     apiKeyCustomOption: 'Gunakan Kunci API Google AI Kustom',
