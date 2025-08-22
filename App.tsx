@@ -613,6 +613,10 @@ export default function App() {
                             return { ...prev, slides: newSlides };
                         });
                     }
+                    // Add a delay between image generation requests to avoid hitting API rate limits.
+                    if (i < initialSlides.length - 1) {
+                        await new Promise(resolve => setTimeout(resolve, 4000)); // 4-second delay
+                    }
                 }
                 
                 const finalCarousel = { ...newCarousel, slides: finalSlides };
