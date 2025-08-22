@@ -1,11 +1,10 @@
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import * as React from 'react';
 import type { AppView, UserProfile, Carousel, SlideData, DesignPreferences, AppSettings, Language } from './types';
 import { ContentNiche, DesignStyle, FontChoice, AspectRatio, AIModel } from './types';
-import { GoogleIcon, SparklesIcon, LoaderIcon, DownloadIcon, SettingsIcon, InstagramIcon, ThreadsIcon, MoonIcon, SunIcon } from './components/icons';
+import { GoogleIcon, SparklesIcon, LoaderIcon, DownloadIcon, SettingsIcon, InstagramIcon, ThreadsIcon, MoonIcon, SunIcon, AvatarIcon } from './components/icons';
 import { generateCarouselContent, generateSlideImage, getAiAssistance } from './services/geminiService';
 import html2canvas from 'html2canvas';
 import JSZip from 'jszip';
-
 
 // --- TRANSLATIONS & I18N ---
 const translations = {
@@ -20,7 +19,7 @@ const translations = {
     // Login Screen
     loginTitle: 'Welcome to CarouMate',
     loginSubtitle: 'Your AI partner for creating stunning social media carousels in minutes.',
-    loginButton: 'Sign in with Google',
+    loginButton: 'Login as Guest',
 
     // Profile Setup
     profileTitle: 'Tell us about you!',
@@ -85,7 +84,7 @@ const translations = {
     // SettingsModal
     settingsTitle: 'Settings',
     aiModelLabel: 'AI Model',
-    aiModelHint: "Choose the AI model. 'gemini-2.5-flash' is fast and cost-effective for most tasks.",
+    aiModelHint: "Choose the AI model. 'gemini-2.5-flash' is fast, while 'gemini-2.5-pro' is more powerful for complex content.",
     apiKeyLabel: 'Google AI API Key',
     apiKeyPlaceholder: 'Enter your Google AI API key',
     apiKeyHint: 'Your API key is stored securely in your browser and is required for all AI features.',
@@ -105,7 +104,7 @@ const translations = {
     // Login Screen
     loginTitle: 'Selamat Datang di CarouMate',
     loginSubtitle: 'Partner AI Anda untuk membuat carousel media sosial yang memukau dalam hitungan menit.',
-    loginButton: 'Masuk dengan Google',
+    loginButton: 'Masuk sebagai Tamu',
 
     // Profile Setup
     profileTitle: 'Beri tahu kami tentang Anda!',
@@ -170,7 +169,7 @@ const translations = {
     // SettingsModal
     settingsTitle: 'Pengaturan',
     aiModelLabel: 'Model AI',
-    aiModelHint: "Pilih model AI. 'gemini-2.5-flash' cepat dan hemat biaya untuk sebagian besar tugas.",
+    aiModelHint: "Pilih model AI. 'gemini-2.5-flash' cepat, sedangkan 'gemini-2.5-pro' lebih kuat untuk konten yang kompleks.",
     apiKeyLabel: 'Kunci API Google AI',
     apiKeyPlaceholder: 'Masukkan kunci API Google AI Anda',
     apiKeyHint: 'Kunci API Anda disimpan dengan aman di browser Anda dan diperlukan untuk semua fitur AI.',
@@ -249,8 +248,14 @@ const fontClassMap: { [key in FontChoice]: string } = {
 
 const aspectRatioClassMap: { [key in AspectRatio]: string } = {
     [AspectRatio.SQUARE]: 'aspect-square',
-    [AspectRatio.PORTRAIT]: 'aspect-[3/4]',
+    [AspectRatio.PORTRAIT]: 'aspect-[4/5]',
     [AspectRatio.STORY]: 'aspect-[9/16]',
+};
+
+const aspectRatioDisplayMap: { [key in AspectRatio]: string } = {
+    [AspectRatio.SQUARE]: '1:1 (Square)',
+    [AspectRatio.PORTRAIT]: '4:5 (Portrait)',
+    [AspectRatio.STORY]: '9:16 (Story)',
 };
 
 const Header: React.FC<{
@@ -273,7 +278,14 @@ const Header: React.FC<{
                 </div>
                 {user && (
                     <div className="flex items-center space-x-2 sm:space-x-4">
-                        <span className="text-gray-600 dark:text-gray-400 hidden sm:block">{t('welcome', { name: user.name })}</span>
+                        <span className="text-gray-600 dark:text-gray-400 hidden md:block">{t('welcome', { name: user.name.split(' ')[0] })}</span>
+                        {user.picture ? (
+                            <img src={user.picture} alt={user.name} referrerPolicy="no-referrer" className="w-8 h-8 rounded-full" />
+                        ) : (
+                           <span className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                               <AvatarIcon className="w-6 h-6 text-gray-500 dark:text-gray-400" />
+                           </span>
+                        )}
                         <button
                             onClick={onLanguageChange}
                             className="p-2 w-10 text-center text-gray-500 dark:text-gray-400 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary-500 transition-colors font-semibold"
@@ -318,7 +330,20 @@ const Loader: React.FC<{ text: string }> = ({ text }) => (
 const SlideCard: React.FC<{ slide: SlideData; preferences: DesignPreferences; isSelected: boolean; onClick: () => void; t: TFunction; }> = ({ slide, preferences, isSelected, onClick, t }) => {
     const font = fontClassMap[preferences.font] || 'font-sans';
     const aspectRatioClass = aspectRatioClassMap[preferences.aspectRatio] || 'aspect-square';
-    const styleClasses = useMemo(() => {
+
+    const { headlineSize, bodySize } = React.useMemo(() => {
+        switch (preferences.aspectRatio) {
+            case AspectRatio.STORY: // 9:16, narrowest
+                return { headlineSize: 'text-base sm:text-lg', bodySize: 'text-xs sm:text-sm' };
+            case AspectRatio.PORTRAIT: // 4:5, narrow
+                return { headlineSize: 'text-lg sm:text-xl', bodySize: 'text-sm' };
+            case AspectRatio.SQUARE: // 1:1, widest
+            default:
+                return { headlineSize: 'text-xl sm:text-2xl', bodySize: 'text-sm sm:text-base' };
+        }
+    }, [preferences.aspectRatio]);
+
+    const styleClasses = React.useMemo(() => {
         switch (preferences.style) {
             case DesignStyle.BOLD: return 'border-4 border-gray-900 dark:border-gray-200';
             case DesignStyle.ELEGANT: return 'border border-gray-300 dark:border-gray-600 shadow-md dark:shadow-xl dark:shadow-black/20';
@@ -356,8 +381,8 @@ const SlideCard: React.FC<{ slide: SlideData; preferences: DesignPreferences; is
                 </div>
             ) : (
                 <div className="z-10 flex flex-col items-center">
-                    <h2 className="text-xl sm:text-2xl font-bold leading-tight mb-4">{slide.headline}</h2>
-                    <p className="text-sm sm:text-base">{slide.body}</p>
+                    <h2 className={`font-bold leading-tight mb-4 ${headlineSize}`}>{slide.headline}</h2>
+                    <p className={`${bodySize}`}>{slide.body}</p>
                 </div>
             )}
 
@@ -375,7 +400,7 @@ const SlideCard: React.FC<{ slide: SlideData; preferences: DesignPreferences; is
 // --- MAIN APP COMPONENT ---
 
 export default function App() {
-    const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    const [theme, setTheme] = React.useState<'light' | 'dark'>(() => {
         if (typeof window !== 'undefined' && localStorage.getItem('theme')) {
             return localStorage.getItem('theme') as 'light' | 'dark';
         }
@@ -385,7 +410,7 @@ export default function App() {
         return 'light';
     });
     
-    useEffect(() => {
+    React.useEffect(() => {
         if (theme === 'dark') {
             document.documentElement.classList.add('dark');
         } else {
@@ -398,17 +423,17 @@ export default function App() {
         setTheme(prevTheme => prevTheme === 'light' ? 'dark' : 'light');
     };
 
-    const [language, setLanguage] = useState<Language>('en');
+    const [language, setLanguage] = React.useState<Language>('en');
     
     // --- State Initialization from localStorage ---
-    const [user, setUser] = useState<UserProfile | null>(() => {
+    const [user, setUser] = React.useState<UserProfile | null>(() => {
         try {
             const savedUser = localStorage.getItem(USER_STORAGE_KEY);
             return savedUser ? JSON.parse(savedUser) : null;
         } catch { return null; }
     });
     
-    const [view, setView] = useState<AppView>(() => {
+    const [view, setView] = React.useState<AppView>(() => {
         try {
             const savedUser = localStorage.getItem(USER_STORAGE_KEY);
             if (savedUser) {
@@ -420,34 +445,34 @@ export default function App() {
         return 'LOGIN';
     });
     
-    const [carouselHistory, setCarouselHistory] = useState<Carousel[]>(() => {
+    const [carouselHistory, setCarouselHistory] = React.useState<Carousel[]>(() => {
         try {
             const savedHistory = localStorage.getItem(HISTORY_STORAGE_KEY);
             return savedHistory ? JSON.parse(savedHistory) : [];
         } catch { return []; }
     });
     
-    const [downloadCount, setDownloadCount] = useState<number>(() => {
+    const [downloadCount, setDownloadCount] = React.useState<number>(() => {
         try {
             const savedCount = localStorage.getItem(DOWNLOADS_STORAGE_KEY);
             return savedCount ? JSON.parse(savedCount) : 0;
         } catch { return 0; }
     });
 
-    const [currentCarousel, setCurrentCarousel] = useState<Carousel | null>(null);
-    const [selectedSlideId, setSelectedSlideId] = useState<string | null>(null);
-    const [isGenerating, setIsGenerating] = useState(false);
-    const [isDownloading, setIsDownloading] = useState(false);
-    const [generationMessage, setGenerationMessage] = useState('');
-    const [error, setError] = useState<string | null>(null);
-    const [isAssistantOpen, setIsAssistantOpen] = useState(false);
-    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-    const [currentTopic, setCurrentTopic] = useState('');
+    const [currentCarousel, setCurrentCarousel] = React.useState<Carousel | null>(null);
+    const [selectedSlideId, setSelectedSlideId] = React.useState<string | null>(null);
+    const [isGenerating, setIsGenerating] = React.useState(false);
+    const [isDownloading, setIsDownloading] = React.useState(false);
+    const [generationMessage, setGenerationMessage] = React.useState('');
+    const [error, setError] = React.useState<string | null>(null);
+    const [isAssistantOpen, setIsAssistantOpen] = React.useState(false);
+    const [isSettingsOpen, setIsSettingsOpen] = React.useState(false);
+    const [currentTopic, setCurrentTopic] = React.useState('');
 
-    const [settings, setSettings] = useState<AppSettings>(() => {
+    const [settings, setSettings] = React.useState<AppSettings>(() => {
         try {
             const savedSettings = localStorage.getItem(SETTINGS_STORAGE_KEY);
-            return savedSettings ? JSON.parse(savedSettings) : defaultSettings;
+            return savedSettings ? { ...defaultSettings, ...JSON.parse(savedSettings) } : defaultSettings;
         } catch (error) {
             console.error("Could not load settings:", error);
             return defaultSettings;
@@ -455,7 +480,7 @@ export default function App() {
     });
 
     // --- Data Persistence Effects ---
-    useEffect(() => {
+    React.useEffect(() => {
         try {
             if (user) {
                 localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
@@ -465,7 +490,7 @@ export default function App() {
         } catch (error) { console.error("Could not save user profile:", error); }
     }, [user]);
 
-    useEffect(() => {
+    React.useEffect(() => {
         try {
             localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(carouselHistory));
         } catch (error) { console.error("Could not save carousel history:", error); }
@@ -475,7 +500,7 @@ export default function App() {
         setLanguage(lang => lang === 'en' ? 'id' : 'en');
     };
     
-    const t = useCallback((key: string, params?: { [key: string]: any }) => {
+    const t = React.useCallback((key: string, params?: { [key: string]: any }) => {
         let text = translations[language][key] || key;
         if (params) {
             Object.keys(params).forEach(pKey => {
@@ -497,7 +522,14 @@ export default function App() {
     };
 
     const handleLogin = () => {
-        // Mock login
+        const guestUser: UserProfile = {
+            name: 'Guest User',
+            email: 'guest@example.com',
+            picture: '', // No picture for guest
+            niche: ContentNiche.MARKETING,
+            profileComplete: false
+        };
+        setUser(guestUser);
         setView('PROFILE_SETUP');
     };
     
@@ -517,18 +549,15 @@ export default function App() {
     };
     
     const goToDashboard = () => {
-        // Before switching view, update history with any changes made during editing
+        if (view === 'LOGIN' || view === 'PROFILE_SETUP') return;
         if (currentCarousel) {
             setCarouselHistory(prev => {
                 const index = prev.findIndex(c => c.id === currentCarousel.id);
-                // If the carousel exists in history, update it.
                 if (index !== -1) {
                     const newHistory = [...prev];
                     newHistory[index] = currentCarousel;
                     return newHistory;
                 }
-                // If it's a new carousel that hasn't been added yet,
-                // handleGenerateCarousel is responsible for adding it.
                 return prev;
             });
         }
@@ -546,13 +575,13 @@ export default function App() {
         const carouselToEdit = carouselHistory.find(c => c.id === carouselId);
         if (carouselToEdit) {
             setCurrentCarousel(carouselToEdit);
-            setCurrentTopic(carouselToEdit.title); // Also set the topic for the AI assistant
+            setCurrentTopic(carouselToEdit.title);
             setSelectedSlideId(carouselToEdit.slides[0]?.id || null);
             setView('GENERATOR');
         }
     };
     
-    const handleGenerateCarousel = useCallback(async (topic: string, preferences: DesignPreferences) => {
+    const handleGenerateCarousel = React.useCallback(async (topic: string, preferences: DesignPreferences) => {
         if (!user) return;
         setIsGenerating(true);
         setError(null);
@@ -576,7 +605,6 @@ export default function App() {
             setSelectedSlideId(initialSlides[0]?.id ?? null);
 
             if (preferences.backgroundImage) {
-                // If there's a background image, we don't need to generate AI ones.
                  setCarouselHistory(prev => [ newCarousel, ...prev ]);
             } else {
                 setGenerationMessage(t('generatingVisualsMessage'));
@@ -591,7 +619,6 @@ export default function App() {
                         const updatedSlide = { ...slide, imageUrl, isGeneratingImage: false };
                         finalSlides[i] = updatedSlide;
                         
-                        // Update state for real-time UI feedback
                         setCurrentCarousel(prev => {
                             if (!prev) return null;
                             const newSlides = [...prev.slides];
@@ -605,7 +632,6 @@ export default function App() {
                         finalSlides[i] = updatedSlide;
                         hasErrors = true;
                         
-                        // Update UI to remove loader even on error
                         setCurrentCarousel(prev => {
                             if (!prev) return null;
                             const newSlides = [...prev.slides];
@@ -613,9 +639,8 @@ export default function App() {
                             return { ...prev, slides: newSlides };
                         });
                     }
-                    // Add a delay between image generation requests to avoid hitting API rate limits.
                     if (i < initialSlides.length - 1) {
-                        await new Promise(resolve => setTimeout(resolve, 4000)); // 4-second delay
+                        await new Promise(resolve => setTimeout(resolve, 4000));
                     }
                 }
                 
@@ -643,12 +668,11 @@ export default function App() {
             const zip = new JSZip();
             const slideElements = document.querySelectorAll('[data-carousel-slide]');
             
-            // A map to get original slide order, since querySelectorAll doesn't guarantee it
             const slideOrderMap = new Map(currentCarousel.slides.map((slide, index) => [slide.id, index]));
             const orderedElements = Array.from(slideElements).sort((a, b) => {
                 const idA = a.getAttribute('data-carousel-slide') || '';
                 const idB = b.getAttribute('data-carousel-slide') || '';
-                return (slideOrderMap.get(idA) ?? 99) - (slideOrderMap.get(idB) ?? 99);
+                return Number(slideOrderMap.get(idA) ?? 99) - Number(slideOrderMap.get(idB) ?? 99);
             });
 
 
@@ -657,8 +681,8 @@ export default function App() {
                 const canvas = await html2canvas(element, {
                     allowTaint: true,
                     useCORS: true,
-                    backgroundColor: null, // Keep transparency for gradients
-                    scale: 2, // Increase resolution
+                    backgroundColor: null,
+                    scale: 2,
                 });
                 const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/png'));
                 if (blob) {
@@ -676,7 +700,6 @@ export default function App() {
             document.body.removeChild(link);
             URL.revokeObjectURL(link.href);
 
-            // Update and persist download count
             const newCount = downloadCount + 1;
             setDownloadCount(newCount);
             localStorage.setItem(DOWNLOADS_STORAGE_KEY, JSON.stringify(newCount));
@@ -708,11 +731,11 @@ export default function App() {
         setCurrentCarousel({ ...currentCarousel, slides });
     };
 
-    const selectedSlide = useMemo(() => {
+    const selectedSlide = React.useMemo(() => {
         return currentCarousel?.slides.find(s => s.id === selectedSlideId);
     }, [currentCarousel, selectedSlideId]);
     
-    const mostUsedCategory = useMemo(() => {
+    const mostUsedCategory = React.useMemo(() => {
         if (carouselHistory.length === 0) return 'N/A';
         const categoryCounts = carouselHistory.reduce((acc, carousel) => {
             acc[carousel.category] = (acc[carousel.category] || 0) + 1;
@@ -725,7 +748,7 @@ export default function App() {
     const renderContent = () => {
         switch (view) {
             case 'LOGIN': return <LoginScreen onLogin={handleLogin} t={t} />;
-            case 'PROFILE_SETUP': return <ProfileSetupModal onSetupComplete={handleProfileSetup} t={t} />;
+            case 'PROFILE_SETUP': return <ProfileSetupModal user={user!} onSetupComplete={handleProfileSetup} t={t} />;
             case 'DASHBOARD': return (
                 <Dashboard
                     onNewCarousel={startNewCarousel}
@@ -798,31 +821,32 @@ export default function App() {
 
 // --- VIEW & MODAL COMPONENTS ---
 
-const LoginScreen: React.FC<{ onLogin: () => void; t: TFunction; }> = ({ onLogin, t }) => (
-    <div className="flex items-center justify-center min-h-[calc(100vh-64px)] bg-gray-50 dark:bg-gray-900">
-        <div className="text-center p-8 max-w-md mx-auto">
-            <SparklesIcon className="w-20 h-20 text-primary-500 mx-auto mb-4"/>
-            <h2 className="text-4xl font-bold text-gray-800 dark:text-gray-200 mb-2">{t('loginTitle')}</h2>
-            <p className="text-lg text-gray-600 dark:text-gray-400 mb-8">{t('loginSubtitle')}</p>
-            <button
-                onClick={onLogin}
-                className="w-full inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 shadow-lg transform hover:scale-105 transition-transform"
-            >
-                <GoogleIcon className="w-5 h-5 mr-3" />
-                {t('loginButton')}
-            </button>
+const LoginScreen: React.FC<{ onLogin: () => void; t: TFunction; }> = ({ onLogin, t }) => {
+    return (
+        <div className="flex items-center justify-center min-h-[calc(100vh-128px)]">
+            <div className="text-center p-8 max-w-md mx-auto">
+                <SparklesIcon className="w-20 h-20 text-primary-500 mx-auto mb-4"/>
+                <h2 className="text-4xl font-bold text-gray-800 dark:text-gray-200 mb-2">{t('loginTitle')}</h2>
+                <p className="text-lg text-gray-600 dark:text-gray-400 mb-8">{t('loginSubtitle')}</p>
+                <button
+                    onClick={onLogin}
+                    className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 shadow-lg"
+                >
+                   {t('loginButton')}
+                </button>
+            </div>
         </div>
-    </div>
-);
+    );
+};
 
 
-const ProfileSetupModal: React.FC<{ onSetupComplete: (profile: Omit<UserProfile, 'profileComplete'>) => void; t: TFunction; }> = ({ onSetupComplete, t }) => {
-    const [name, setName] = useState('');
-    const [niche, setNiche] = useState<ContentNiche>(ContentNiche.MARKETING);
+const ProfileSetupModal: React.FC<{ user: UserProfile, onSetupComplete: (profile: Omit<UserProfile, 'profileComplete'>) => void; t: TFunction; }> = ({ user, onSetupComplete, t }) => {
+    const [name, setName] = React.useState(user.name || '');
+    const [niche, setNiche] = React.useState<ContentNiche>(user.niche || ContentNiche.MARKETING);
     
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        onSetupComplete({ name, niche });
+        onSetupComplete({ ...user, name, niche });
     };
 
     return (
@@ -931,8 +955,8 @@ const Generator: React.FC<{
     t: TFunction;
 }> = (props) => {
     const { user, isGenerating, generationMessage, error, onGenerate, currentCarousel, selectedSlide, onSelectSlide, onUpdateSlide, onMoveSlide, onOpenAssistant, onDownload, isDownloading, t } = props;
-    const [topic, setTopic] = useState('');
-    const [preferences, setPreferences] = useState<DesignPreferences>({
+    const [topic, setTopic] = React.useState('');
+    const [preferences, setPreferences] = React.useState<DesignPreferences>({
         backgroundColor: '#FFFFFF',
         fontColor: '#111827',
         style: DesignStyle.MINIMALIST,
@@ -942,7 +966,7 @@ const Generator: React.FC<{
         brandingText: '',
     });
 
-    useEffect(() => {
+    React.useEffect(() => {
         if (currentCarousel) {
             setTopic(currentCarousel.title);
             setPreferences(currentCarousel.preferences);
@@ -960,7 +984,7 @@ const Generator: React.FC<{
       }
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         onGenerate(topic, preferences);
     };
@@ -990,7 +1014,7 @@ const Generator: React.FC<{
                               <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorAspectRatioLabel')}</label>
                                 <select value={preferences.aspectRatio} onChange={e => setPreferences(p => ({...p, aspectRatio: e.target.value as AspectRatio}))} className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-white dark:bg-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md">
-                                    {Object.entries(AspectRatio).map(([key, value]) => <option key={key} value={value}>{key.charAt(0) + key.slice(1).toLowerCase()}</option>)}
+                                    {Object.values(AspectRatio).map(value => <option key={value} value={value}>{aspectRatioDisplayMap[value]}</option>)}
                                 </select>
                               </div>
                            </div>
@@ -1128,9 +1152,9 @@ const AiAssistantModal: React.FC<{
     settings: AppSettings;
     t: TFunction;
 }> = ({ topic, onClose, settings, t }) => {
-    const [isLoading, setIsLoading] = useState(false);
-    const [suggestions, setSuggestions] = useState<string[]>([]);
-    const [type, setType] = useState<'hook' | 'cta' | null>(null);
+    const [isLoading, setIsLoading] = React.useState(false);
+    const [suggestions, setSuggestions] = React.useState<string[]>([]);
+    const [type, setType] = React.useState<'hook' | 'cta' | null>(null);
 
     const fetchSuggestions = async (suggestionType: 'hook' | 'cta') => {
         setIsLoading(true);
@@ -1177,9 +1201,9 @@ const SettingsModal: React.FC<{
     onSave: (settings: AppSettings) => void;
     t: TFunction;
 }> = ({ currentSettings, onClose, onSave, t }) => {
-    const [localSettings, setLocalSettings] = useState<AppSettings>(currentSettings);
+    const [localSettings, setLocalSettings] = React.useState<AppSettings>(currentSettings);
 
-    const handleSave = (e: React.FormEvent) => {
+    const handleSave = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         onSave(localSettings);
     };
@@ -1228,7 +1252,7 @@ const SettingsModal: React.FC<{
                         />
                          <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">{t('apiKeyHint')}</p>
                     </div>
-                    
+
                     {/* System Prompt */}
                     <div>
                         <label htmlFor="systemPrompt" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('systemPromptLabel')}</label>

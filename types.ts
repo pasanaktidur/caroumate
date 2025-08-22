@@ -12,6 +12,8 @@ export interface DesignPreferences {
 
 export interface UserProfile {
   name: string;
+  email: string;
+  picture: string;
   niche: ContentNiche;
   profileComplete: boolean;
 }
@@ -38,6 +40,7 @@ export type AppView = 'LOGIN' | 'PROFILE_SETUP' | 'DASHBOARD' | 'GENERATOR';
 
 export enum AIModel {
     GEMINI_2_5_FLASH = 'gemini-2.5-flash', // Fast and cost-effective for most tasks.
+    GEMINI_2_5_PRO = 'gemini-2.5-pro', // More powerful, for higher quality or complex content.
 }
 
 export interface AppSettings {
@@ -67,7 +70,7 @@ export enum ContentNiche {
 
 export enum AspectRatio {
     SQUARE = '1:1',
-    PORTRAIT = '3:4',
+    PORTRAIT = '4:5',
     STORY = '9:16',
 }
 

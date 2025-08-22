@@ -90,6 +90,10 @@ export const generateCarouselContent = async (
 export const generateSlideImage = async (prompt: string, aspectRatio: string, settings: AppSettings): Promise<string> => {
     try {
         const ai = getAiClient(settings);
+
+        // The Imagen API supports "3:4", which is the closest to Instagram's "4:5".
+        // We'll generate a 3:4 image and let the UI crop it to 4:5 using object-cover.
+        const apiAspectRatio = aspectRatio === '4:5' ? '3:4' : aspectRatio;
         
         const response = await ai.models.generateImages({
             model: 'imagen-3.0-generate-002',
@@ -97,7 +101,7 @@ export const generateSlideImage = async (prompt: string, aspectRatio: string, se
             config: {
               numberOfImages: 1,
               outputMimeType: 'image/jpeg',
-              aspectRatio: aspectRatio as "1:1" | "3:4" | "9:16",
+              aspectRatio: apiAspectRatio as "1:1" | "3:4" | "9:16",
             },
         });
 
