@@ -279,13 +279,6 @@ const Header: React.FC<{
                 {user && (
                     <div className="flex items-center space-x-2 sm:space-x-4">
                         <span className="text-gray-600 dark:text-gray-400 hidden md:block">{t('welcome', { name: user.name.split(' ')[0] })}</span>
-                        {user.picture ? (
-                            <img src={user.picture} alt={user.name} referrerPolicy="no-referrer" className="w-8 h-8 rounded-full" />
-                        ) : (
-                           <span className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-                               <AvatarIcon className="w-6 h-6 text-gray-500 dark:text-gray-400" />
-                           </span>
-                        )}
                         <button
                             onClick={onLanguageChange}
                             className="p-2 w-10 text-center text-gray-500 dark:text-gray-400 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary-500 transition-colors font-semibold"
