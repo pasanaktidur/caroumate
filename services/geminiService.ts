@@ -3,9 +3,8 @@ import type { DesignPreferences, SlideData, AppSettings, ContentNiche, AspectRat
 
 // Helper to get the Gemini API client
 const getAiClient = (settings: AppSettings) => {
-    // When running on the client-side, the API key MUST come from user settings.
-    // The 'caroumate' option would imply a backend proxy, which is not used in this setup.
-    const apiKey = settings.apiKeyOption === 'custom' ? settings.customApiKey : '';
+    // In a client-side only application, the API key must be provided by the user.
+    const apiKey = settings.apiKey;
 
     if (!apiKey) {
         throw new Error("API key is not configured. Please go to Settings and enter your Google AI API key.");

@@ -86,10 +86,9 @@ const translations = {
     settingsTitle: 'Settings',
     aiModelLabel: 'AI Model',
     aiModelHint: "Choose the AI model. 'gemini-2.5-flash' is fast and cost-effective for most tasks.",
-    apiKeyLabel: 'API Key',
-    apiKeyDefaultOption: 'Use CarouMate API (Default)',
-    apiKeyCustomOption: 'Use Custom Google AI API Key',
-    apiKeyPlaceholder: 'Enter your API key',
+    apiKeyLabel: 'Google AI API Key',
+    apiKeyPlaceholder: 'Enter your Google AI API key',
+    apiKeyHint: 'Your API key is stored securely in your browser and is required for all AI features.',
     systemPromptLabel: 'System Prompt',
     systemPromptPlaceholder: 'e.g., You are a witty content creator...',
     cancelButton: 'Cancel',
@@ -172,10 +171,9 @@ const translations = {
     settingsTitle: 'Pengaturan',
     aiModelLabel: 'Model AI',
     aiModelHint: "Pilih model AI. 'gemini-2.5-flash' cepat dan hemat biaya untuk sebagian besar tugas.",
-    apiKeyLabel: 'Kunci API',
-    apiKeyDefaultOption: 'Gunakan API CarouMate (Default)',
-    apiKeyCustomOption: 'Gunakan Kunci API Google AI Kustom',
-    apiKeyPlaceholder: 'Masukkan kunci API Anda',
+    apiKeyLabel: 'Kunci API Google AI',
+    apiKeyPlaceholder: 'Masukkan kunci API Google AI Anda',
+    apiKeyHint: 'Kunci API Anda disimpan dengan aman di browser Anda dan diperlukan untuk semua fitur AI.',
     systemPromptLabel: 'Prompt Sistem',
     systemPromptPlaceholder: 'cth., Anda adalah seorang pembuat konten yang jenaka...',
     cancelButton: 'Batal',
@@ -195,8 +193,7 @@ const DOWNLOADS_STORAGE_KEY = 'caroumate-downloads';
 
 const defaultSettings: AppSettings = {
     aiModel: AIModel.GEMINI_2_5_FLASH,
-    apiKeyOption: 'caroumate',
-    customApiKey: '',
+    apiKey: '',
     systemPrompt: 'You are an expert social media content strategist specializing in creating viral carousels.'
 };
 
@@ -584,28 +581,45 @@ export default function App() {
             } else {
                 setGenerationMessage(t('generatingVisualsMessage'));
                 
-                const imagePromises = initialSlides.map(slide => 
-                    generateSlideImage(slide.visual_prompt, preferences.aspectRatio, settings)
-                );
+                let finalSlides = [...initialSlides];
+                let hasErrors = false;
 
-                const imageResults = await Promise.allSettled(imagePromises);
+                for (let i = 0; i < initialSlides.length; i++) {
+                    const slide = initialSlides[i];
+                    try {
+                        const imageUrl = await generateSlideImage(slide.visual_prompt, preferences.aspectRatio, settings);
+                        const updatedSlide = { ...slide, imageUrl, isGeneratingImage: false };
+                        finalSlides[i] = updatedSlide;
+                        
+                        // Update state for real-time UI feedback
+                        setCurrentCarousel(prev => {
+                            if (!prev) return null;
+                            const newSlides = [...prev.slides];
+                            newSlides[i] = updatedSlide;
+                            return { ...prev, slides: newSlides };
+                        });
 
-                const slidesWithImages: SlideData[] = initialSlides.map((slide, index) => {
-                    const result = imageResults[index];
-                    if (result.status === 'fulfilled') {
-                        return { ...slide, imageUrl: result.value, isGeneratingImage: false };
-                    } else {
-                        console.error(`Failed to generate image for slide "${slide.headline}":`, result.reason);
-                        return { ...slide, isGeneratingImage: false };
+                    } catch (err: any) {
+                        console.error(`Failed to generate image for slide "${slide.headline}":`, err);
+                        const updatedSlide = { ...slide, isGeneratingImage: false };
+                        finalSlides[i] = updatedSlide;
+                        hasErrors = true;
+                        
+                        // Update UI to remove loader even on error
+                        setCurrentCarousel(prev => {
+                            if (!prev) return null;
+                            const newSlides = [...prev.slides];
+                            newSlides[i] = updatedSlide;
+                            return { ...prev, slides: newSlides };
+                        });
                     }
-                });
+                }
                 
-                const finalCarousel = { ...newCarousel, slides: slidesWithImages };
-                setCurrentCarousel(finalCarousel);
+                const finalCarousel = { ...newCarousel, slides: finalSlides };
                 setCarouselHistory(prev => [ finalCarousel, ...prev ]);
 
-                if (imageResults.some(r => r.status === 'rejected')) {
-                    setError("Some images couldn't be generated. You can try again or edit the content.");
+                if (hasErrors) {
+                    setError("Some images couldn't be generated, likely due to API rate limits. Please wait a moment before trying again.");
                 }
             }
 
@@ -1171,10 +1185,6 @@ const SettingsModal: React.FC<{
         setLocalSettings(prev => ({ ...prev, [name]: value }));
     };
 
-    const handleRadioChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setLocalSettings(prev => ({...prev, apiKeyOption: e.target.value as 'caroumate' | 'custom' }));
-    };
-
     return (
         <div className="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50" onClick={onClose}>
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl p-6 max-w-2xl w-full m-4" onClick={e => e.stopPropagation()}>
@@ -1202,33 +1212,17 @@ const SettingsModal: React.FC<{
 
                     {/* API Key */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('apiKeyLabel')}</label>
-                        <fieldset className="mt-2">
-                            <legend className="sr-only">API Key Option</legend>
-                            <div className="space-y-2">
-                                <div className="flex items-center">
-                                    <input id="caroumate-api" value="caroumate" name="apiKeyOption" type="radio" checked={localSettings.apiKeyOption === 'caroumate'} onChange={handleRadioChange} className="focus:ring-primary-500 h-4 w-4 text-primary-600 border-gray-300" />
-                                    <label htmlFor="caroumate-api" className="ml-3 block text-sm font-medium text-gray-700 dark:text-gray-300">{t('apiKeyDefaultOption')}</label>
-                                </div>
-                                <div className="flex items-center">
-                                    <input id="custom-api" value="custom" name="apiKeyOption" type="radio" checked={localSettings.apiKeyOption === 'custom'} onChange={handleRadioChange} className="focus:ring-primary-500 h-4 w-4 text-primary-600 border-gray-300" />
-                                    <label htmlFor="custom-api" className="ml-3 block text-sm font-medium text-gray-700 dark:text-gray-300">{t('apiKeyCustomOption')}</label>
-                                </div>
-                            </div>
-                        </fieldset>
-                        {localSettings.apiKeyOption === 'custom' && (
-                            <div className="mt-3">
-                                <input
-                                    type="password"
-                                    name="customApiKey"
-                                    id="customApiKey"
-                                    placeholder={t('apiKeyPlaceholder')}
-                                    value={localSettings.customApiKey}
-                                    onChange={handleChange}
-                                    className="block w-full px-3 py-2 bg-white dark:bg-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
-                                />
-                            </div>
-                        )}
+                        <label htmlFor="apiKey" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('apiKeyLabel')}</label>
+                        <input
+                            type="password"
+                            name="apiKey"
+                            id="apiKey"
+                            placeholder={t('apiKeyPlaceholder')}
+                            value={localSettings.apiKey}
+                            onChange={handleChange}
+                            className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                        />
+                         <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">{t('apiKeyHint')}</p>
                     </div>
                     
                     {/* System Prompt */}

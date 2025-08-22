@@ -42,8 +42,7 @@ export enum AIModel {
 
 export interface AppSettings {
   aiModel: AIModel;
-  apiKeyOption: 'caroumate' | 'custom';
-  customApiKey: string;
+  apiKey: string;
   systemPrompt: string;
 }
 
