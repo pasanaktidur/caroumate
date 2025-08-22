@@ -64,7 +64,12 @@ export const generateCarouselContent = async (
             }
         });
         
-        const jsonResponse = response.text.trim();
+        const text = response.text;
+        if (!text) {
+            throw new Error("AI response was empty. The prompt may have been blocked for safety reasons. Please try a different topic.");
+        }
+
+        const jsonResponse = text.trim();
         const parsedSlides = JSON.parse(jsonResponse);
         
         if (!Array.isArray(parsedSlides)) {
@@ -140,7 +145,11 @@ export const getAiAssistance = async (topic: string, type: 'hook' | 'cta', setti
             }
         });
         
-        const jsonResponse = response.text.trim();
+        const text = response.text;
+        if (!text) {
+            throw new Error("AI assistance response was empty. Please try a different topic or rephrase.");
+        }
+        const jsonResponse = text.trim();
         const parsedSuggestions = JSON.parse(jsonResponse);
 
         if (!Array.isArray(parsedSuggestions)) {
