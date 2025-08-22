@@ -2,9 +2,72 @@
 // It directly imports dependencies from esm.sh.
 
 import { GoogleGenAI, Type } from "https://esm.sh/@google/genai@^1.15.0";
-// Assuming Netlify's build process can resolve this relative path to your existing types.
-import type { DesignPreferences, SlideData, AppSettings, ContentNiche } from "../../types.ts"; 
-import { DesignStyle } from "../../types.ts";
+
+// --- START: Inlined types from ../../types.ts to remove build dependency ---
+
+// NOTE: These types are duplicated from the main `types.ts` file.
+// This is done to avoid build issues with Netlify functions resolving relative paths outside their root.
+
+export enum DesignStyle {
+  MINIMALIST = 'Minimalist',
+  BOLD = 'Bold & Punchy',
+  COLORFUL = 'Vibrant & Colorful',
+  ELEGANT = 'Elegant & Refined',
+  VINTAGE = 'Retro & Vintage',
+}
+
+export enum AIModel {
+    GEMINI_2_5_FLASH = 'gemini-2.5-flash',
+    GEMINI_2_5_PRO = 'gemini-2.5-pro',
+}
+
+export enum ContentNiche {
+  MARKETING = 'Digital Marketing',
+  TECH = 'Technology',
+  WELLNESS = 'Health & Wellness',
+  FINANCE = 'Personal Finance',
+  FOOD = 'Food & Cooking',
+  TRAVEL = 'Travel',
+}
+
+export enum AspectRatio {
+    SQUARE = '1:1',
+    PORTRAIT = '3:4',
+    STORY = '9:16',
+}
+
+// A minimal FontChoice enum to satisfy the type checker, as the function logic doesn't use the font value.
+export enum FontChoice {
+  SANS = 'Inter',
+}
+
+export interface DesignPreferences {
+  backgroundColor: string;
+  fontColor: string;
+  backgroundImage?: string;
+  style: DesignStyle;
+  font: FontChoice;
+  aspectRatio: AspectRatio;
+  brandingText?: string;
+}
+
+export interface SlideData {
+  id: string;
+  headline: string;
+  body: string;
+  visual_prompt: string;
+  imageUrl?: string;
+  isGeneratingImage?: boolean;
+}
+
+export interface AppSettings {
+  aiModel: AIModel;
+  apiKeyOption: 'caroumate' | 'custom';
+  customApiKey: string;
+  systemPrompt: string;
+}
+
+// --- END: Inlined types ---
 
 // TypeScript type definition for Deno, in case it's not globally available in the build environment.
 declare const Deno: {
