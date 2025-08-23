@@ -734,7 +734,7 @@ export default function App() {
                 setGenerationMessage(t('generatingVisualsMessage'));
                 
                 let finalSlides = [...initialSlides];
-                let hasErrors = false;
+                const errorMessages = new Set<string>();
 
                 for (let i = 0; i < initialSlides.length; i++) {
                     const slide = initialSlides[i];
@@ -754,7 +754,7 @@ export default function App() {
                         console.error(`Failed to generate image for slide "${slide.headline}":`, err);
                         const updatedSlide = { ...slide, isGeneratingImage: false };
                         finalSlides[i] = updatedSlide;
-                        hasErrors = true;
+                        errorMessages.add(err.message || 'An unknown image generation error occurred.');
                         
                         setCurrentCarousel(prev => {
                             if (!prev) return null;
@@ -771,8 +771,9 @@ export default function App() {
                 const finalCarousel = { ...newCarousel, slides: finalSlides };
                 setCarouselHistory(prev => [ finalCarousel, ...prev ]);
 
-                if (hasErrors) {
-                    setError("Some images couldn't be generated, likely due to API rate limits. Please wait a moment before trying again.");
+                if (errorMessages.size > 0) {
+                    const combinedErrors = Array.from(errorMessages).join('. ');
+                    setError(`Some images couldn't be generated. Reason: ${combinedErrors}`);
                 }
             }
 
