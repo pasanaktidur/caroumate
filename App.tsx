@@ -1,7 +1,7 @@
 import * as React from 'react';
 import type { AppView, UserProfile, Carousel, SlideData, DesignPreferences, AppSettings, Language, TextStyle } from './types';
 import { ContentNiche, DesignStyle, FontChoice, AspectRatio, AIModel } from './types';
-import { GoogleIcon, SparklesIcon, LoaderIcon, DownloadIcon, SettingsIcon, InstagramIcon, ThreadsIcon, MoonIcon, SunIcon, AvatarIcon, LogoutIcon, HashtagIcon, HomeIcon, BoldIcon, ItalicIcon, UnderlineIcon, StrikethroughIcon, CaseIcon, AlignLeftIcon, AlignCenterIcon, AlignRightIcon, AlignJustifyIcon } from './components/icons';
+import { GoogleIcon, SparklesIcon, LoaderIcon, DownloadIcon, SettingsIcon, InstagramIcon, ThreadsIcon, MoonIcon, SunIcon, AvatarIcon, LogoutIcon, HashtagIcon, HomeIcon, BoldIcon, ItalicIcon, UnderlineIcon, StrikethroughIcon, CaseIcon, AlignLeftIcon, AlignCenterIcon, AlignRightIcon, AlignJustifyIcon, LeftArrowIcon, RightArrowIcon } from './components/icons';
 import { generateCarouselContent, generateSlideImage, getAiAssistance, generateHashtags } from './services/geminiService';
 import html2canvas from 'html2canvas';
 import JSZip from 'jszip';
@@ -1404,8 +1404,14 @@ const Generator: React.FC<{
                         <div className="flex justify-between items-center pt-2">
                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorMoveSlideLabel')}</label>
                              <div className="flex space-x-2">
-                                <button onClick={() => onMoveSlide(selectedSlide.id, 'left')} className="px-3 py-1 border dark:border-gray-600 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700">&larr;</button>
-                                <button onClick={() => onMoveSlide(selectedSlide.id, 'right')} className="px-3 py-1 border dark:border-gray-600 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700">&rarr;</button>
+                                <button type="button" onClick={() => onMoveSlide(selectedSlide.id, 'left')} className="p-2 border dark:border-gray-600 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 transition-colors">
+                                    <span className="sr-only">Move slide left</span>
+                                    <LeftArrowIcon className="w-5 h-5" />
+                                </button>
+                                <button type="button" onClick={() => onMoveSlide(selectedSlide.id, 'right')} className="p-2 border dark:border-gray-600 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 transition-colors">
+                                    <span className="sr-only">Move slide right</span>
+                                    <RightArrowIcon className="w-5 h-5" />
+                                </button>
                              </div>
                         </div>
                     </div>
@@ -1644,10 +1650,10 @@ const SettingsModal: React.FC<{
 };
 
 const Footer: React.FC = () => (
-    <footer className="w-full bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 py-4 px-6 hidden md:block">
+    <footer className="w-full bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 py-4 px-6">
         <div className="container mx-auto flex flex-col sm:flex-row items-center justify-between text-center">
             <p className="text-sm text-gray-500 dark:text-gray-400 mb-2 sm:mb-0">
-                &copy; {new Date().getFullYear()} CarouMate. All rights reserved.
+                &copy; {new Date().getFullYear()} Pasanaktidur. All rights reserved.
             </p>
             <div className="flex items-center space-x-4">
                 <a href="#" target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors">
