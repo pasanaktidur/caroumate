@@ -7,7 +7,7 @@ const getAiClient = (settings: AppSettings) => {
     const apiKey = settings.apiKey;
 
     if (!apiKey) {
-        throw new Error("API key is not configured. Please go to Settings and enter your Google AI API key.");
+        throw new Error("Kunci API belum dikonfigurasi. Silakan buka Pengaturan dan masukkan kunci API Google AI Anda.");
     }
     
     return new GoogleGenAI({ apiKey });
@@ -66,14 +66,14 @@ export const generateCarouselContent = async (
         
         const text = response.text;
         if (!text) {
-            throw new Error("AI response was empty. The prompt may have been blocked for safety reasons. Please try a different topic.");
+            throw new Error("Respons AI kosong. Prompt mungkin diblokir karena alasan keamanan. Silakan coba topik yang berbeda.");
         }
 
         const jsonResponse = text.trim();
         const parsedSlides = JSON.parse(jsonResponse);
         
         if (!Array.isArray(parsedSlides)) {
-            throw new Error("AI response was not in the expected array format.");
+            throw new Error("Respons AI tidak dalam format array yang diharapkan.");
         }
 
         return parsedSlides;
@@ -83,7 +83,7 @@ export const generateCarouselContent = async (
         if (error instanceof Error) {
             throw error;
         }
-        throw new Error("Failed to generate carousel content from AI. Please check your prompt and API key.");
+        throw new Error("Gagal membuat konten carousel dari AI. Silakan periksa prompt dan kunci API Anda.");
     }
 };
 
@@ -106,7 +106,7 @@ export const generateSlideImage = async (prompt: string, aspectRatio: string, se
         });
 
         if (!response.generatedImages || response.generatedImages.length === 0) {
-            throw new Error("AI did not return any images.");
+            throw new Error("AI tidak mengembalikan gambar apa pun.");
         }
 
         const base64ImageBytes: string = response.generatedImages[0].image.imageBytes;
@@ -117,7 +117,7 @@ export const generateSlideImage = async (prompt: string, aspectRatio: string, se
         if (error instanceof Error) {
             throw error;
         }
-        throw new Error("Failed to generate image. The model may have safety concerns with the prompt.");
+        throw new Error("Gagal membuat gambar. Model mungkin memiliki masalah keamanan dengan prompt.");
     }
 };
 
@@ -151,13 +151,13 @@ export const getAiAssistance = async (topic: string, type: 'hook' | 'cta', setti
         
         const text = response.text;
         if (!text) {
-            throw new Error("AI assistance response was empty. Please try a different topic or rephrase.");
+            throw new Error("Respons asisten AI kosong. Silakan coba topik lain atau ubah kalimat Anda.");
         }
         const jsonResponse = text.trim();
         const parsedSuggestions = JSON.parse(jsonResponse);
 
         if (!Array.isArray(parsedSuggestions)) {
-            throw new Error("AI response was not in the expected array format.");
+            throw new Error("Respons AI tidak dalam format array yang diharapkan.");
         }
         
         return parsedSuggestions;
@@ -166,7 +166,7 @@ export const getAiAssistance = async (topic: string, type: 'hook' | 'cta', setti
         if (error instanceof Error) {
             throw error;
         }
-        throw new Error(`Failed to get AI-powered ${type} suggestions.`);
+        throw new Error(`Gagal mendapatkan saran ${type} dari AI.`);
     }
 };
 
@@ -201,13 +201,13 @@ export const generateHashtags = async (topic: string, settings: AppSettings): Pr
 
         const text = response.text;
         if (!text) {
-            throw new Error("AI hashtag response was empty. Please try a different topic.");
+            throw new Error("Respons hashtag AI kosong. Silakan coba topik yang berbeda.");
         }
         const jsonResponse = text.trim();
         const parsedHashtags = JSON.parse(jsonResponse);
 
         if (!Array.isArray(parsedHashtags)) {
-            throw new Error("AI response was not in the expected array format.");
+            throw new Error("Respons AI tidak dalam format array yang diharapkan.");
         }
 
         return parsedHashtags;
@@ -216,6 +216,6 @@ export const generateHashtags = async (topic: string, settings: AppSettings): Pr
         if (error instanceof Error) {
             throw error;
         }
-        throw new Error("Failed to generate AI-powered hashtags.");
+        throw new Error("Gagal membuat hashtag dari AI.");
     }
 };

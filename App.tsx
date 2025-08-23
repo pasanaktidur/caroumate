@@ -82,6 +82,10 @@ const translations = {
     previewEmptyTitle: "Let's create something amazing!",
     previewEmptySubtitle: 'Fill in the details on the left and click "Create Carousel" to begin.',
     errorTitle: 'An Error Occurred',
+    errorUnknown: 'An unknown error occurred.',
+    errorImageGen: 'An unknown image generation error occurred.',
+    errorHashtagGen: 'Failed to generate hashtags.',
+    errorDownload: 'Sorry, there was an issue creating the download file.',
     generatingContentMessage: 'Crafting your carousel content...',
     generatingVisualsMessage: 'Generating stunning visuals...',
     applyTo: 'Apply to:',
@@ -193,6 +197,10 @@ const translations = {
     previewEmptyTitle: 'Ayo buat sesuatu yang luar biasa!',
     previewEmptySubtitle: 'Isi detail di sebelah kiri dan klik "Buat Carousel" untuk memulai.',
     errorTitle: 'Terjadi Kesalahan',
+    errorUnknown: 'Terjadi kesalahan yang tidak diketahui.',
+    errorImageGen: 'Terjadi kesalahan pembuatan gambar yang tidak diketahui.',
+    errorHashtagGen: 'Gagal membuat hashtag.',
+    errorDownload: 'Maaf, terjadi masalah saat membuat file unduhan.',
     generatingContentMessage: 'Menyusun konten carousel Anda...',
     generatingVisualsMessage: 'Membuat visual yang memukau...',
     applyTo: 'Terapkan ke:',
@@ -309,6 +317,23 @@ const aspectRatioDisplayMap: { [key in AspectRatio]: string } = {
     [AspectRatio.SQUARE]: '1:1 (Square)',
     [AspectRatio.PORTRAIT]: '4:5 (Portrait)',
     [AspectRatio.STORY]: '9:16 (Story)',
+};
+
+const parseGeminiErrorMessage = (error: any, fallbackMessage: string): string => {
+    const message = error?.message || fallbackMessage;
+    try {
+        // The error message from the Gemini SDK might be a JSON string
+        if (typeof message === 'string' && message.startsWith('{') && message.endsWith('}')) {
+            const parsedError = JSON.parse(message);
+            // Following the structure like {"error":{"code":400,"message":"..."}}
+            return parsedError?.error?.message || message;
+        }
+        // If it's not a JSON string, return as is
+        return message;
+    } catch (e) {
+        // In case of parsing error, return the original message
+        return message;
+    }
 };
 
 const Header: React.FC<{
@@ -456,7 +481,7 @@ const SlideCard: React.FC<{ slide: SlideData; preferences: DesignPreferences; is
 
             {/* Overlays: Loading, Error */}
             {(slide.isGeneratingImage || slide.imageUrlError) && (
-                <div className="absolute inset-0 bg-gray-900/70 backdrop-blur-sm flex flex-col items-center justify-center space-y-2 rounded-lg text-white p-4">
+                <div className="absolute inset-0 bg-gray-900/70 backdrop-blur-sm flex flex-col items-center justify-center rounded-lg text-white p-4">
                     {slide.isGeneratingImage ? (
                         <>
                             <LoaderIcon className="w-12 h-12" />
@@ -464,11 +489,13 @@ const SlideCard: React.FC<{ slide: SlideData; preferences: DesignPreferences; is
                         </>
                     ) : slide.imageUrlError ? (
                         <>
-                            <p className="text-sm text-red-300 font-semibold mb-2 text-center">{t('errorTitle')}</p>
-                            <p className="text-xs text-red-300 text-center mb-4">{slide.imageUrlError}</p>
+                            <p className="text-sm text-red-300 font-semibold text-center">{t('errorTitle')}</p>
+                            <div className="my-2 max-h-24 w-full overflow-y-auto break-words p-1 text-center">
+                                <p className="text-xs text-red-300">{slide.imageUrlError}</p>
+                            </div>
                             <button
                                 onClick={(e) => { e.stopPropagation(); onRegenerate(slide.id); }}
-                                className="inline-flex items-center justify-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-primary-500"
+                                className="flex-shrink-0 inline-flex items-center justify-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-primary-500"
                             >
                                 <RefreshIcon className="w-4 h-4 mr-1.5" />
                                 {t('regenerateButton')}
@@ -769,7 +796,7 @@ export default function App() {
                         return updatedSlide;
                     } catch (err: any) {
                         console.error(`Failed to generate image for slide "${slide.headline}":`, err);
-                        const errorMessage = err.message || 'An unknown image generation error occurred.';
+                        const errorMessage = parseGeminiErrorMessage(err, t('errorImageGen'));
                         const updatedSlide = { ...slide, isGeneratingImage: false, imageUrlError: errorMessage };
                         
                         setCurrentCarousel(prev => {
@@ -794,7 +821,7 @@ export default function App() {
 
         } catch (err: any)
         {
-            setError(err.message || 'An unknown error occurred.');
+            setError(err.message || t('errorUnknown'));
         } finally {
             setIsGenerating(false);
             setGenerationMessage('');
@@ -814,7 +841,7 @@ export default function App() {
             handleUpdateSlide(slideId, { imageUrl, isGeneratingImage: false, imageUrlError: null });
         } catch (err: any) {
             console.error(`Failed to regenerate image for slide "${slideToRegen.headline}":`, err);
-            const errorMessage = err.message || 'An unknown image generation error occurred.';
+            const errorMessage = parseGeminiErrorMessage(err, t('errorImageGen'));
             handleUpdateSlide(slideId, { isGeneratingImage: false, imageUrlError: errorMessage });
         }
     };
@@ -830,7 +857,7 @@ export default function App() {
             const hashtags = await generateHashtags(currentTopic, settings);
             setGeneratedHashtags(hashtags);
         } catch (err: any) {
-            setError(err.message || 'Failed to generate hashtags.');
+            setError(err.message || t('errorHashtagGen'));
         } finally {
             setIsGeneratingHashtags(false);
         }
@@ -882,7 +909,7 @@ export default function App() {
 
         } catch (error) {
             console.error("Failed to download carousel:", error);
-            setError("Sorry, there was an issue creating the download file.");
+            setError(t('errorDownload'));
         } finally {
             setIsDownloading(false);
         }
