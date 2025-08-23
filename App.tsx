@@ -1,7 +1,7 @@
 import * as React from 'react';
 import type { AppView, UserProfile, Carousel, SlideData, DesignPreferences, AppSettings, Language } from './types';
 import { ContentNiche, DesignStyle, FontChoice, AspectRatio, AIModel } from './types';
-import { GoogleIcon, SparklesIcon, LoaderIcon, DownloadIcon, SettingsIcon, InstagramIcon, ThreadsIcon, MoonIcon, SunIcon, AvatarIcon, LogoutIcon, HashtagIcon } from './components/icons';
+import { GoogleIcon, SparklesIcon, LoaderIcon, DownloadIcon, SettingsIcon, InstagramIcon, ThreadsIcon, MoonIcon, SunIcon, AvatarIcon, LogoutIcon, HashtagIcon, HomeIcon } from './components/icons';
 import { generateCarouselContent, generateSlideImage, getAiAssistance, generateHashtags } from './services/geminiService';
 import html2canvas from 'html2canvas';
 import JSZip from 'jszip';
@@ -41,6 +41,7 @@ const translations = {
     historyEmptyHint: 'Click "Create New Carousel" to get started!',
 
     // Generator
+    generator: 'Generator',
     generatorStep1Title: '1. Enter Your Idea',
     generatorTopicLabel: "What's your carousel about?",
     generatorTopicPlaceholder: "e.g., '5 tips for growing on Instagram in 2024'",
@@ -137,6 +138,7 @@ const translations = {
     historyEmptyHint: 'Klik "Buat Carousel Baru" untuk memulai!',
 
     // Generator
+    generator: 'Generator',
     generatorStep1Title: '1. Masukkan Ide Anda',
     generatorTopicLabel: 'Tentang apa carousel Anda?',
     generatorTopicPlaceholder: "cth., '5 tips untuk berkembang di Instagram pada 2024'",
@@ -317,7 +319,7 @@ const Header: React.FC<{
                         </button>
                         <button
                             onClick={onOpenSettings}
-                            className="p-2 text-gray-500 dark:text-gray-400 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary-500 transition-colors"
+                            className="hidden md:inline-block p-2 text-gray-500 dark:text-gray-400 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary-500 transition-colors"
                             aria-label={t('settingsAriaLabel')}
                         >
                             <SettingsIcon className="w-5 h-5" />
@@ -421,6 +423,50 @@ const SlideCard: React.FC<{ slide: SlideData; preferences: DesignPreferences; is
     );
 };
 
+
+// --- MOBILE FOOTER COMPONENT ---
+const MobileFooter: React.FC<{
+    currentView: AppView;
+    onNavigate: (view: AppView) => void;
+    onOpenSettings: () => void;
+    t: TFunction;
+}> = ({ currentView, onNavigate, onOpenSettings, t }) => {
+    
+    const navItems = [
+        { view: 'DASHBOARD' as AppView, label: t('dashboardTitle'), icon: <HomeIcon className="w-6 h-6 mx-auto mb-1" /> },
+        { view: 'GENERATOR' as AppView, label: t('generator'), icon: <SparklesIcon className="w-6 h-6 mx-auto mb-1" /> },
+    ];
+
+    return (
+        <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-t-lg z-50">
+            <div className="flex justify-around items-center h-16">
+                {navItems.map(item => (
+                    <button
+                        key={item.view}
+                        onClick={() => onNavigate(item.view)}
+                        className={`flex flex-col items-center justify-center w-full h-full text-xs font-medium transition-colors duration-200 ${
+                            currentView === item.view
+                                ? 'text-primary-600 dark:text-primary-400'
+                                : 'text-gray-500 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400'
+                        }`}
+                        aria-current={currentView === item.view ? 'page' : undefined}
+                    >
+                        {item.icon}
+                        <span>{item.label}</span>
+                    </button>
+                ))}
+                 <button
+                    onClick={onOpenSettings}
+                    className="flex flex-col items-center justify-center w-full h-full text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors duration-200"
+                    aria-label={t('settingsAriaLabel')}
+                >
+                    <SettingsIcon className="w-6 h-6 mx-auto mb-1" />
+                    <span>{t('settingsTitle')}</span>
+                </button>
+            </div>
+        </div>
+    );
+};
 
 // --- MAIN APP COMPONENT ---
 
@@ -840,7 +886,7 @@ export default function App() {
                 onToggleTheme={toggleTheme}
                 t={t}
             />
-            <main className="flex-grow">
+            <main className="flex-grow pb-16 md:pb-0">
                 {renderContent()}
             </main>
             <Footer />
@@ -867,6 +913,14 @@ export default function App() {
                     currentSettings={settings}
                     onClose={() => setIsSettingsOpen(false)}
                     onSave={handleSaveSettings}
+                    t={t}
+                />
+            )}
+            {user && user.profileComplete && (
+                <MobileFooter
+                    currentView={view}
+                    onNavigate={(targetView) => setView(targetView)}
+                    onOpenSettings={() => setIsSettingsOpen(true)}
                     t={t}
                 />
             )}
@@ -1427,7 +1481,7 @@ const SettingsModal: React.FC<{
 };
 
 const Footer: React.FC = () => (
-    <footer className="w-full bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 py-4 px-6">
+    <footer className="w-full bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 py-4 px-6 hidden md:block">
         <div className="container mx-auto flex flex-col sm:flex-row items-center justify-between text-center">
             <p className="text-sm text-gray-500 dark:text-gray-400 mb-2 sm:mb-0">
                 &copy; {new Date().getFullYear()} Pasanaktidur. All rights reserved.
