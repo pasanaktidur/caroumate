@@ -34,13 +34,9 @@ export interface SlideData {
   headline: string;
   body: string;
   visual_prompt: string;
-  imageUrl?: string;
-  isGeneratingImage?: boolean;
-  imageUrlError?: string | null;
   // Per-slide style overrides
   backgroundColor?: string;
   fontColor?: string;
-  backgroundImage?: string;
   headlineStyle?: TextStyle;
   bodyStyle?: TextStyle;
 }

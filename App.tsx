@@ -1,8 +1,8 @@
 import * as React from 'react';
 import type { AppView, UserProfile, Carousel, SlideData, DesignPreferences, AppSettings, Language, TextStyle } from './types';
 import { ContentNiche, DesignStyle, FontChoice, AspectRatio, AIModel } from './types';
-import { GoogleIcon, SparklesIcon, LoaderIcon, DownloadIcon, SettingsIcon, InstagramIcon, ThreadsIcon, MoonIcon, SunIcon, AvatarIcon, LogoutIcon, HashtagIcon, HomeIcon, BoldIcon, ItalicIcon, UnderlineIcon, StrikethroughIcon, CaseIcon, AlignLeftIcon, AlignCenterIcon, AlignRightIcon, AlignJustifyIcon, LeftArrowIcon, RightArrowIcon, RefreshIcon } from './components/icons';
-import { generateCarouselContent, generateSlideImage, getAiAssistance, generateHashtags } from './services/geminiService';
+import { GoogleIcon, SparklesIcon, LoaderIcon, DownloadIcon, SettingsIcon, InstagramIcon, ThreadsIcon, MoonIcon, SunIcon, AvatarIcon, LogoutIcon, HashtagIcon, HomeIcon, BoldIcon, ItalicIcon, UnderlineIcon, StrikethroughIcon, CaseIcon, AlignLeftIcon, AlignCenterIcon, AlignRightIcon, AlignJustifyIcon, LeftArrowIcon, RightArrowIcon } from './components/icons';
+import { generateCarouselContent, getAiAssistance, generateHashtags } from './services/geminiService';
 import html2canvas from 'html2canvas';
 import JSZip from 'jszip';
 
@@ -66,8 +66,8 @@ const translations = {
     generatorBrandingPlaceholder: '@yourhandle',
     generatorBgColorLabel: 'BG Color',
     generatorFontColorLabel: 'Font Color',
-    generatorCustomBgLabel: 'Custom Background',
-    generatorRemoveBgButton: 'Remove background',
+    generatorCustomBgLabel: 'Background Image',
+    generatorRemoveBgButton: 'Remove image',
     generatorCreateButton: 'Create Carousel',
     generatorGeneratingButton: 'Generating...',
     generatorAssistantButton: 'AI Assistant',
@@ -87,14 +87,14 @@ const translations = {
     errorHashtagGen: 'Failed to generate hashtags.',
     errorDownload: 'Sorry, there was an issue creating the download file.',
     generatingContentMessage: 'Crafting your carousel content...',
-    generatingVisualsMessage: 'Generating stunning visuals...',
     applyTo: 'Apply to:',
     applyToAll: 'All Slides',
     applyToSelected: 'Selected Slide',
+    uploadVisual: 'Upload Visual',
+    removeButton: 'Remove',
 
     // SlideCard
     generatingVisual: 'Generating visual...',
-    regenerateButton: 'Regenerate',
 
     // AiAssistantModal
     assistantTitle: 'AI Assistant',
@@ -181,8 +181,8 @@ const translations = {
     generatorBrandingPlaceholder: '@handleanda',
     generatorBgColorLabel: 'Warna Latar',
     generatorFontColorLabel: 'Warna Font',
-    generatorCustomBgLabel: 'Latar Belakang Kustom',
-    generatorRemoveBgButton: 'Hapus latar belakang',
+    generatorCustomBgLabel: 'Gambar Latar',
+    generatorRemoveBgButton: 'Hapus Gambar',
     generatorCreateButton: 'Buat Carousel',
     generatorGeneratingButton: 'Membuat...',
     generatorAssistantButton: 'Asisten AI',
@@ -202,14 +202,14 @@ const translations = {
     errorHashtagGen: 'Gagal membuat hashtag.',
     errorDownload: 'Maaf, terjadi masalah saat membuat file unduhan.',
     generatingContentMessage: 'Menyusun konten carousel Anda...',
-    generatingVisualsMessage: 'Membuat visual yang memukau...',
     applyTo: 'Terapkan ke:',
     applyToAll: 'Semua Slide',
     applyToSelected: 'Slide Terpilih',
+    uploadVisual: 'Unggah Visual',
+    removeButton: 'Hapus',
 
     // SlideCard
     generatingVisual: 'Membuat visual...',
-    regenerateButton: 'Buat Ulang',
 
     // AiAssistantModal
     assistantTitle: 'Asisten AI',
@@ -400,13 +400,12 @@ const Loader: React.FC<{ text: string }> = ({ text }) => (
     </div>
 );
 
-const SlideCard: React.FC<{ slide: SlideData; preferences: DesignPreferences; isSelected: boolean; onClick: () => void; onRegenerate: (slideId: string) => void; t: TFunction; }> = ({ slide, preferences, isSelected, onClick, onRegenerate, t }) => {
+const SlideCard: React.FC<{ slide: SlideData; preferences: DesignPreferences; isSelected: boolean; onClick: () => void; t: TFunction; }> = ({ slide, preferences, isSelected, onClick, t }) => {
     
     const finalPrefs = React.useMemo(() => {
         const slideOverrides = {
             backgroundColor: slide.backgroundColor,
             fontColor: slide.fontColor,
-            backgroundImage: slide.backgroundImage,
             headlineStyle: slide.headlineStyle,
             bodyStyle: slide.bodyStyle
         };
@@ -415,7 +414,6 @@ const SlideCard: React.FC<{ slide: SlideData; preferences: DesignPreferences; is
             ...preferences,
             backgroundColor: slideOverrides.backgroundColor ?? preferences.backgroundColor,
             fontColor: slideOverrides.fontColor ?? preferences.fontColor,
-            backgroundImage: slideOverrides.backgroundImage ?? preferences.backgroundImage,
             headlineStyle: { ...preferences.headlineStyle, ...(slideOverrides.headlineStyle || {}) },
             bodyStyle: { ...preferences.bodyStyle, ...(slideOverrides.bodyStyle || {}) },
         };
@@ -452,58 +450,31 @@ const SlideCard: React.FC<{ slide: SlideData; preferences: DesignPreferences; is
         }
     }, [finalPrefs.style]);
 
+    const finalBackgroundImage = finalPrefs.backgroundImage;
+    
     return (
         <div
             data-carousel-slide={slide.id}
             onClick={onClick}
             className={`h-[280px] sm:h-[320px] md:h-[400px] flex-shrink-0 relative flex flex-col justify-center items-center p-6 pb-10 text-center rounded-lg cursor-pointer transition-all duration-300 transform ${styleClasses} ${font} ${aspectRatioClass} ${isSelected ? 'ring-4 ring-primary-500 ring-offset-2 scale-105 shadow-2xl shadow-primary-600/50' : 'hover:scale-102'}`}
             style={{
-                backgroundColor: finalPrefs.style !== DesignStyle.COLORFUL && !finalPrefs.backgroundImage ? finalPrefs.backgroundColor : undefined,
+                backgroundColor: finalPrefs.style !== DesignStyle.COLORFUL && !finalBackgroundImage ? finalPrefs.backgroundColor : undefined,
                 color: finalPrefs.fontColor
             }}
         >
             {/* Background Image Layer */}
-            {finalPrefs.backgroundImage ? (
+            {finalBackgroundImage && (
                 <>
-                    <img src={finalPrefs.backgroundImage} alt="Custom background" className="absolute inset-0 w-full h-full object-cover rounded-md -z-10" />
+                    <img src={finalBackgroundImage} alt="Slide background" className="absolute inset-0 w-full h-full object-cover rounded-md -z-10" />
                     <div className="absolute inset-0 bg-black/30 rounded-md -z-10"></div> {/* Dark overlay for readability */}
                 </>
-            ) : slide.imageUrl ? (
-                <img src={slide.imageUrl} alt={slide.visual_prompt} className="absolute inset-0 w-full h-full object-cover rounded-md -z-10 opacity-20" />
-            ) : null}
+            )}
 
             {/* Content Layer */}
             <div className="z-10 flex flex-col items-center">
                 <h2 className="font-bold leading-tight mb-4" style={{...headlineStyles, lineHeight: '1.2' }}>{slide.headline}</h2>
                 <p className="" style={{ ...bodyStyles, lineHeight: '1.5' }}>{slide.body}</p>
             </div>
-
-
-            {/* Overlays: Loading, Error */}
-            {(slide.isGeneratingImage || slide.imageUrlError) && (
-                <div className="absolute inset-0 bg-gray-900/70 backdrop-blur-sm flex flex-col items-center justify-center rounded-lg text-white p-4">
-                    {slide.isGeneratingImage ? (
-                        <>
-                            <LoaderIcon className="w-12 h-12" />
-                            <p className="text-sm">{t('generatingVisual')}</p>
-                        </>
-                    ) : slide.imageUrlError ? (
-                        <>
-                            <p className="text-sm text-red-300 font-semibold text-center">{t('errorTitle')}</p>
-                            <div className="my-2 max-h-24 w-full overflow-y-auto break-words p-1 text-center">
-                                <p className="text-xs text-red-300">{slide.imageUrlError}</p>
-                            </div>
-                            <button
-                                onClick={(e) => { e.stopPropagation(); onRegenerate(slide.id); }}
-                                className="flex-shrink-0 inline-flex items-center justify-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-primary-500"
-                            >
-                                <RefreshIcon className="w-4 h-4 mr-1.5" />
-                                {t('regenerateButton')}
-                            </button>
-                        </>
-                    ) : null}
-                </div>
-            )}
             
             {/* Branding Text */}
             {finalPrefs.brandingText && (
@@ -763,7 +734,8 @@ export default function App() {
             setGenerationMessage(t('generatingContentMessage'));
             const slidesContent = await generateCarouselContent(topic, user.niche, preferences, settings);
 
-            const initialSlides: SlideData[] = slidesContent.map(s => ({ ...s, id: crypto.randomUUID(), isGeneratingImage: !preferences.backgroundImage }));
+            const initialSlides: SlideData[] = slidesContent.map(s => ({ ...s, id: crypto.randomUUID() }));
+            
             const newCarousel: Carousel = {
                 id: crypto.randomUUID(),
                 title: topic,
@@ -772,52 +744,10 @@ export default function App() {
                 category: user.niche,
                 preferences,
             };
+            
             setCurrentCarousel(newCarousel);
             setSelectedSlideId(initialSlides[0]?.id ?? null);
-
-            if (preferences.backgroundImage) {
-                 setCarouselHistory(prev => [ newCarousel, ...prev ]);
-            } else {
-                setGenerationMessage(t('generatingVisualsMessage'));
-                
-                let finalSlides = [...initialSlides];
-                
-                const imageGenerationPromises = initialSlides.map(async (slide, i) => {
-                    try {
-                        const imageUrl = await generateSlideImage(slide.visual_prompt, preferences.aspectRatio, settings);
-                        const updatedSlide = { ...slide, imageUrl, isGeneratingImage: false, imageUrlError: null };
-                        
-                        setCurrentCarousel(prev => {
-                            if (!prev) return null;
-                            const newSlides = [...prev.slides];
-                            newSlides[i] = updatedSlide;
-                            return { ...prev, slides: newSlides };
-                        });
-                        return updatedSlide;
-                    } catch (err: any) {
-                        console.error(`Failed to generate image for slide "${slide.headline}":`, err);
-                        const errorMessage = parseGeminiErrorMessage(err, t('errorImageGen'));
-                        const updatedSlide = { ...slide, isGeneratingImage: false, imageUrlError: errorMessage };
-                        
-                        setCurrentCarousel(prev => {
-                             if (!prev) return null;
-                            const newSlides = [...prev.slides];
-                            newSlides[i] = updatedSlide;
-                            return { ...prev, slides: newSlides };
-                        });
-                        return updatedSlide;
-                    }
-                });
-
-                finalSlides = await Promise.all(imageGenerationPromises);
-                
-                const finalCarousel = { ...newCarousel, slides: finalSlides };
-                setCarouselHistory(prev => [ finalCarousel, ...prev ]);
-
-                if (finalSlides.some(s => s.imageUrlError)) {
-                    setError(`Some images couldn't be generated. Please check the individual slides and try to regenerate them.`);
-                }
-            }
+            setCarouselHistory(prev => [newCarousel, ...prev]);
 
         } catch (err: any)
         {
@@ -827,25 +757,6 @@ export default function App() {
             setGenerationMessage('');
         }
     }, [user, settings, t]);
-    
-    const handleRegenerateImage = async (slideId: string) => {
-        const slideToRegen = currentCarousel?.slides.find(s => s.id === slideId);
-        if (!slideToRegen || !currentCarousel) return;
-
-        // Update UI to show loading state for this specific slide
-        handleUpdateSlide(slideId, { isGeneratingImage: true, imageUrlError: null });
-        setError(null); // Clear global error
-
-        try {
-            const imageUrl = await generateSlideImage(slideToRegen.visual_prompt, currentCarousel.preferences.aspectRatio, settings);
-            handleUpdateSlide(slideId, { imageUrl, isGeneratingImage: false, imageUrlError: null });
-        } catch (err: any) {
-            console.error(`Failed to regenerate image for slide "${slideToRegen.headline}":`, err);
-            const errorMessage = parseGeminiErrorMessage(err, t('errorImageGen'));
-            handleUpdateSlide(slideId, { isGeneratingImage: false, imageUrlError: errorMessage });
-        }
-    };
-
 
     const handleGenerateHashtags = async () => {
         if (!currentTopic) return;
@@ -1024,7 +935,6 @@ export default function App() {
                     onUpdateCarouselPreferences={handleUpdateCarouselPreferences}
                     onClearSlideOverrides={handleClearSlideOverrides}
                     onMoveSlide={handleMoveSlide}
-                    onRegenerateImage={handleRegenerateImage}
                     onOpenAssistant={() => setIsAssistantOpen(true)}
                     onOpenHashtag={handleGenerateHashtags}
                     onDownload={handleDownloadCarousel}
@@ -1421,7 +1331,6 @@ const Generator: React.FC<{
     onUpdateCarouselPreferences: (updates: Partial<DesignPreferences>, currentTopic: string) => void;
     onClearSlideOverrides: (property: keyof SlideData) => void;
     onMoveSlide: (id: string, direction: 'left' | 'right') => void;
-    onRegenerateImage: (slideId: string) => void;
     onOpenAssistant: () => void;
     onOpenHashtag: () => void;
     onDownload: () => void;
@@ -1429,14 +1338,13 @@ const Generator: React.FC<{
     isHashtagModalOpen: boolean;
     t: TFunction;
 }> = (props) => {
-    const { onGenerate, currentCarousel, selectedSlide, onUpdateSlide, onUpdateCarouselPreferences, onClearSlideOverrides, onSelectSlide, onMoveSlide, onRegenerateImage, ...rest } = props;
+    const { onGenerate, currentCarousel, selectedSlide, onUpdateSlide, onUpdateCarouselPreferences, onClearSlideOverrides, onSelectSlide, onMoveSlide, ...rest } = props;
     const { isGenerating, generationMessage, error, onOpenAssistant, onOpenHashtag, onDownload, isDownloading, isHashtagModalOpen, t } = rest;
 
     const [topic, setTopic] = React.useState('');
     
     // Scopes for applying styles
     const [colorScope, setColorScope] = React.useState<'all' | 'selected'>('all');
-    const [bgImageScope, setBgImageScope] = React.useState<'all' | 'selected'>('all');
     
     const preferences = currentCarousel?.preferences ?? {
         backgroundColor: '#FFFFFF',
@@ -1474,13 +1382,13 @@ const Generator: React.FC<{
         }
     };
     
-    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleGlobalImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (file) {
         const reader = new FileReader();
         reader.onloadend = () => {
           const imageUrl = reader.result as string;
-          handleStyleChange(bgImageScope, 'backgroundImage', imageUrl, 'backgroundImage');
+          onUpdateCarouselPreferences({ backgroundImage: imageUrl }, topic);
         };
         reader.readAsDataURL(file);
       }
@@ -1551,11 +1459,10 @@ const Generator: React.FC<{
                            </div>
                            <div className="space-y-2">
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorCustomBgLabel')}</label>
-                                <input type="file" accept="image/*" onChange={handleImageUpload} className="mt-1 block w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary-50 dark:file:bg-primary-900/50 file:text-primary-700 dark:file:text-primary-300 hover:file:bg-primary-100 dark:hover:file:bg-primary-800/50"/>
-                                {(preferences.backgroundImage || selectedSlide?.backgroundImage) && (
-                                    <button onClick={() => handleStyleChange(bgImageScope, 'backgroundImage', undefined, 'backgroundImage')} type="button" className="text-xs text-red-500 hover:text-red-700 mt-1">{t('generatorRemoveBgButton')}</button>
+                                <input type="file" accept="image/*" onChange={handleGlobalImageUpload} className="mt-1 block w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary-50 dark:file:bg-primary-900/50 file:text-primary-700 dark:file:text-primary-300 hover:file:bg-primary-100 dark:hover:file:bg-primary-800/50"/>
+                                {preferences.backgroundImage && (
+                                    <button onClick={() => onUpdateCarouselPreferences({ backgroundImage: undefined }, topic)} type="button" className="text-xs text-red-500 hover:text-red-700 mt-1">{t('generatorRemoveBgButton')}</button>
                                 )}
-                                <ApplyScopeControl scope={bgImageScope} setScope={setBgImageScope} isDisabled={!selectedSlide} t={t} fieldId="bgImage" />
                            </div>
                         </div>
                     </details>
@@ -1645,7 +1552,6 @@ const Generator: React.FC<{
                                         preferences={preferences}
                                         isSelected={selectedSlide?.id === slide.id}
                                         onClick={() => onSelectSlide(slide.id)}
-                                        onRegenerate={onRegenerateImage}
                                         t={t}
                                     />
                                 ))}

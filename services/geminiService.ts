@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
 import type { DesignPreferences, SlideData, AppSettings, ContentNiche, AspectRatio } from '../types';
 
@@ -27,13 +28,13 @@ export const generateCarouselContent = async (
             properties: {
                 headline: { type: Type.STRING, description: 'A catchy, short headline for the slide (max 10 words).' },
                 body: { type: Type.STRING, description: 'The main content of the slide (2-3 sentences, max 40 words).' },
-                visual_prompt: { type: Type.STRING, description: 'A detailed, descriptive prompt for an AI image generator to create a relevant background visual. Describe the scene, style, colors, and mood. E.g., "A vibrant, abstract painting of a brain with ideas flowing out as colorful streams, minimalist style."' }
+                visual_prompt: { type: Type.STRING, description: 'A detailed, descriptive visual prompt in English for an AI image generator. It should describe a visually appealing scene, object, or concept that matches the slide\'s content and the overall carousel style.' },
             },
             required: ['headline', 'body', 'visual_prompt']
         };
 
         const prompt = `
-            You are an expert social media content creator. Your task is to generate the content for an engaging Instagram carousel.
+            You are an expert social media content creator and a skilled prompt engineer for AI image generators. Your task is to generate the content for an engaging Instagram carousel.
             The carousel is about: "${topic}".
             The target niche is: ${niche}.
             The desired style is: ${preferences.style}.
@@ -43,10 +44,10 @@ export const generateCarouselContent = async (
             The last slide should be a clear call to action (CTA).
             The slides in between should provide value, tips, or steps related to the topic.
             
-            For each slide, provide a headline, body text, and a visual prompt for an AI image generator.
-            The headline should be short and punchy.
-            The body text should be concise and easy to read.
-            The visual prompt should be descriptive to generate a beautiful and relevant image.
+            For each slide, provide:
+            1. A headline (short and punchy).
+            2. Body text (concise and easy to read).
+            3. A 'visual_prompt' (a detailed, descriptive prompt in English for an AI image generator like Midjourney or DALL-E, reflecting the slide's content and the carousel's style).
             
             Strictly follow the JSON schema provided.
         `;
@@ -77,6 +78,7 @@ export const generateCarouselContent = async (
         }
 
         return parsedSlides;
+
     } catch (error) {
         console.error("Error generating carousel content:", error);
         // Re-throw the specific error from getAiClient or a generic one for other issues.
@@ -84,40 +86,6 @@ export const generateCarouselContent = async (
             throw error;
         }
         throw new Error("Gagal membuat konten carousel dari AI. Silakan periksa prompt dan kunci API Anda.");
-    }
-};
-
-export const generateSlideImage = async (prompt: string, aspectRatio: string, settings: AppSettings): Promise<string> => {
-    try {
-        const ai = getAiClient(settings);
-
-        // The Imagen API supports "3:4", which is the closest to Instagram's "4:5".
-        // We'll generate a 3:4 image and let the UI crop it to 4:5 using object-cover.
-        const apiAspectRatio = aspectRatio === '4:5' ? '3:4' : aspectRatio;
-        
-        const response = await ai.models.generateImages({
-            model: 'imagen-3.0-generate-002',
-            prompt: `Create a visually stunning image for a social media carousel slide. The style should be modern and engaging. Prompt: "${prompt}"`,
-            config: {
-              numberOfImages: 1,
-              outputMimeType: 'image/jpeg',
-              aspectRatio: apiAspectRatio as "1:1" | "3:4" | "9:16",
-            },
-        });
-
-        if (!response.generatedImages || response.generatedImages.length === 0) {
-            throw new Error("AI tidak mengembalikan gambar apa pun.");
-        }
-
-        const base64ImageBytes: string = response.generatedImages[0].image.imageBytes;
-        return `data:image/jpeg;base64,${base64ImageBytes}`;
-
-    } catch (error) {
-        console.error("Error generating slide image:", error);
-        if (error instanceof Error) {
-            throw error;
-        }
-        throw new Error("Gagal membuat gambar. Model mungkin memiliki masalah keamanan dengan prompt.");
     }
 };
 

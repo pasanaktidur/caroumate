@@ -176,9 +176,3 @@ export const RightArrowIcon: React.FC<{ className?: string }> = ({ className }) 
         <path d="M256,0C114.842,0,0.002,114.84,0.002,256S114.842,512,256,512c141.158,0,255.998-114.84,255.998-256 S397.158,0,256,0z M256,66.785c104.334,0,189.216,84.879,189.216,189.215S360.334,445.215,256,445.215S66.783,360.336,66.783,256 S151.667,66.785,256,66.785z"></path>
     </svg>
 );
-
-export const RefreshIcon: React.FC<{ className?: string }> = ({ className }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 11.664 0l3.181-3.183m-3.181-3.182-3.182 3.182a8.25 8.25 0 0 1-11.664 0l-3.182-3.182m3.182-3.182 3.181 3.183a8.25 8.25 0 0 0 11.664 0l3.181-3.183" />
-    </svg>
-);
