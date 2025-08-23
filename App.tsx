@@ -838,8 +838,34 @@ export default function App() {
 
     const handleUpdateCarouselPreferences = (updates: Partial<DesignPreferences>) => {
         setCurrentCarousel(prev => {
-            if (!prev) return null;
-            return { ...prev, preferences: { ...prev.preferences, ...updates } };
+            // If there's already a carousel (real or temporary), update it
+            if (prev) {
+                return { ...prev, preferences: { ...prev.preferences, ...updates } };
+            }
+            
+            // If no carousel exists, create a new temporary one to store preferences
+            const newTempCarousel: Carousel = {
+                id: 'temp-' + crypto.randomUUID(), // unique temp id
+                title: '', // Will be set by topic input
+                createdAt: new Date().toISOString(),
+                slides: [],
+                category: user?.niche || ContentNiche.MARKETING, // Use user's niche if available
+                preferences: {
+                    // Start with defaults
+                    backgroundColor: '#FFFFFF',
+                    fontColor: '#111827',
+                    style: DesignStyle.MINIMALIST,
+                    font: FontChoice.MONO,
+                    aspectRatio: AspectRatio.SQUARE,
+                    backgroundImage: undefined,
+                    brandingText: '',
+                    headlineStyle: { fontSize: 2.2, fontWeight: 'bold', textAlign: 'center' },
+                    bodyStyle: { fontSize: 1.1, textAlign: 'center' },
+                    // Apply the specific update
+                    ...updates,
+                },
+            };
+            return newTempCarousel;
         });
     };
     
