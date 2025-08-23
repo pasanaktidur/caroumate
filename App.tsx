@@ -73,6 +73,9 @@ const translations = {
     errorTitle: 'An Error Occurred',
     generatingContentMessage: 'Crafting your carousel content...',
     generatingVisualsMessage: 'Generating stunning visuals...',
+    applyTo: 'Apply to:',
+    applyToAll: 'All Slides',
+    applyToSelected: 'Selected Slide',
 
     // SlideCard
     generatingVisual: 'Generating visual...',
@@ -170,6 +173,9 @@ const translations = {
     errorTitle: 'Terjadi Kesalahan',
     generatingContentMessage: 'Menyusun konten carousel Anda...',
     generatingVisualsMessage: 'Membuat visual yang memukau...',
+    applyTo: 'Terapkan ke:',
+    applyToAll: 'Semua Slide',
+    applyToSelected: 'Slide Terpilih',
 
     // SlideCard
     generatingVisual: 'Membuat visual...',
@@ -347,12 +353,22 @@ const Loader: React.FC<{ text: string }> = ({ text }) => (
 );
 
 const SlideCard: React.FC<{ slide: SlideData; preferences: DesignPreferences; isSelected: boolean; onClick: () => void; t: TFunction; }> = ({ slide, preferences, isSelected, onClick, t }) => {
-    const font = fontClassMap[preferences.font] || 'font-sans';
-    const aspectRatioClass = aspectRatioClassMap[preferences.aspectRatio] || 'aspect-square';
+    
+    const finalPrefs = React.useMemo(() => ({
+        ...preferences,
+        backgroundColor: slide.backgroundColor ?? preferences.backgroundColor,
+        fontColor: slide.fontColor ?? preferences.fontColor,
+        backgroundImage: slide.backgroundImage ?? preferences.backgroundImage,
+        headlineFontSize: slide.headlineFontSize ?? preferences.headlineFontSize,
+        bodyFontSize: slide.bodyFontSize ?? preferences.bodyFontSize,
+    }), [slide, preferences]);
+
+    const font = fontClassMap[finalPrefs.font] || 'font-sans';
+    const aspectRatioClass = aspectRatioClassMap[finalPrefs.aspectRatio] || 'aspect-square';
 
     const { headlineSize, bodySize } = React.useMemo(() => {
         let scale = 1.0;
-        switch (preferences.aspectRatio) {
+        switch (finalPrefs.aspectRatio) {
             case AspectRatio.STORY:
                 scale = 0.85;
                 break;
@@ -364,21 +380,21 @@ const SlideCard: React.FC<{ slide: SlideData; preferences: DesignPreferences; is
                 scale = 1.0;
         }
         return {
-            headlineSize: preferences.headlineFontSize * scale,
-            bodySize: preferences.bodyFontSize * scale,
+            headlineSize: finalPrefs.headlineFontSize * scale,
+            bodySize: finalPrefs.bodyFontSize * scale,
         };
-    }, [preferences.aspectRatio, preferences.headlineFontSize, preferences.bodyFontSize]);
+    }, [finalPrefs.aspectRatio, finalPrefs.headlineFontSize, finalPrefs.bodyFontSize]);
 
 
     const styleClasses = React.useMemo(() => {
-        switch (preferences.style) {
+        switch (finalPrefs.style) {
             case DesignStyle.BOLD: return 'border-4 border-gray-900 dark:border-gray-200';
             case DesignStyle.ELEGANT: return 'border border-gray-300 dark:border-gray-600 shadow-md dark:shadow-xl dark:shadow-black/20';
             case DesignStyle.COLORFUL: return `border-4 border-transparent bg-gradient-to-br from-pink-300 to-indigo-400`;
             case DesignStyle.VINTAGE: return 'border-2 border-yellow-800 dark:border-yellow-600 bg-yellow-50 dark:bg-yellow-900/20';
             default: return 'border border-gray-200 dark:border-gray-700';
         }
-    }, [preferences.style]);
+    }, [finalPrefs.style]);
 
     return (
         <div
@@ -386,14 +402,14 @@ const SlideCard: React.FC<{ slide: SlideData; preferences: DesignPreferences; is
             onClick={onClick}
             className={`h-[280px] sm:h-[320px] md:h-[400px] flex-shrink-0 relative flex flex-col justify-center items-center p-6 pb-10 text-center rounded-lg cursor-pointer transition-all duration-300 transform ${styleClasses} ${font} ${aspectRatioClass} ${isSelected ? 'ring-4 ring-primary-500 ring-offset-2 scale-105' : 'hover:scale-102'}`}
             style={{
-                backgroundColor: preferences.style !== DesignStyle.COLORFUL && !preferences.backgroundImage ? preferences.backgroundColor : undefined,
-                color: preferences.fontColor
+                backgroundColor: finalPrefs.style !== DesignStyle.COLORFUL && !finalPrefs.backgroundImage ? finalPrefs.backgroundColor : undefined,
+                color: finalPrefs.fontColor
             }}
         >
             {/* Background Image Layer */}
-            {preferences.backgroundImage ? (
+            {finalPrefs.backgroundImage ? (
                 <>
-                    <img src={preferences.backgroundImage} alt="Custom background" className="absolute inset-0 w-full h-full object-cover rounded-md -z-10" />
+                    <img src={finalPrefs.backgroundImage} alt="Custom background" className="absolute inset-0 w-full h-full object-cover rounded-md -z-10" />
                     <div className="absolute inset-0 bg-black/30 rounded-md -z-10"></div> {/* Dark overlay for readability */}
                 </>
             ) : slide.imageUrl ? (
@@ -401,7 +417,7 @@ const SlideCard: React.FC<{ slide: SlideData; preferences: DesignPreferences; is
             ) : null}
 
             {/* Loading Indicator for AI Image */}
-            {(slide.isGeneratingImage && !preferences.backgroundImage) ? (
+            {(slide.isGeneratingImage && !finalPrefs.backgroundImage) ? (
                 <div className="flex flex-col items-center justify-center space-y-2">
                     <LoaderIcon className="w-12 h-12" />
                     <p className="text-sm">{t('generatingVisual')}</p>
@@ -414,9 +430,9 @@ const SlideCard: React.FC<{ slide: SlideData; preferences: DesignPreferences; is
             )}
 
             {/* Branding Text */}
-            {preferences.brandingText && (
+            {finalPrefs.brandingText && (
                 <div className="absolute bottom-4 left-0 right-0 text-center text-xs sm:text-sm z-20 px-4 pointer-events-none">
-                    <p style={{ opacity: 0.75 }}>{preferences.brandingText}</p>
+                    <p style={{ opacity: 0.75 }}>{finalPrefs.brandingText}</p>
                 </div>
             )}
         </div>
@@ -625,13 +641,18 @@ export default function App() {
     const goToDashboard = () => {
         if (view === 'LOGIN' || view === 'PROFILE_SETUP') return;
         if (currentCarousel) {
+            // Save the latest changes to history before switching views
             setCarouselHistory(prev => {
                 const index = prev.findIndex(c => c.id === currentCarousel.id);
+                // If it's an existing carousel, update it
                 if (index !== -1) {
                     const newHistory = [...prev];
                     newHistory[index] = currentCarousel;
                     return newHistory;
                 }
+                // If it's a new one not yet in history, check if it should be added.
+                // The main generation logic already adds it, so this might not be needed.
+                // However, to be safe, let's just update if it exists.
                 return prev;
             });
         }
@@ -726,7 +747,8 @@ export default function App() {
                 }
             }
 
-        } catch (err: any) {
+        } catch (err: any)
+        {
             setError(err.message || 'An unknown error occurred.');
         } finally {
             setIsGenerating(false);
@@ -803,9 +825,30 @@ export default function App() {
     };
 
     const handleUpdateSlide = (slideId: string, updates: Partial<SlideData>) => {
-        if (!currentCarousel) return;
-        const updatedSlides = currentCarousel.slides.map(s => s.id === slideId ? { ...s, ...updates } : s);
-        setCurrentCarousel({ ...currentCarousel, slides: updatedSlides });
+        setCurrentCarousel(prev => {
+            if (!prev) return null;
+            const updatedSlides = prev.slides.map(s => s.id === slideId ? { ...s, ...updates } : s);
+            return { ...prev, slides: updatedSlides };
+        });
+    };
+
+    const handleUpdateCarouselPreferences = (updates: Partial<DesignPreferences>) => {
+        setCurrentCarousel(prev => {
+            if (!prev) return null;
+            return { ...prev, preferences: { ...prev.preferences, ...updates } };
+        });
+    };
+    
+    const handleClearSlideOverrides = (property: keyof SlideData) => {
+        setCurrentCarousel(prev => {
+            if (!prev) return null;
+            const updatedSlides = prev.slides.map(slide => {
+                const newSlide = { ...slide };
+                delete newSlide[property];
+                return newSlide;
+            });
+            return { ...prev, slides: updatedSlides };
+        });
     };
 
     const handleMoveSlide = (slideId: string, direction: 'left' | 'right') => {
@@ -857,9 +900,12 @@ export default function App() {
                     error={error}
                     onGenerate={handleGenerateCarousel}
                     currentCarousel={currentCarousel}
+                    setCurrentCarousel={setCurrentCarousel}
                     selectedSlide={selectedSlide}
                     onSelectSlide={setSelectedSlideId}
                     onUpdateSlide={handleUpdateSlide}
+                    onUpdateCarouselPreferences={handleUpdateCarouselPreferences}
+                    onClearSlideOverrides={handleClearSlideOverrides}
                     onMoveSlide={handleMoveSlide}
                     onOpenAssistant={() => setIsAssistantOpen(true)}
                     onOpenHashtag={handleGenerateHashtags}
@@ -919,7 +965,10 @@ export default function App() {
             {user && user.profileComplete && (
                 <MobileFooter
                     currentView={view}
-                    onNavigate={(targetView) => setView(targetView)}
+                    onNavigate={(targetView) => {
+                        if (targetView === 'DASHBOARD') goToDashboard();
+                        else setView(targetView);
+                    }}
                     onOpenSettings={() => setIsSettingsOpen(true)}
                     t={t}
                 />
@@ -1047,6 +1096,43 @@ const Dashboard: React.FC<{
     </div>
 );
 
+const ApplyScopeControl: React.FC<{
+    scope: 'all' | 'selected';
+    setScope: (scope: 'all' | 'selected') => void;
+    isDisabled: boolean;
+    t: TFunction;
+    fieldId: string;
+}> = ({ scope, setScope, isDisabled, t, fieldId }) => (
+    <div className="flex items-center space-x-4 mt-1">
+        <span className="text-xs font-medium text-gray-500 dark:text-gray-400">{t('applyTo')}</span>
+        <div className="flex items-center">
+            <input
+                id={`${fieldId}-scope-all`}
+                type="radio"
+                name={`${fieldId}-scope`}
+                value="all"
+                checked={scope === 'all'}
+                onChange={() => setScope('all')}
+                className="h-4 w-4 text-primary-600 border-gray-300 focus:ring-primary-500"
+            />
+            <label htmlFor={`${fieldId}-scope-all`} className="ml-2 block text-xs text-gray-700 dark:text-gray-300">{t('applyToAll')}</label>
+        </div>
+        <div className="flex items-center">
+            <input
+                id={`${fieldId}-scope-selected`}
+                type="radio"
+                name={`${fieldId}-scope`}
+                value="selected"
+                checked={scope === 'selected'}
+                onChange={() => setScope('selected')}
+                disabled={isDisabled}
+                className="h-4 w-4 text-primary-600 border-gray-300 focus:ring-primary-500 disabled:opacity-50"
+            />
+            <label htmlFor={`${fieldId}-scope-selected`} className="ml-2 block text-xs text-gray-700 dark:text-gray-300 disabled:opacity-50">{t('applyToSelected')}</label>
+        </div>
+    </div>
+);
+
 
 const Generator: React.FC<{
     user: UserProfile;
@@ -1055,9 +1141,12 @@ const Generator: React.FC<{
     error: string | null;
     onGenerate: (topic: string, preferences: DesignPreferences) => void;
     currentCarousel: Carousel | null;
+    setCurrentCarousel: (carousel: Carousel | null) => void;
     selectedSlide: SlideData | undefined;
     onSelectSlide: (id: string) => void;
     onUpdateSlide: (id: string, updates: Partial<SlideData>) => void;
+    onUpdateCarouselPreferences: (updates: Partial<DesignPreferences>) => void;
+    onClearSlideOverrides: (property: keyof SlideData) => void;
     onMoveSlide: (id: string, direction: 'left' | 'right') => void;
     onOpenAssistant: () => void;
     onOpenHashtag: () => void;
@@ -1066,9 +1155,17 @@ const Generator: React.FC<{
     isHashtagModalOpen: boolean;
     t: TFunction;
 }> = (props) => {
-    const { user, isGenerating, generationMessage, error, onGenerate, currentCarousel, selectedSlide, onSelectSlide, onUpdateSlide, onMoveSlide, onOpenAssistant, onOpenHashtag, onDownload, isDownloading, isHashtagModalOpen, t } = props;
+    const { onGenerate, currentCarousel, selectedSlide, onUpdateSlide, onUpdateCarouselPreferences, onClearSlideOverrides, onSelectSlide, onMoveSlide, ...rest } = props;
+    const { isGenerating, generationMessage, error, onOpenAssistant, onOpenHashtag, onDownload, isDownloading, isHashtagModalOpen, t } = rest;
+
     const [topic, setTopic] = React.useState('');
-    const [preferences, setPreferences] = React.useState<DesignPreferences>({
+    
+    // Scopes for applying styles
+    const [colorScope, setColorScope] = React.useState<'all' | 'selected'>('all');
+    const [fontScope, setFontScope] = React.useState<'all' | 'selected'>('all');
+    const [bgImageScope, setBgImageScope] = React.useState<'all' | 'selected'>('all');
+    
+    const preferences = currentCarousel?.preferences ?? {
         backgroundColor: '#FFFFFF',
         fontColor: '#111827',
         style: DesignStyle.MINIMALIST,
@@ -1078,21 +1175,39 @@ const Generator: React.FC<{
         brandingText: '',
         headlineFontSize: 2.2,
         bodyFontSize: 1.1,
-    });
+    };
 
     React.useEffect(() => {
         if (currentCarousel) {
             setTopic(currentCarousel.title);
-            setPreferences(currentCarousel.preferences);
+        } else {
+             setTopic('');
         }
     }, [currentCarousel]);
+    
+    const handleStyleChange = <K extends keyof DesignPreferences, V extends DesignPreferences[K]>(
+        scope: 'all' | 'selected',
+        key: K,
+        value: V,
+        slideKey: keyof SlideData
+    ) => {
+        if (scope === 'all') {
+            onUpdateCarouselPreferences({ [key]: value });
+            onClearSlideOverrides(slideKey);
+        } else {
+            if (selectedSlide) {
+                onUpdateSlide(selectedSlide.id, { [slideKey]: value });
+            }
+        }
+    };
     
     const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (file) {
         const reader = new FileReader();
         reader.onloadend = () => {
-          setPreferences(p => ({ ...p, backgroundImage: reader.result as string }));
+          const imageUrl = reader.result as string;
+          handleStyleChange(bgImageScope, 'backgroundImage', imageUrl, 'backgroundImage');
         };
         reader.readAsDataURL(file);
       }
@@ -1121,86 +1236,66 @@ const Generator: React.FC<{
                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                               <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorStyleLabel')}</label>
-                                <select value={preferences.style} onChange={e => setPreferences(p => ({...p, style: e.target.value as DesignStyle}))} className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-white dark:bg-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md">
+                                <select value={preferences.style} onChange={e => onUpdateCarouselPreferences({style: e.target.value as DesignStyle})} className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-white dark:bg-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md">
                                     {Object.values(DesignStyle).map(s => <option key={s} value={s}>{s}</option>)}
                                </select>
                               </div>
                               <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorAspectRatioLabel')}</label>
-                                <select value={preferences.aspectRatio} onChange={e => setPreferences(p => ({...p, aspectRatio: e.target.value as AspectRatio}))} className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-white dark:bg-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md">
+                                <select value={preferences.aspectRatio} onChange={e => onUpdateCarouselPreferences({aspectRatio: e.target.value as AspectRatio})} className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-white dark:bg-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md">
                                     {Object.values(AspectRatio).map(value => <option key={value} value={value}>{aspectRatioDisplayMap[value]}</option>)}
                                 </select>
                               </div>
                            </div>
                            <div>
                               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorFontLabel')}</label>
-                              <select value={preferences.font} onChange={e => setPreferences(p => ({...p, font: e.target.value as FontChoice}))} className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-white dark:bg-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md">
+                              <select value={preferences.font} onChange={e => onUpdateCarouselPreferences({font: e.target.value as FontChoice})} className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-white dark:bg-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md">
                                   {Object.values(FontChoice).map(f => <option key={f} value={f}>{f}</option>)}
                               </select>
                            </div>
-                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div>
-                                    <label htmlFor="headlineFontSize" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorFontSizeHeadlineLabel')}</label>
-                                    <div className="flex items-center space-x-2 mt-1">
-                                        <input
-                                            id="headlineFontSize"
-                                            type="range"
-                                            min="1" max="5" step="0.1"
-                                            value={preferences.headlineFontSize}
-                                            onChange={e => setPreferences(p => ({ ...p, headlineFontSize: parseFloat(e.target.value) }))}
-                                            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-600"
-                                        />
-                                        <span className="text-sm text-gray-600 dark:text-gray-300 w-10 text-center">{preferences.headlineFontSize.toFixed(1)}</span>
-                                    </div>
+                           <div className="space-y-2">
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorFontSizeHeadlineLabel')}</label>
+                                <div className="flex items-center space-x-2">
+                                    <input type="range" min="1" max="5" step="0.1" value={selectedSlide?.headlineFontSize ?? preferences.headlineFontSize} onChange={e => handleStyleChange(fontScope, 'headlineFontSize', parseFloat(e.target.value), 'headlineFontSize')} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-600" />
+                                    <span className="text-sm text-gray-600 dark:text-gray-300 w-10 text-center">{(selectedSlide?.headlineFontSize ?? preferences.headlineFontSize).toFixed(1)}</span>
                                 </div>
-                                <div>
-                                    <label htmlFor="bodyFontSize" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorFontSizeBodyLabel')}</label>
-                                    <div className="flex items-center space-x-2 mt-1">
-                                        <input
-                                            id="bodyFontSize"
-                                            type="range"
-                                            min="0.5" max="2.5" step="0.1"
-                                            value={preferences.bodyFontSize}
-                                            onChange={e => setPreferences(p => ({ ...p, bodyFontSize: parseFloat(e.target.value) }))}
-                                            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-600"
-                                        />
-                                        <span className="text-sm text-gray-600 dark:text-gray-300 w-10 text-center">{preferences.bodyFontSize.toFixed(1)}</span>
-                                    </div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorFontSizeBodyLabel')}</label>
+                                <div className="flex items-center space-x-2">
+                                    <input type="range" min="0.5" max="2.5" step="0.1" value={selectedSlide?.bodyFontSize ?? preferences.bodyFontSize} onChange={e => handleStyleChange(fontScope, 'bodyFontSize', parseFloat(e.target.value), 'bodyFontSize')} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-600" />
+                                    <span className="text-sm text-gray-600 dark:text-gray-300 w-10 text-center">{(selectedSlide?.bodyFontSize ?? preferences.bodyFontSize).toFixed(1)}</span>
                                 </div>
+                                <ApplyScopeControl scope={fontScope} setScope={setFontScope} isDisabled={!selectedSlide} t={t} fieldId="font" />
                            </div>
                            <div>
                                 <label htmlFor="brandingText" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorBrandingLabel')}</label>
-                                <input
-                                    type="text"
-                                    id="brandingText"
-                                    value={preferences.brandingText || ''}
-                                    onChange={e => setPreferences(p => ({ ...p, brandingText: e.target.value }))}
-                                    placeholder={t('generatorBrandingPlaceholder')}
-                                    className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
-                                />
+                                <input type="text" id="brandingText" value={preferences.brandingText || ''} onChange={e => onUpdateCarouselPreferences({brandingText: e.target.value})} placeholder={t('generatorBrandingPlaceholder')} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500" />
                            </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div>
-                                    <label htmlFor="bgColor" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorBgColorLabel')}</label>
-                                    <div className="mt-1 flex items-center">
-                                        <input id="bgColor" type="color" value={preferences.backgroundColor} onChange={e => setPreferences(p => ({...p, backgroundColor: e.target.value}))} className="h-10 w-12 p-1 block rounded-l-md border border-gray-300 dark:border-gray-600 cursor-pointer" />
-                                        <input type="text" value={preferences.backgroundColor} onChange={e => setPreferences(p => ({...p, backgroundColor: e.target.value}))} className="block w-full h-10 px-3 py-2 bg-white dark:bg-gray-700 dark:text-gray-200 border border-l-0 border-gray-300 dark:border-gray-600 rounded-r-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm" />
+                            <div className="space-y-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div>
+                                        <label htmlFor="bgColor" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorBgColorLabel')}</label>
+                                        <div className="mt-1 flex items-center">
+                                            <input id="bgColor" type="color" value={selectedSlide?.backgroundColor ?? preferences.backgroundColor} onChange={e => handleStyleChange(colorScope, 'backgroundColor', e.target.value, 'backgroundColor')} className="h-10 w-12 p-1 block rounded-l-md border border-gray-300 dark:border-gray-600 cursor-pointer" />
+                                            <input type="text" value={selectedSlide?.backgroundColor ?? preferences.backgroundColor} onChange={e => handleStyleChange(colorScope, 'backgroundColor', e.target.value, 'backgroundColor')} className="block w-full h-10 px-3 py-2 bg-white dark:bg-gray-700 dark:text-gray-200 border border-l-0 border-gray-300 dark:border-gray-600 rounded-r-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm" />
+                                        </div>
                                     </div>
-                                </div>
-                                <div>
-                                    <label htmlFor="fontColor" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorFontColorLabel')}</label>
-                                    <div className="mt-1 flex items-center">
-                                        <input id="fontColor" type="color" value={preferences.fontColor} onChange={e => setPreferences(p => ({...p, fontColor: e.target.value}))} className="h-10 w-12 p-1 block rounded-l-md border border-gray-300 dark:border-gray-600 cursor-pointer" />
-                                        <input type="text" value={preferences.fontColor} onChange={e => setPreferences(p => ({...p, fontColor: e.target.value}))} className="block w-full h-10 px-3 py-2 bg-white dark:bg-gray-700 dark:text-gray-200 border border-l-0 border-gray-300 dark:border-gray-600 rounded-r-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm" />
+                                    <div>
+                                        <label htmlFor="fontColor" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorFontColorLabel')}</label>
+                                        <div className="mt-1 flex items-center">
+                                            <input id="fontColor" type="color" value={selectedSlide?.fontColor ?? preferences.fontColor} onChange={e => handleStyleChange(colorScope, 'fontColor', e.target.value, 'fontColor')} className="h-10 w-12 p-1 block rounded-l-md border border-gray-300 dark:border-gray-600 cursor-pointer" />
+                                            <input type="text" value={selectedSlide?.fontColor ?? preferences.fontColor} onChange={e => handleStyleChange(colorScope, 'fontColor', e.target.value, 'fontColor')} className="block w-full h-10 px-3 py-2 bg-white dark:bg-gray-700 dark:text-gray-200 border border-l-0 border-gray-300 dark:border-gray-600 rounded-r-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm" />
+                                        </div>
                                     </div>
-                                </div>
+                               </div>
+                               <ApplyScopeControl scope={colorScope} setScope={setColorScope} isDisabled={!selectedSlide} t={t} fieldId="color" />
                            </div>
-                           <div>
+                           <div className="space-y-2">
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorCustomBgLabel')}</label>
                                 <input type="file" accept="image/*" onChange={handleImageUpload} className="mt-1 block w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary-50 dark:file:bg-primary-900/50 file:text-primary-700 dark:file:text-primary-300 hover:file:bg-primary-100 dark:hover:file:bg-primary-800/50"/>
-                                {preferences.backgroundImage && (
-                                    <button onClick={() => setPreferences(p => ({ ...p, backgroundImage: undefined }))} className="text-xs text-red-500 hover:text-red-700 mt-1">{t('generatorRemoveBgButton')}</button>
+                                {(preferences.backgroundImage || selectedSlide?.backgroundImage) && (
+                                    <button onClick={() => handleStyleChange(bgImageScope, 'backgroundImage', undefined, 'backgroundImage')} type="button" className="text-xs text-red-500 hover:text-red-700 mt-1">{t('generatorRemoveBgButton')}</button>
                                 )}
+                                <ApplyScopeControl scope={bgImageScope} setScope={setBgImageScope} isDisabled={!selectedSlide} t={t} fieldId="bgImage" />
                            </div>
                         </div>
                     </details>

@@ -27,6 +27,12 @@ export interface SlideData {
   visual_prompt: string;
   imageUrl?: string;
   isGeneratingImage?: boolean;
+  // Per-slide style overrides
+  backgroundColor?: string;
+  fontColor?: string;
+  backgroundImage?: string;
+  headlineFontSize?: number;
+  bodyFontSize?: number;
 }
 
 export interface Carousel {
