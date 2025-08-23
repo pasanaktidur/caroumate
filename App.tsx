@@ -1,7 +1,7 @@
 import * as React from 'react';
 import type { AppView, UserProfile, Carousel, SlideData, DesignPreferences, AppSettings, Language, TextStyle } from './types';
 import { ContentNiche, DesignStyle, FontChoice, AspectRatio, AIModel } from './types';
-import { GoogleIcon, SparklesIcon, LoaderIcon, DownloadIcon, SettingsIcon, InstagramIcon, ThreadsIcon, MoonIcon, SunIcon, AvatarIcon, LogoutIcon, HashtagIcon, HomeIcon, BoldIcon, ItalicIcon, UnderlineIcon, StrikethroughIcon, CaseIcon, AlignLeftIcon, AlignCenterIcon, AlignRightIcon, AlignJustifyIcon, LeftArrowIcon, RightArrowIcon } from './components/icons';
+import { GoogleIcon, SparklesIcon, LoaderIcon, DownloadIcon, SettingsIcon, InstagramIcon, ThreadsIcon, MoonIcon, SunIcon, AvatarIcon, LogoutIcon, HashtagIcon, HomeIcon, BoldIcon, ItalicIcon, UnderlineIcon, StrikethroughIcon, CaseIcon, AlignLeftIcon, AlignCenterIcon, AlignRightIcon, AlignJustifyIcon, LeftArrowIcon, RightArrowIcon, RefreshIcon } from './components/icons';
 import { generateCarouselContent, generateSlideImage, getAiAssistance, generateHashtags } from './services/geminiService';
 import html2canvas from 'html2canvas';
 import JSZip from 'jszip';
@@ -19,7 +19,7 @@ const translations = {
     // Login Screen
     loginTitle: 'Welcome to CarouMate',
     loginSubtitle: 'Your AI partner for creating stunning social media carousels in minutes.',
-    loginButton: 'Start Creating for Free',
+    loginButton: 'Generate Your Carousel Instantly',
     heroTagline: 'CarouMate AI',
     heroTitle1: 'Create Viral Carousels',
     heroTitle2: 'in Seconds',
@@ -90,6 +90,7 @@ const translations = {
 
     // SlideCard
     generatingVisual: 'Generating visual...',
+    regenerateButton: 'Regenerate',
 
     // AiAssistantModal
     assistantTitle: 'AI Assistant',
@@ -130,7 +131,7 @@ const translations = {
     // Login Screen
     loginTitle: 'Selamat Datang di CarouMate',
     loginSubtitle: 'Partner AI Anda untuk membuat carousel media sosial yang memukau dalam hitungan menit.',
-    loginButton: 'Mulai Membuat Gratis',
+    loginButton: 'Hasilkan Carousel Anda Seketika',
     heroTagline: 'CarouMate AI',
     heroTitle1: 'Buat Carousel Viral',
     heroTitle2: 'dalam Detik',
@@ -200,6 +201,7 @@ const translations = {
 
     // SlideCard
     generatingVisual: 'Membuat visual...',
+    regenerateButton: 'Buat Ulang',
 
     // AiAssistantModal
     assistantTitle: 'Asisten AI',
@@ -373,7 +375,7 @@ const Loader: React.FC<{ text: string }> = ({ text }) => (
     </div>
 );
 
-const SlideCard: React.FC<{ slide: SlideData; preferences: DesignPreferences; isSelected: boolean; onClick: () => void; t: TFunction; }> = ({ slide, preferences, isSelected, onClick, t }) => {
+const SlideCard: React.FC<{ slide: SlideData; preferences: DesignPreferences; isSelected: boolean; onClick: () => void; onRegenerate: (slideId: string) => void; t: TFunction; }> = ({ slide, preferences, isSelected, onClick, onRegenerate, t }) => {
     
     const finalPrefs = React.useMemo(() => {
         const slideOverrides = {
@@ -445,19 +447,37 @@ const SlideCard: React.FC<{ slide: SlideData; preferences: DesignPreferences; is
                 <img src={slide.imageUrl} alt={slide.visual_prompt} className="absolute inset-0 w-full h-full object-cover rounded-md -z-10 opacity-20" />
             ) : null}
 
-            {/* Loading Indicator for AI Image */}
-            {(slide.isGeneratingImage && !finalPrefs.backgroundImage) ? (
-                <div className="flex flex-col items-center justify-center space-y-2">
-                    <LoaderIcon className="w-12 h-12" />
-                    <p className="text-sm">{t('generatingVisual')}</p>
-                </div>
-            ) : (
-                <div className="z-10 flex flex-col items-center">
-                    <h2 className="font-bold leading-tight mb-4" style={{...headlineStyles, lineHeight: '1.2' }}>{slide.headline}</h2>
-                    <p className="" style={{ ...bodyStyles, lineHeight: '1.5' }}>{slide.body}</p>
+            {/* Content Layer */}
+            <div className="z-10 flex flex-col items-center">
+                <h2 className="font-bold leading-tight mb-4" style={{...headlineStyles, lineHeight: '1.2' }}>{slide.headline}</h2>
+                <p className="" style={{ ...bodyStyles, lineHeight: '1.5' }}>{slide.body}</p>
+            </div>
+
+
+            {/* Overlays: Loading, Error */}
+            {(slide.isGeneratingImage || slide.imageUrlError) && (
+                <div className="absolute inset-0 bg-gray-900/70 backdrop-blur-sm flex flex-col items-center justify-center space-y-2 rounded-lg text-white p-4">
+                    {slide.isGeneratingImage ? (
+                        <>
+                            <LoaderIcon className="w-12 h-12" />
+                            <p className="text-sm">{t('generatingVisual')}</p>
+                        </>
+                    ) : slide.imageUrlError ? (
+                        <>
+                            <p className="text-sm text-red-300 font-semibold mb-2 text-center">{t('errorTitle')}</p>
+                            <p className="text-xs text-red-300 text-center mb-4">{slide.imageUrlError}</p>
+                            <button
+                                onClick={(e) => { e.stopPropagation(); onRegenerate(slide.id); }}
+                                className="inline-flex items-center justify-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-primary-500"
+                            >
+                                <RefreshIcon className="w-4 h-4 mr-1.5" />
+                                {t('regenerateButton')}
+                            </button>
+                        </>
+                    ) : null}
                 </div>
             )}
-
+            
             {/* Branding Text */}
             {finalPrefs.brandingText && (
                 <div className="absolute bottom-4 left-0 right-0 text-center text-xs sm:text-sm z-20 px-4 pointer-events-none">
@@ -539,7 +559,7 @@ export default function App() {
         setTheme(prevTheme => prevTheme === 'light' ? 'dark' : 'light');
     };
 
-    const [language, setLanguage] = React.useState<Language>('en');
+    const [language, setLanguage] = React.useState<Language>('id');
     
     // --- State Initialization from localStorage ---
     const [user, setUser] = React.useState<UserProfile | null>(() => {
@@ -642,7 +662,7 @@ export default function App() {
 
     const handleLogin = () => {
         const guestUser: UserProfile = {
-            name: 'Guest User',
+            name: '',
             email: 'guest@example.com',
             picture: '', // No picture for guest
             niche: ContentNiche.MARKETING,
@@ -734,14 +754,11 @@ export default function App() {
                 setGenerationMessage(t('generatingVisualsMessage'));
                 
                 let finalSlides = [...initialSlides];
-                const errorMessages = new Set<string>();
-
-                for (let i = 0; i < initialSlides.length; i++) {
-                    const slide = initialSlides[i];
+                
+                const imageGenerationPromises = initialSlides.map(async (slide, i) => {
                     try {
                         const imageUrl = await generateSlideImage(slide.visual_prompt, preferences.aspectRatio, settings);
-                        const updatedSlide = { ...slide, imageUrl, isGeneratingImage: false };
-                        finalSlides[i] = updatedSlide;
+                        const updatedSlide = { ...slide, imageUrl, isGeneratingImage: false, imageUrlError: null };
                         
                         setCurrentCarousel(prev => {
                             if (!prev) return null;
@@ -749,31 +766,29 @@ export default function App() {
                             newSlides[i] = updatedSlide;
                             return { ...prev, slides: newSlides };
                         });
-
+                        return updatedSlide;
                     } catch (err: any) {
                         console.error(`Failed to generate image for slide "${slide.headline}":`, err);
-                        const updatedSlide = { ...slide, isGeneratingImage: false };
-                        finalSlides[i] = updatedSlide;
-                        errorMessages.add(err.message || 'An unknown image generation error occurred.');
+                        const errorMessage = err.message || 'An unknown image generation error occurred.';
+                        const updatedSlide = { ...slide, isGeneratingImage: false, imageUrlError: errorMessage };
                         
                         setCurrentCarousel(prev => {
-                            if (!prev) return null;
+                             if (!prev) return null;
                             const newSlides = [...prev.slides];
                             newSlides[i] = updatedSlide;
                             return { ...prev, slides: newSlides };
                         });
+                        return updatedSlide;
                     }
-                    if (i < initialSlides.length - 1) {
-                        await new Promise(resolve => setTimeout(resolve, 4000));
-                    }
-                }
+                });
+
+                finalSlides = await Promise.all(imageGenerationPromises);
                 
                 const finalCarousel = { ...newCarousel, slides: finalSlides };
                 setCarouselHistory(prev => [ finalCarousel, ...prev ]);
 
-                if (errorMessages.size > 0) {
-                    const combinedErrors = Array.from(errorMessages).join('. ');
-                    setError(`Some images couldn't be generated. Reason: ${combinedErrors}`);
+                if (finalSlides.some(s => s.imageUrlError)) {
+                    setError(`Some images couldn't be generated. Please check the individual slides and try to regenerate them.`);
                 }
             }
 
@@ -785,6 +800,25 @@ export default function App() {
             setGenerationMessage('');
         }
     }, [user, settings, t]);
+    
+    const handleRegenerateImage = async (slideId: string) => {
+        const slideToRegen = currentCarousel?.slides.find(s => s.id === slideId);
+        if (!slideToRegen || !currentCarousel) return;
+
+        // Update UI to show loading state for this specific slide
+        handleUpdateSlide(slideId, { isGeneratingImage: true, imageUrlError: null });
+        setError(null); // Clear global error
+
+        try {
+            const imageUrl = await generateSlideImage(slideToRegen.visual_prompt, currentCarousel.preferences.aspectRatio, settings);
+            handleUpdateSlide(slideId, { imageUrl, isGeneratingImage: false, imageUrlError: null });
+        } catch (err: any) {
+            console.error(`Failed to regenerate image for slide "${slideToRegen.headline}":`, err);
+            const errorMessage = err.message || 'An unknown image generation error occurred.';
+            handleUpdateSlide(slideId, { isGeneratingImage: false, imageUrlError: errorMessage });
+        }
+    };
+
 
     const handleGenerateHashtags = async () => {
         if (!currentTopic) return;
@@ -862,7 +896,7 @@ export default function App() {
         });
     };
 
-    const handleUpdateCarouselPreferences = (updates: Partial<DesignPreferences>) => {
+    const handleUpdateCarouselPreferences = (updates: Partial<DesignPreferences>, topicValue: string) => {
         setCurrentCarousel(prev => {
             // If there's already a carousel (real or temporary), update it
             if (prev) {
@@ -872,7 +906,7 @@ export default function App() {
             // If no carousel exists, create a new temporary one to store preferences
             const newTempCarousel: Carousel = {
                 id: 'temp-' + crypto.randomUUID(), // unique temp id
-                title: '', // Will be set by topic input
+                title: topicValue, // Will be set by topic input
                 createdAt: new Date().toISOString(),
                 slides: [],
                 category: user?.niche || ContentNiche.MARKETING, // Use user's niche if available
@@ -963,6 +997,7 @@ export default function App() {
                     onUpdateCarouselPreferences={handleUpdateCarouselPreferences}
                     onClearSlideOverrides={handleClearSlideOverrides}
                     onMoveSlide={handleMoveSlide}
+                    onRegenerateImage={handleRegenerateImage}
                     onOpenAssistant={() => setIsAssistantOpen(true)}
                     onOpenHashtag={handleGenerateHashtags}
                     onDownload={handleDownloadCarousel}
@@ -1356,9 +1391,10 @@ const Generator: React.FC<{
     selectedSlide: SlideData | undefined;
     onSelectSlide: (id: string) => void;
     onUpdateSlide: (id: string, updates: Partial<SlideData>) => void;
-    onUpdateCarouselPreferences: (updates: Partial<DesignPreferences>) => void;
+    onUpdateCarouselPreferences: (updates: Partial<DesignPreferences>, currentTopic: string) => void;
     onClearSlideOverrides: (property: keyof SlideData) => void;
     onMoveSlide: (id: string, direction: 'left' | 'right') => void;
+    onRegenerateImage: (slideId: string) => void;
     onOpenAssistant: () => void;
     onOpenHashtag: () => void;
     onDownload: () => void;
@@ -1366,7 +1402,7 @@ const Generator: React.FC<{
     isHashtagModalOpen: boolean;
     t: TFunction;
 }> = (props) => {
-    const { onGenerate, currentCarousel, selectedSlide, onUpdateSlide, onUpdateCarouselPreferences, onClearSlideOverrides, onSelectSlide, onMoveSlide, ...rest } = props;
+    const { onGenerate, currentCarousel, selectedSlide, onUpdateSlide, onUpdateCarouselPreferences, onClearSlideOverrides, onSelectSlide, onMoveSlide, onRegenerateImage, ...rest } = props;
     const { isGenerating, generationMessage, error, onOpenAssistant, onOpenHashtag, onDownload, isDownloading, isHashtagModalOpen, t } = rest;
 
     const [topic, setTopic] = React.useState('');
@@ -1402,7 +1438,7 @@ const Generator: React.FC<{
         slideKey: keyof SlideData
     ) => {
         if (scope === 'all') {
-            onUpdateCarouselPreferences({ [key]: value });
+            onUpdateCarouselPreferences({ [key]: value }, topic);
             onClearSlideOverrides(slideKey);
         } else {
             if (selectedSlide) {
@@ -1446,26 +1482,26 @@ const Generator: React.FC<{
                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                               <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorStyleLabel')}</label>
-                                <select value={preferences.style} onChange={e => onUpdateCarouselPreferences({style: e.target.value as DesignStyle})} className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-white dark:bg-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md">
+                                <select value={preferences.style} onChange={e => onUpdateCarouselPreferences({style: e.target.value as DesignStyle}, topic)} className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-white dark:bg-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md">
                                     {Object.values(DesignStyle).map(s => <option key={s} value={s}>{s}</option>)}
                                </select>
                               </div>
                               <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorAspectRatioLabel')}</label>
-                                <select value={preferences.aspectRatio} onChange={e => onUpdateCarouselPreferences({aspectRatio: e.target.value as AspectRatio})} className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-white dark:bg-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md">
+                                <select value={preferences.aspectRatio} onChange={e => onUpdateCarouselPreferences({aspectRatio: e.target.value as AspectRatio}, topic)} className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-white dark:bg-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md">
                                     {Object.values(AspectRatio).map(value => <option key={value} value={value}>{aspectRatioDisplayMap[value]}</option>)}
                                 </select>
                               </div>
                            </div>
                            <div>
                               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorFontLabel')}</label>
-                              <select value={preferences.font} onChange={e => onUpdateCarouselPreferences({font: e.target.value as FontChoice})} className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-white dark:bg-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md">
+                              <select value={preferences.font} onChange={e => onUpdateCarouselPreferences({font: e.target.value as FontChoice}, topic)} className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-white dark:bg-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md">
                                   {Object.values(FontChoice).map(f => <option key={f} value={f}>{f}</option>)}
                               </select>
                            </div>
                            <div>
                                 <label htmlFor="brandingText" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorBrandingLabel')}</label>
-                                <input type="text" id="brandingText" value={preferences.brandingText || ''} onChange={e => onUpdateCarouselPreferences({brandingText: e.target.value})} placeholder={t('generatorBrandingPlaceholder')} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500" />
+                                <input type="text" id="brandingText" value={preferences.brandingText || ''} onChange={e => onUpdateCarouselPreferences({brandingText: e.target.value}, topic)} placeholder={t('generatorBrandingPlaceholder')} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500" />
                            </div>
                             <div className="space-y-4">
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1582,6 +1618,7 @@ const Generator: React.FC<{
                                         preferences={preferences}
                                         isSelected={selectedSlide?.id === slide.id}
                                         onClick={() => onSelectSlide(slide.id)}
+                                        onRegenerate={onRegenerateImage}
                                         t={t}
                                     />
                                 ))}

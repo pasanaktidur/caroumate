@@ -36,6 +36,7 @@ export interface SlideData {
   visual_prompt: string;
   imageUrl?: string;
   isGeneratingImage?: boolean;
+  imageUrlError?: string | null;
   // Per-slide style overrides
   backgroundColor?: string;
   fontColor?: string;
@@ -83,6 +84,14 @@ export enum ContentNiche {
   FINANCE = 'Personal Finance',
   FOOD = 'Food & Cooking',
   TRAVEL = 'Travel',
+  EDUCATION = 'Education & Learning',
+  FASHION = 'Fashion & Style',
+  FITNESS = 'Fitness & Exercise',
+  ENTREPRENEURSHIP = 'Entrepreneurship',
+  PARENTING = 'Parenting & Family',
+  REAL_ESTATE = 'Real Estate',
+  SELF_IMPROVEMENT = 'Self Improvement',
+  CODING = 'Coding & Development',
 }
 
 export enum AspectRatio {
