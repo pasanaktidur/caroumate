@@ -1,8 +1,8 @@
 import * as React from 'react';
 import type { AppView, UserProfile, Carousel, SlideData, DesignPreferences, AppSettings, Language } from './types';
 import { ContentNiche, DesignStyle, FontChoice, AspectRatio, AIModel } from './types';
-import { GoogleIcon, SparklesIcon, LoaderIcon, DownloadIcon, SettingsIcon, InstagramIcon, ThreadsIcon, MoonIcon, SunIcon, AvatarIcon, LogoutIcon } from './components/icons';
-import { generateCarouselContent, generateSlideImage, getAiAssistance } from './services/geminiService';
+import { GoogleIcon, SparklesIcon, LoaderIcon, DownloadIcon, SettingsIcon, InstagramIcon, ThreadsIcon, MoonIcon, SunIcon, AvatarIcon, LogoutIcon, HashtagIcon } from './components/icons';
+import { generateCarouselContent, generateSlideImage, getAiAssistance, generateHashtags } from './services/geminiService';
 import html2canvas from 'html2canvas';
 import JSZip from 'jszip';
 
@@ -48,6 +48,8 @@ const translations = {
     generatorStyleLabel: 'Style',
     generatorAspectRatioLabel: 'Aspect Ratio',
     generatorFontLabel: 'Font',
+    generatorFontSizeHeadlineLabel: 'Headline Font Size (rem)',
+    generatorFontSizeBodyLabel: 'Body Font Size (rem)',
     generatorBrandingLabel: 'Branding (@username)',
     generatorBrandingPlaceholder: '@yourhandle',
     generatorBgColorLabel: 'BG Color',
@@ -56,7 +58,8 @@ const translations = {
     generatorRemoveBgButton: 'Remove background',
     generatorCreateButton: 'Create Carousel',
     generatorGeneratingButton: 'Generating...',
-    generatorAssistantButton: 'AI Assistant (Get Ideas)',
+    generatorAssistantButton: 'AI Assistant',
+    generatorHashtagButton: 'Generate Hashtags',
     generatorStep3Title: '3. Edit Your Content',
     generatorHeadlineLabel: 'Headline',
     generatorBodyLabel: 'Body Text',
@@ -80,6 +83,14 @@ const translations = {
     getHookButton: 'Get Hook Ideas',
     getCTAButton: 'Get CTA Ideas',
     assistantEmpty: 'Select a category above to see suggestions.',
+
+    // HashtagModal
+    hashtagModalTitle: 'AI Hashtag Generator',
+    hashtagModalSubtitle1: 'Here are some suggested hashtags for "',
+    hashtagModalSubtitle2: '".',
+    hashtagModalCopyButton: 'Copy All',
+    hashtagModalCopiedButton: 'Copied!',
+    hashtagModalEmpty: 'Generate hashtags to see suggestions here.',
 
     // SettingsModal
     settingsTitle: 'Settings',
@@ -133,6 +144,8 @@ const translations = {
     generatorStyleLabel: 'Gaya',
     generatorAspectRatioLabel: 'Rasio Aspek',
     generatorFontLabel: 'Font',
+    generatorFontSizeHeadlineLabel: 'Ukuran Font Judul (rem)',
+    generatorFontSizeBodyLabel: 'Ukuran Font Isi (rem)',
     generatorBrandingLabel: 'Branding (@username)',
     generatorBrandingPlaceholder: '@handleanda',
     generatorBgColorLabel: 'Warna Latar',
@@ -141,7 +154,8 @@ const translations = {
     generatorRemoveBgButton: 'Hapus latar belakang',
     generatorCreateButton: 'Buat Carousel',
     generatorGeneratingButton: 'Membuat...',
-    generatorAssistantButton: 'Asisten AI (Dapatkan Ide)',
+    generatorAssistantButton: 'Asisten AI',
+    generatorHashtagButton: 'Buat Hashtag',
     generatorStep3Title: '3. Edit Konten Anda',
     generatorHeadlineLabel: 'Judul',
     generatorBodyLabel: 'Teks Isi',
@@ -165,6 +179,14 @@ const translations = {
     getHookButton: 'Dapatkan Ide Hook',
     getCTAButton: 'Dapatkan Ide CTA',
     assistantEmpty: 'Pilih kategori di atas untuk melihat saran.',
+    
+    // HashtagModal
+    hashtagModalTitle: 'Generator Hashtag AI',
+    hashtagModalSubtitle1: 'Berikut adalah beberapa saran hashtag untuk "',
+    hashtagModalSubtitle2: '".',
+    hashtagModalCopyButton: 'Salin Semua',
+    hashtagModalCopiedButton: 'Tersalin!',
+    hashtagModalEmpty: 'Buat hashtag untuk melihat saran di sini.',
 
     // SettingsModal
     settingsTitle: 'Pengaturan',
@@ -327,16 +349,24 @@ const SlideCard: React.FC<{ slide: SlideData; preferences: DesignPreferences; is
     const aspectRatioClass = aspectRatioClassMap[preferences.aspectRatio] || 'aspect-square';
 
     const { headlineSize, bodySize } = React.useMemo(() => {
+        let scale = 1.0;
         switch (preferences.aspectRatio) {
-            case AspectRatio.STORY: // 9:16, narrowest
-                return { headlineSize: 'text-base sm:text-lg', bodySize: 'text-xs sm:text-sm' };
-            case AspectRatio.PORTRAIT: // 4:5, narrow
-                return { headlineSize: 'text-lg sm:text-xl', bodySize: 'text-sm' };
-            case AspectRatio.SQUARE: // 1:1, widest
+            case AspectRatio.STORY:
+                scale = 0.85;
+                break;
+            case AspectRatio.PORTRAIT:
+                scale = 0.95;
+                break;
+            case AspectRatio.SQUARE:
             default:
-                return { headlineSize: 'text-xl sm:text-2xl', bodySize: 'text-sm sm:text-base' };
+                scale = 1.0;
         }
-    }, [preferences.aspectRatio]);
+        return {
+            headlineSize: preferences.headlineFontSize * scale,
+            bodySize: preferences.bodyFontSize * scale,
+        };
+    }, [preferences.aspectRatio, preferences.headlineFontSize, preferences.bodyFontSize]);
+
 
     const styleClasses = React.useMemo(() => {
         switch (preferences.style) {
@@ -376,8 +406,8 @@ const SlideCard: React.FC<{ slide: SlideData; preferences: DesignPreferences; is
                 </div>
             ) : (
                 <div className="z-10 flex flex-col items-center">
-                    <h2 className={`font-bold leading-tight mb-4 ${headlineSize}`}>{slide.headline}</h2>
-                    <p className={`${bodySize}`}>{slide.body}</p>
+                    <h2 className="font-bold leading-tight mb-4" style={{ fontSize: `${headlineSize}rem`, lineHeight: '1.2' }}>{slide.headline}</h2>
+                    <p className="" style={{ fontSize: `${bodySize}rem`, lineHeight: '1.5' }}>{slide.body}</p>
                 </div>
             )}
 
@@ -462,6 +492,9 @@ export default function App() {
     const [error, setError] = React.useState<string | null>(null);
     const [isAssistantOpen, setIsAssistantOpen] = React.useState(false);
     const [isSettingsOpen, setIsSettingsOpen] = React.useState(false);
+    const [isHashtagModalOpen, setIsHashtagModalOpen] = React.useState(false);
+    const [isGeneratingHashtags, setIsGeneratingHashtags] = React.useState(false);
+    const [generatedHashtags, setGeneratedHashtags] = React.useState<string[]>([]);
     const [currentTopic, setCurrentTopic] = React.useState('');
 
     const [settings, setSettings] = React.useState<AppSettings>(() => {
@@ -655,6 +688,22 @@ export default function App() {
         }
     }, [user, settings, t]);
 
+    const handleGenerateHashtags = async () => {
+        if (!currentTopic) return;
+        setIsHashtagModalOpen(true);
+        setIsGeneratingHashtags(true);
+        setGeneratedHashtags([]);
+        setError(null);
+        try {
+            const hashtags = await generateHashtags(currentTopic, settings);
+            setGeneratedHashtags(hashtags);
+        } catch (err: any) {
+            setError(err.message || 'Failed to generate hashtags.');
+        } finally {
+            setIsGeneratingHashtags(false);
+        }
+    };
+
     const handleDownloadCarousel = async () => {
         if (!currentCarousel) return;
         setIsDownloading(true);
@@ -767,8 +816,10 @@ export default function App() {
                     onUpdateSlide={handleUpdateSlide}
                     onMoveSlide={handleMoveSlide}
                     onOpenAssistant={() => setIsAssistantOpen(true)}
+                    onOpenHashtag={handleGenerateHashtags}
                     onDownload={handleDownloadCarousel}
                     isDownloading={isDownloading}
+                    isHashtagModalOpen={isHashtagModalOpen}
                     t={t}
                 />
             );
@@ -798,6 +849,16 @@ export default function App() {
                     topic={currentTopic}
                     onClose={() => setIsAssistantOpen(false)}
                     settings={settings}
+                    t={t}
+                />
+            )}
+            {isHashtagModalOpen && (
+                <HashtagModal
+                    topic={currentTopic}
+                    onClose={() => setIsHashtagModalOpen(false)}
+                    isLoading={isGeneratingHashtags}
+                    hashtags={generatedHashtags}
+                    error={error}
                     t={t}
                 />
             )}
@@ -945,11 +1006,13 @@ const Generator: React.FC<{
     onUpdateSlide: (id: string, updates: Partial<SlideData>) => void;
     onMoveSlide: (id: string, direction: 'left' | 'right') => void;
     onOpenAssistant: () => void;
+    onOpenHashtag: () => void;
     onDownload: () => void;
     isDownloading: boolean;
+    isHashtagModalOpen: boolean;
     t: TFunction;
 }> = (props) => {
-    const { user, isGenerating, generationMessage, error, onGenerate, currentCarousel, selectedSlide, onSelectSlide, onUpdateSlide, onMoveSlide, onOpenAssistant, onDownload, isDownloading, t } = props;
+    const { user, isGenerating, generationMessage, error, onGenerate, currentCarousel, selectedSlide, onSelectSlide, onUpdateSlide, onMoveSlide, onOpenAssistant, onOpenHashtag, onDownload, isDownloading, isHashtagModalOpen, t } = props;
     const [topic, setTopic] = React.useState('');
     const [preferences, setPreferences] = React.useState<DesignPreferences>({
         backgroundColor: '#FFFFFF',
@@ -959,6 +1022,8 @@ const Generator: React.FC<{
         aspectRatio: AspectRatio.SQUARE,
         backgroundImage: undefined,
         brandingText: '',
+        headlineFontSize: 2.2,
+        bodyFontSize: 1.1,
     });
 
     React.useEffect(() => {
@@ -1019,6 +1084,36 @@ const Generator: React.FC<{
                                   {Object.values(FontChoice).map(f => <option key={f} value={f}>{f}</option>)}
                               </select>
                            </div>
+                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label htmlFor="headlineFontSize" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorFontSizeHeadlineLabel')}</label>
+                                    <div className="flex items-center space-x-2 mt-1">
+                                        <input
+                                            id="headlineFontSize"
+                                            type="range"
+                                            min="1" max="5" step="0.1"
+                                            value={preferences.headlineFontSize}
+                                            onChange={e => setPreferences(p => ({ ...p, headlineFontSize: parseFloat(e.target.value) }))}
+                                            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-600"
+                                        />
+                                        <span className="text-sm text-gray-600 dark:text-gray-300 w-10 text-center">{preferences.headlineFontSize.toFixed(1)}</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label htmlFor="bodyFontSize" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorFontSizeBodyLabel')}</label>
+                                    <div className="flex items-center space-x-2 mt-1">
+                                        <input
+                                            id="bodyFontSize"
+                                            type="range"
+                                            min="0.5" max="2.5" step="0.1"
+                                            value={preferences.bodyFontSize}
+                                            onChange={e => setPreferences(p => ({ ...p, bodyFontSize: parseFloat(e.target.value) }))}
+                                            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-600"
+                                        />
+                                        <span className="text-sm text-gray-600 dark:text-gray-300 w-10 text-center">{preferences.bodyFontSize.toFixed(1)}</span>
+                                    </div>
+                                </div>
+                           </div>
                            <div>
                                 <label htmlFor="brandingText" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorBrandingLabel')}</label>
                                 <input
@@ -1061,9 +1156,15 @@ const Generator: React.FC<{
                             <SparklesIcon className="w-5 h-5 mr-2" />
                             {isGenerating ? t('generatorGeneratingButton') : t('generatorCreateButton')}
                         </button>
-                        <button type="button" onClick={onOpenAssistant} disabled={!topic} className="w-full inline-flex items-center justify-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50">
-                            {t('generatorAssistantButton')}
-                        </button>
+                        <div className="flex space-x-4">
+                            <button type="button" onClick={onOpenAssistant} disabled={!topic} className="w-full inline-flex items-center justify-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50">
+                                {t('generatorAssistantButton')}
+                            </button>
+                            <button type="button" onClick={onOpenHashtag} disabled={!topic} className="w-full inline-flex items-center justify-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50">
+                                <HashtagIcon className="w-4 h-4 mr-2" />
+                                {t('generatorHashtagButton')}
+                            </button>
+                        </div>
                     </div>
                 </form>
 
@@ -1097,7 +1198,7 @@ const Generator: React.FC<{
             {/* Right Panel: Preview */}
             <div className="w-full lg:w-2/3 xl:w-3/4 bg-gray-100 dark:bg-gray-900 p-6 flex flex-col items-center justify-center min-h-[500px] lg:min-h-0 lg:h-[calc(100vh-112px)]">
                 {isGenerating && <Loader text={generationMessage} />}
-                {error && <div className="text-center p-8 bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300 rounded-lg"><h3 className="font-bold">{t('errorTitle')}</h3><p>{error}</p></div>}
+                {error && !isHashtagModalOpen && <div className="text-center p-8 bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300 rounded-lg"><h3 className="font-bold">{t('errorTitle')}</h3><p>{error}</p></div>}
 
                 {!isGenerating && currentCarousel && (
                     <div className="w-full h-full flex flex-col">
@@ -1185,6 +1286,54 @@ const AiAssistantModal: React.FC<{
                         </ul>
                     )}
                 </div>
+            </div>
+        </div>
+    );
+};
+
+const HashtagModal: React.FC<{
+    topic: string;
+    onClose: () => void;
+    isLoading: boolean;
+    hashtags: string[];
+    error: string | null;
+    t: TFunction;
+}> = ({ topic, onClose, isLoading, hashtags, error, t }) => {
+    const [copyText, setCopyText] = React.useState(t('hashtagModalCopyButton'));
+
+    const handleCopy = () => {
+        const hashtagString = hashtags.map(h => `#${h}`).join(' ');
+        navigator.clipboard.writeText(hashtagString);
+        setCopyText(t('hashtagModalCopiedButton'));
+        setTimeout(() => setCopyText(t('hashtagModalCopyButton')), 2000);
+    };
+
+    return (
+        <div className="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 transition-opacity" onClick={onClose}>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl p-6 max-w-2xl w-full m-4" onClick={e => e.stopPropagation()}>
+                <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200">{t('hashtagModalTitle')}</h2>
+                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-2xl font-bold">&times;</button>
+                </div>
+                <p className="text-gray-600 dark:text-gray-400 mb-4">{t('hashtagModalSubtitle1')}<strong>{topic}</strong>{t('hashtagModalSubtitle2')}</p>
+                
+                <div className="h-64 overflow-y-auto p-4 bg-gray-50 dark:bg-gray-900/50 rounded-md border dark:border-gray-700 mb-4">
+                    {isLoading && <div className="flex justify-center items-center h-full"><LoaderIcon className="w-12 h-12" /></div>}
+                    {!isLoading && error && <p className="text-center text-red-500 h-full flex items-center justify-center">{error}</p>}
+                    {!isLoading && !error && hashtags.length === 0 && <p className="text-center text-gray-500 dark:text-gray-400 h-full flex items-center justify-center">{t('hashtagModalEmpty')}</p>}
+                    {!isLoading && !error && hashtags.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                            {hashtags.map((tag, i) => (
+                                <span key={i} className="px-3 py-1 bg-blue-100 text-blue-800 text-sm font-medium rounded-full dark:bg-blue-900 dark:text-blue-300">#{tag}</span>
+                            ))}
+                        </div>
+                    )}
+                </div>
+                {!isLoading && hashtags.length > 0 && (
+                     <button onClick={handleCopy} className="w-full px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700 disabled:bg-gray-400 transition-colors">
+                        {copyText}
+                     </button>
+                )}
             </div>
         </div>
     );

@@ -169,3 +169,53 @@ export const getAiAssistance = async (topic: string, type: 'hook' | 'cta', setti
         throw new Error(`Failed to get AI-powered ${type} suggestions.`);
     }
 };
+
+export const generateHashtags = async (topic: string, settings: AppSettings): Promise<string[]> => {
+    try {
+        const ai = getAiClient(settings);
+
+        const prompt = `
+            You are a social media growth expert.
+            Generate a list of 20-30 highly relevant and effective hashtags for an Instagram carousel about "${topic}".
+            Include a mix of:
+            - Broad, high-traffic hashtags (e.g., #digitalmarketing)
+            - Niche-specific hashtags (e.g., #contentcreationtips)
+            - Post-specific hashtags (e.g., #instagramgrowthhacks)
+
+            Do not include the '#' symbol in your response.
+            Strictly follow the JSON schema provided.
+        `;
+
+        const response = await ai.models.generateContent({
+            model: settings.aiModel,
+            contents: prompt,
+            config: {
+                systemInstruction: settings.systemPrompt,
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.ARRAY,
+                    items: { type: Type.STRING }
+                }
+            }
+        });
+
+        const text = response.text;
+        if (!text) {
+            throw new Error("AI hashtag response was empty. Please try a different topic.");
+        }
+        const jsonResponse = text.trim();
+        const parsedHashtags = JSON.parse(jsonResponse);
+
+        if (!Array.isArray(parsedHashtags)) {
+            throw new Error("AI response was not in the expected array format.");
+        }
+
+        return parsedHashtags;
+    } catch (error) {
+        console.error("Error generating hashtags:", error);
+        if (error instanceof Error) {
+            throw error;
+        }
+        throw new Error("Failed to generate AI-powered hashtags.");
+    }
+};

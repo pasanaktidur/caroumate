@@ -8,6 +8,8 @@ export interface DesignPreferences {
   font: FontChoice;
   aspectRatio: AspectRatio;
   brandingText?: string;
+  headlineFontSize: number;
+  bodyFontSize: number;
 }
 
 export interface UserProfile {
