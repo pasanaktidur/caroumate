@@ -400,7 +400,7 @@ const SlideCard: React.FC<{ slide: SlideData; preferences: DesignPreferences; is
         <div
             data-carousel-slide={slide.id}
             onClick={onClick}
-            className={`h-[280px] sm:h-[320px] md:h-[400px] flex-shrink-0 relative flex flex-col justify-center items-center p-6 pb-10 text-center rounded-lg cursor-pointer transition-all duration-300 transform ${styleClasses} ${font} ${aspectRatioClass} ${isSelected ? 'ring-4 ring-primary-500 ring-offset-2 scale-105' : 'hover:scale-102'}`}
+            className={`h-[280px] sm:h-[320px] md:h-[400px] flex-shrink-0 relative flex flex-col justify-center items-center p-6 pb-10 text-center rounded-lg cursor-pointer transition-all duration-300 transform ${styleClasses} ${font} ${aspectRatioClass} ${isSelected ? 'ring-4 ring-primary-500 ring-offset-2 scale-105 shadow-2xl shadow-primary-600/50' : 'hover:scale-102'}`}
             style={{
                 backgroundColor: finalPrefs.style !== DesignStyle.COLORFUL && !finalPrefs.backgroundImage ? finalPrefs.backgroundColor : undefined,
                 color: finalPrefs.fontColor
@@ -920,7 +920,7 @@ export default function App() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col">
             <Header
                 user={user}
                 onLogout={handleLogout}
@@ -989,7 +989,7 @@ const LoginScreen: React.FC<{ onLogin: () => void; t: TFunction; }> = ({ onLogin
                 <p className="text-lg text-gray-600 dark:text-gray-400 mb-8">{t('loginSubtitle')}</p>
                 <button
                     onClick={onLogin}
-                    className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 shadow-lg"
+                    className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 shadow-lg shadow-primary-600/40 hover:shadow-xl hover:shadow-primary-500/40 transition-shadow"
                 >
                    {t('loginButton')}
                 </button>
@@ -1048,7 +1048,7 @@ const Dashboard: React.FC<{
                 <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-200">{t('dashboardTitle')}</h2>
                 <p className="text-gray-600 dark:text-gray-400 mt-1">{t('dashboardSubtitle')}</p>
             </div>
-            <button onClick={onNewCarousel} className="mt-4 sm:mt-0 w-full sm:w-auto inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 shadow-lg">
+            <button onClick={onNewCarousel} className="mt-4 sm:mt-0 w-full sm:w-auto inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 shadow-lg shadow-primary-600/40 hover:shadow-xl hover:shadow-primary-500/40 transition-shadow">
                 <SparklesIcon className="w-5 h-5 mr-2 -ml-1" />
                 {t('newCarouselButton')}
             </button>
@@ -1169,7 +1169,7 @@ const Generator: React.FC<{
         backgroundColor: '#FFFFFF',
         fontColor: '#111827',
         style: DesignStyle.MINIMALIST,
-        font: FontChoice.SANS,
+        font: FontChoice.MONO,
         aspectRatio: AspectRatio.SQUARE,
         backgroundImage: undefined,
         brandingText: '',
@@ -1301,7 +1301,7 @@ const Generator: React.FC<{
                     </details>
                     
                     <div className="border-t dark:border-gray-700 pt-6 space-y-4">
-                        <button type="submit" disabled={isGenerating} className="w-full inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 disabled:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                        <button type="submit" disabled={isGenerating} className="w-full inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 disabled:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 shadow-lg shadow-primary-600/40 hover:shadow-xl hover:shadow-primary-500/40 transition-shadow">
                             <SparklesIcon className="w-5 h-5 mr-2" />
                             {isGenerating ? t('generatorGeneratingButton') : t('generatorCreateButton')}
                         </button>
@@ -1421,7 +1421,7 @@ const AiAssistantModal: React.FC<{
                 
                 <div className="flex space-x-4 mb-4">
                     <button onClick={() => fetchSuggestions('hook')} disabled={isLoading} className="flex-1 px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700 disabled:bg-gray-400">{t('getHookButton')}</button>
-                    <button onClick={() => fetchSuggestions('cta')} disabled={isLoading} className="flex-1 px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 disabled:bg-gray-400">{t('getCTAButton')}</button>
+                    <button onClick={() => fetchSuggestions('cta')} disabled={isLoading} className="flex-1 px-4 py-2 text-sm font-medium text-white bg-accent-500 rounded-md hover:bg-accent-600 disabled:bg-gray-400">{t('getCTAButton')}</button>
                 </div>
 
                 <div className="h-64 overflow-y-auto p-4 bg-gray-50 dark:bg-gray-900/50 rounded-md border dark:border-gray-700">
@@ -1473,7 +1473,7 @@ const HashtagModal: React.FC<{
                     {!isLoading && !error && hashtags.length > 0 && (
                         <div className="flex flex-wrap gap-2">
                             {hashtags.map((tag, i) => (
-                                <span key={i} className="px-3 py-1 bg-blue-100 text-blue-800 text-sm font-medium rounded-full dark:bg-blue-900 dark:text-blue-300">#{tag}</span>
+                                <span key={i} className="px-3 py-1 bg-gold-100 text-gold-800 text-sm font-medium rounded-full dark:bg-gold-900 dark:text-gold-300">#{tag}</span>
                             ))}
                         </div>
                     )}
@@ -1579,13 +1579,13 @@ const Footer: React.FC = () => (
     <footer className="w-full bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 py-4 px-6 hidden md:block">
         <div className="container mx-auto flex flex-col sm:flex-row items-center justify-between text-center">
             <p className="text-sm text-gray-500 dark:text-gray-400 mb-2 sm:mb-0">
-                &copy; {new Date().getFullYear()} Pasanaktidur. All rights reserved.
+                &copy; {new Date().getFullYear()} CarouMate. All rights reserved.
             </p>
             <div className="flex items-center space-x-4">
-                <a href="https://instagram.com/pasanaktidur" target="_blank" rel="noopener noreferrer" aria-label="Instagram @pasanaktidur" className="text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors">
+                <a href="#" target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors">
                     <InstagramIcon className="w-5 h-5" />
                 </a>
-                 <a href="https://threads.net/@pasanaktidur" target="_blank" rel="noopener noreferrer" aria-label="Threads @pasanaktidur" className="text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors">
+                 <a href="#" target="_blank" rel="noopener noreferrer" aria-label="Threads" className="text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors">
                     <ThreadsIcon className="w-5 h-5" />
                 </a>
             </div>
