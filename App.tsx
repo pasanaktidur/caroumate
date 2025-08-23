@@ -1,7 +1,7 @@
 import * as React from 'react';
-import type { AppView, UserProfile, Carousel, SlideData, DesignPreferences, AppSettings, Language } from './types';
+import type { AppView, UserProfile, Carousel, SlideData, DesignPreferences, AppSettings, Language, TextStyle } from './types';
 import { ContentNiche, DesignStyle, FontChoice, AspectRatio, AIModel } from './types';
-import { GoogleIcon, SparklesIcon, LoaderIcon, DownloadIcon, SettingsIcon, InstagramIcon, ThreadsIcon, MoonIcon, SunIcon, AvatarIcon, LogoutIcon, HashtagIcon, HomeIcon } from './components/icons';
+import { GoogleIcon, SparklesIcon, LoaderIcon, DownloadIcon, SettingsIcon, InstagramIcon, ThreadsIcon, MoonIcon, SunIcon, AvatarIcon, LogoutIcon, HashtagIcon, HomeIcon, BoldIcon, ItalicIcon, UnderlineIcon, StrikethroughIcon, CaseIcon, AlignLeftIcon, AlignCenterIcon, AlignRightIcon, AlignJustifyIcon } from './components/icons';
 import { generateCarouselContent, generateSlideImage, getAiAssistance, generateHashtags } from './services/geminiService';
 import html2canvas from 'html2canvas';
 import JSZip from 'jszip';
@@ -49,8 +49,6 @@ const translations = {
     generatorStyleLabel: 'Style',
     generatorAspectRatioLabel: 'Aspect Ratio',
     generatorFontLabel: 'Font',
-    generatorFontSizeHeadlineLabel: 'Headline Font Size (rem)',
-    generatorFontSizeBodyLabel: 'Body Font Size (rem)',
     generatorBrandingLabel: 'Branding (@username)',
     generatorBrandingPlaceholder: '@yourhandle',
     generatorBgColorLabel: 'BG Color',
@@ -149,8 +147,6 @@ const translations = {
     generatorStyleLabel: 'Gaya',
     generatorAspectRatioLabel: 'Rasio Aspek',
     generatorFontLabel: 'Font',
-    generatorFontSizeHeadlineLabel: 'Ukuran Font Judul (rem)',
-    generatorFontSizeBodyLabel: 'Ukuran Font Isi (rem)',
     generatorBrandingLabel: 'Branding (@username)',
     generatorBrandingPlaceholder: '@handleanda',
     generatorBgColorLabel: 'Warna Latar',
@@ -354,36 +350,44 @@ const Loader: React.FC<{ text: string }> = ({ text }) => (
 
 const SlideCard: React.FC<{ slide: SlideData; preferences: DesignPreferences; isSelected: boolean; onClick: () => void; t: TFunction; }> = ({ slide, preferences, isSelected, onClick, t }) => {
     
-    const finalPrefs = React.useMemo(() => ({
-        ...preferences,
-        backgroundColor: slide.backgroundColor ?? preferences.backgroundColor,
-        fontColor: slide.fontColor ?? preferences.fontColor,
-        backgroundImage: slide.backgroundImage ?? preferences.backgroundImage,
-        headlineFontSize: slide.headlineFontSize ?? preferences.headlineFontSize,
-        bodyFontSize: slide.bodyFontSize ?? preferences.bodyFontSize,
-    }), [slide, preferences]);
+    const finalPrefs = React.useMemo(() => {
+        const slideOverrides = {
+            backgroundColor: slide.backgroundColor,
+            fontColor: slide.fontColor,
+            backgroundImage: slide.backgroundImage,
+            headlineStyle: slide.headlineStyle,
+            bodyStyle: slide.bodyStyle
+        };
+
+        return {
+            ...preferences,
+            backgroundColor: slideOverrides.backgroundColor ?? preferences.backgroundColor,
+            fontColor: slideOverrides.fontColor ?? preferences.fontColor,
+            backgroundImage: slideOverrides.backgroundImage ?? preferences.backgroundImage,
+            headlineStyle: { ...preferences.headlineStyle, ...(slideOverrides.headlineStyle || {}) },
+            bodyStyle: { ...preferences.bodyStyle, ...(slideOverrides.bodyStyle || {}) },
+        };
+    }, [slide, preferences]);
 
     const font = fontClassMap[finalPrefs.font] || 'font-sans';
     const aspectRatioClass = aspectRatioClassMap[finalPrefs.aspectRatio] || 'aspect-square';
 
-    const { headlineSize, bodySize } = React.useMemo(() => {
-        let scale = 1.0;
-        switch (finalPrefs.aspectRatio) {
-            case AspectRatio.STORY:
-                scale = 0.85;
-                break;
-            case AspectRatio.PORTRAIT:
-                scale = 0.95;
-                break;
-            case AspectRatio.SQUARE:
-            default:
-                scale = 1.0;
-        }
-        return {
-            headlineSize: finalPrefs.headlineFontSize * scale,
-            bodySize: finalPrefs.bodyFontSize * scale,
+    const getDynamicStyles = (style: TextStyle) => {
+        const cssStyle: React.CSSProperties = {
+            fontWeight: style.fontWeight,
+            fontStyle: style.fontStyle,
+            textDecorationLine: style.textDecorationLine,
+            textAlign: style.textAlign,
+            textTransform: style.textTransform,
         };
-    }, [finalPrefs.aspectRatio, finalPrefs.headlineFontSize, finalPrefs.bodyFontSize]);
+        if (style.fontSize) {
+            cssStyle.fontSize = `${style.fontSize}rem`;
+        }
+        return cssStyle;
+    };
+    
+    const headlineStyles = getDynamicStyles(finalPrefs.headlineStyle);
+    const bodyStyles = getDynamicStyles(finalPrefs.bodyStyle);
 
 
     const styleClasses = React.useMemo(() => {
@@ -424,8 +428,8 @@ const SlideCard: React.FC<{ slide: SlideData; preferences: DesignPreferences; is
                 </div>
             ) : (
                 <div className="z-10 flex flex-col items-center">
-                    <h2 className="font-bold leading-tight mb-4" style={{ fontSize: `${headlineSize}rem`, lineHeight: '1.2' }}>{slide.headline}</h2>
-                    <p className="" style={{ fontSize: `${bodySize}rem`, lineHeight: '1.5' }}>{slide.body}</p>
+                    <h2 className="font-bold leading-tight mb-4" style={{...headlineStyles, lineHeight: '1.2' }}>{slide.headline}</h2>
+                    <p className="" style={{ ...bodyStyles, lineHeight: '1.5' }}>{slide.body}</p>
                 </div>
             )}
 
@@ -1133,6 +1137,50 @@ const ApplyScopeControl: React.FC<{
     </div>
 );
 
+const TextFormatToolbar: React.FC<{ style: TextStyle, onStyleChange: (newStyle: TextStyle) => void }> = ({ style, onStyleChange }) => {
+    const toggleStyle = (key: keyof TextStyle, value: any, defaultValue: any) => {
+        onStyleChange({ ...style, [key]: style[key] === value ? defaultValue : value });
+    };
+
+    const toggleDecoration = (value: 'underline' | 'line-through') => {
+        const decorations = new Set((style.textDecorationLine || '').split(' ').filter(Boolean));
+        if (decorations.has(value)) {
+            decorations.delete(value);
+        } else {
+            decorations.add(value);
+        }
+        onStyleChange({ ...style, textDecorationLine: Array.from(decorations).join(' ') });
+    };
+
+    const isDecorationActive = (value: string) => (style.textDecorationLine || '').includes(value);
+
+    return (
+        <div className="flex flex-wrap items-center gap-1 p-1 bg-gray-100 dark:bg-gray-700 rounded-md border dark:border-gray-600">
+            <button type="button" onClick={() => toggleStyle('fontWeight', 'bold', 'normal')} className={`p-1.5 rounded ${style.fontWeight === 'bold' ? 'bg-primary-200 dark:bg-primary-800' : 'hover:bg-gray-200 dark:hover:bg-gray-600'}`}><BoldIcon className="w-4 h-4" /></button>
+            <button type="button" onClick={() => toggleStyle('fontStyle', 'italic', 'normal')} className={`p-1.5 rounded ${style.fontStyle === 'italic' ? 'bg-primary-200 dark:bg-primary-800' : 'hover:bg-gray-200 dark:hover:bg-gray-600'}`}><ItalicIcon className="w-4 h-4" /></button>
+            <button type="button" onClick={() => toggleDecoration('underline')} className={`p-1.5 rounded ${isDecorationActive('underline') ? 'bg-primary-200 dark:bg-primary-800' : 'hover:bg-gray-200 dark:hover:bg-gray-600'}`}><UnderlineIcon className="w-4 h-4" /></button>
+            <button type="button" onClick={() => toggleDecoration('line-through')} className={`p-1.5 rounded ${isDecorationActive('line-through') ? 'bg-primary-200 dark:bg-primary-800' : 'hover:bg-gray-200 dark:hover:bg-gray-600'}`}><StrikethroughIcon className="w-4 h-4" /></button>
+            <button type="button" onClick={() => toggleStyle('textTransform', 'uppercase', 'none')} className={`p-1.5 rounded ${style.textTransform === 'uppercase' ? 'bg-primary-200 dark:bg-primary-800' : 'hover:bg-gray-200 dark:hover:bg-gray-600'}`}><CaseIcon className="w-4 h-4" /></button>
+            <div className="w-px h-5 bg-gray-300 dark:bg-gray-500 mx-1"></div>
+            <button type="button" onClick={() => onStyleChange({ ...style, textAlign: 'left' })} className={`p-1.5 rounded ${style.textAlign === 'left' ? 'bg-primary-200 dark:bg-primary-800' : 'hover:bg-gray-200 dark:hover:bg-gray-600'}`}><AlignLeftIcon className="w-4 h-4" /></button>
+            <button type="button" onClick={() => onStyleChange({ ...style, textAlign: 'center' })} className={`p-1.5 rounded ${style.textAlign === 'center' ? 'bg-primary-200 dark:bg-primary-800' : 'hover:bg-gray-200 dark:hover:bg-gray-600'}`}><AlignCenterIcon className="w-4 h-4" /></button>
+            <button type="button" onClick={() => onStyleChange({ ...style, textAlign: 'right' })} className={`p-1.5 rounded ${style.textAlign === 'right' ? 'bg-primary-200 dark:bg-primary-800' : 'hover:bg-gray-200 dark:hover:bg-gray-600'}`}><AlignRightIcon className="w-4 h-4" /></button>
+            <button type="button" onClick={() => onStyleChange({ ...style, textAlign: 'justify' })} className={`p-1.5 rounded ${style.textAlign === 'justify' ? 'bg-primary-200 dark:bg-primary-800' : 'hover:bg-gray-200 dark:hover:bg-gray-600'}`}><AlignJustifyIcon className="w-4 h-4" /></button>
+            <div className="w-px h-5 bg-gray-300 dark:bg-gray-500 mx-1"></div>
+            <input
+                type="number"
+                value={style.fontSize ? style.fontSize * 10 : ''}
+                onChange={e => onStyleChange({ ...style, fontSize: parseFloat(e.target.value) / 10 })}
+                className="w-12 p-1 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                step="1"
+                min="5"
+                max="100"
+                placeholder="Size"
+                aria-label="Font size"
+            />
+        </div>
+    );
+};
 
 const Generator: React.FC<{
     user: UserProfile;
@@ -1162,7 +1210,6 @@ const Generator: React.FC<{
     
     // Scopes for applying styles
     const [colorScope, setColorScope] = React.useState<'all' | 'selected'>('all');
-    const [fontScope, setFontScope] = React.useState<'all' | 'selected'>('all');
     const [bgImageScope, setBgImageScope] = React.useState<'all' | 'selected'>('all');
     
     const preferences = currentCarousel?.preferences ?? {
@@ -1173,8 +1220,8 @@ const Generator: React.FC<{
         aspectRatio: AspectRatio.SQUARE,
         backgroundImage: undefined,
         brandingText: '',
-        headlineFontSize: 2.2,
-        bodyFontSize: 1.1,
+        headlineStyle: { fontSize: 2.2, fontWeight: 'bold', textAlign: 'center' },
+        bodyStyle: { fontSize: 1.1, textAlign: 'center' },
     };
 
     React.useEffect(() => {
@@ -1253,19 +1300,6 @@ const Generator: React.FC<{
                                   {Object.values(FontChoice).map(f => <option key={f} value={f}>{f}</option>)}
                               </select>
                            </div>
-                           <div className="space-y-2">
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorFontSizeHeadlineLabel')}</label>
-                                <div className="flex items-center space-x-2">
-                                    <input type="range" min="1" max="5" step="0.1" value={selectedSlide?.headlineFontSize ?? preferences.headlineFontSize} onChange={e => handleStyleChange(fontScope, 'headlineFontSize', parseFloat(e.target.value), 'headlineFontSize')} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-600" />
-                                    <span className="text-sm text-gray-600 dark:text-gray-300 w-10 text-center">{(selectedSlide?.headlineFontSize ?? preferences.headlineFontSize).toFixed(1)}</span>
-                                </div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorFontSizeBodyLabel')}</label>
-                                <div className="flex items-center space-x-2">
-                                    <input type="range" min="0.5" max="2.5" step="0.1" value={selectedSlide?.bodyFontSize ?? preferences.bodyFontSize} onChange={e => handleStyleChange(fontScope, 'bodyFontSize', parseFloat(e.target.value), 'bodyFontSize')} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-600" />
-                                    <span className="text-sm text-gray-600 dark:text-gray-300 w-10 text-center">{(selectedSlide?.bodyFontSize ?? preferences.bodyFontSize).toFixed(1)}</span>
-                                </div>
-                                <ApplyScopeControl scope={fontScope} setScope={setFontScope} isDisabled={!selectedSlide} t={t} fieldId="font" />
-                           </div>
                            <div>
                                 <label htmlFor="brandingText" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorBrandingLabel')}</label>
                                 <input type="text" id="brandingText" value={preferences.brandingText || ''} onChange={e => onUpdateCarouselPreferences({brandingText: e.target.value})} placeholder={t('generatorBrandingPlaceholder')} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500" />
@@ -1321,13 +1355,21 @@ const Generator: React.FC<{
                 {selectedSlide && (
                     <div className="space-y-4 border-t dark:border-gray-700 pt-6 mt-6">
                         <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200">{t('generatorStep3Title')}</h2>
-                        <div>
+                        <div className="space-y-2">
                             <label htmlFor="headline" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorHeadlineLabel')}</label>
-                            <textarea id="headline" value={selectedSlide.headline} onChange={e => onUpdateSlide(selectedSlide.id, { headline: e.target.value })} rows={2} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500" />
+                            <TextFormatToolbar 
+                                style={selectedSlide.headlineStyle ?? preferences.headlineStyle}
+                                onStyleChange={(newStyle) => onUpdateSlide(selectedSlide.id, { headlineStyle: newStyle })}
+                            />
+                            <textarea id="headline" value={selectedSlide.headline} onChange={e => onUpdateSlide(selectedSlide.id, { headline: e.target.value })} rows={2} className="block w-full px-3 py-2 bg-white dark:bg-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500" />
                         </div>
-                        <div>
+                        <div className="space-y-2">
                             <label htmlFor="body" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorBodyLabel')}</label>
-                            <textarea id="body" value={selectedSlide.body} onChange={e => onUpdateSlide(selectedSlide.id, { body: e.target.value })} rows={4} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500" />
+                             <TextFormatToolbar 
+                                style={selectedSlide.bodyStyle ?? preferences.bodyStyle}
+                                onStyleChange={(newStyle) => onUpdateSlide(selectedSlide.id, { bodyStyle: newStyle })}
+                            />
+                            <textarea id="body" value={selectedSlide.body} onChange={e => onUpdateSlide(selectedSlide.id, { body: e.target.value })} rows={4} className="block w-full px-3 py-2 bg-white dark:bg-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500" />
                         </div>
                          <div>
                             <label htmlFor="visual_prompt" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorVisualPromptLabel')}</label>

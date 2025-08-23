@@ -1,5 +1,14 @@
 
 
+export interface TextStyle {
+  fontWeight?: 'bold' | 'normal';
+  fontStyle?: 'italic' | 'normal';
+  textDecorationLine?: string; // e.g., 'underline', 'line-through', or 'underline line-through'
+  textAlign?: 'left' | 'center' | 'right' | 'justify';
+  textTransform?: 'uppercase' | 'none';
+  fontSize?: number; // in rem
+}
+
 export interface DesignPreferences {
   backgroundColor: string;
   fontColor: string;
@@ -8,8 +17,8 @@ export interface DesignPreferences {
   font: FontChoice;
   aspectRatio: AspectRatio;
   brandingText?: string;
-  headlineFontSize: number;
-  bodyFontSize: number;
+  headlineStyle: TextStyle;
+  bodyStyle: TextStyle;
 }
 
 export interface UserProfile {
@@ -31,8 +40,8 @@ export interface SlideData {
   backgroundColor?: string;
   fontColor?: string;
   backgroundImage?: string;
-  headlineFontSize?: number;
-  bodyFontSize?: number;
+  headlineStyle?: TextStyle;
+  bodyStyle?: TextStyle;
 }
 
 export interface Carousel {
