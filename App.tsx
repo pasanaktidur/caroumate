@@ -1605,8 +1605,8 @@ const Generator: React.FC<{
 
                 {!isGenerating && currentCarousel && (
                     <div className="w-full h-full flex flex-col">
-                        <div className="hidden sm:flex justify-between items-center mb-4 flex-shrink-0">
-                            <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200 truncate pr-4 mb-2 sm:mb-0">{currentCarousel.title}</h2>
+                        <div className="flex justify-end sm:justify-between items-center mb-4 flex-shrink-0">
+                            <h2 className="hidden sm:block text-xl font-bold text-gray-800 dark:text-gray-200 truncate pr-4">{currentCarousel.title}</h2>
                             <button
                                 onClick={onDownload}
                                 disabled={isDownloading}
