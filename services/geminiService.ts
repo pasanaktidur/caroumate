@@ -1,13 +1,15 @@
 
+
 import { GoogleGenAI, Type } from "@google/genai";
-import type { DesignPreferences, SlideData, AppSettings, ContentNiche, AspectRatio } from '../types';
+import type { DesignPreferences, SlideData, AppSettings, AspectRatio } from '../types';
 
 // Helper to get the Gemini API client
 const getAiClient = (settings: AppSettings) => {
-    // In a client-side only application, the API key must be provided by the user.
-    const apiKey = settings.apiKey;
+    // Determine the API key based on user's choice in settings
+    const apiKey = settings.apiKeySource === 'custom' ? settings.apiKey : process.env.API_KEY;
 
     if (!apiKey) {
+        // This error will primarily trigger if the user selects "custom" but leaves the key blank.
         throw new Error("Kunci API belum dikonfigurasi. Silakan buka Pengaturan dan masukkan kunci API Google AI Anda.");
     }
     
@@ -16,7 +18,7 @@ const getAiClient = (settings: AppSettings) => {
 
 export const generateCarouselContent = async (
     topic: string,
-    niche: ContentNiche,
+    niche: string,
     preferences: DesignPreferences,
     settings: AppSettings,
 ): Promise<Omit<SlideData, 'id'>[]> => {

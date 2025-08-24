@@ -1,5 +1,6 @@
 
 
+
 export interface TextStyle {
   fontWeight?: 'bold' | 'normal';
   fontStyle?: 'italic' | 'normal';
@@ -25,7 +26,7 @@ export interface UserProfile {
   name: string;
   email: string;
   picture: string;
-  niche: ContentNiche;
+  niche: string;
   profileComplete: boolean;
 }
 
@@ -60,6 +61,7 @@ export enum AIModel {
 export interface AppSettings {
   aiModel: AIModel;
   apiKey: string;
+  apiKeySource: 'caroumate' | 'custom';
   systemPrompt: string;
 }
 
@@ -71,23 +73,6 @@ export enum DesignStyle {
   COLORFUL = 'Vibrant & Colorful',
   ELEGANT = 'Elegant & Refined',
   VINTAGE = 'Retro & Vintage',
-}
-
-export enum ContentNiche {
-  MARKETING = 'Digital Marketing',
-  TECH = 'Technology',
-  WELLNESS = 'Health & Wellness',
-  FINANCE = 'Personal Finance',
-  FOOD = 'Food & Cooking',
-  TRAVEL = 'Travel',
-  EDUCATION = 'Education & Learning',
-  FASHION = 'Fashion & Style',
-  FITNESS = 'Fitness & Exercise',
-  ENTREPRENEURSHIP = 'Entrepreneurship',
-  PARENTING = 'Parenting & Family',
-  REAL_ESTATE = 'Real Estate',
-  SELF_IMPROVEMENT = 'Self Improvement',
-  CODING = 'Coding & Development',
 }
 
 export enum AspectRatio {

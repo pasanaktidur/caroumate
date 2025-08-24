@@ -1,6 +1,6 @@
 import * as React from 'react';
 import type { AppView, UserProfile, Carousel, SlideData, DesignPreferences, AppSettings, Language, TextStyle } from './types';
-import { ContentNiche, DesignStyle, FontChoice, AspectRatio, AIModel } from './types';
+import { DesignStyle, FontChoice, AspectRatio, AIModel } from './types';
 import { GoogleIcon, SparklesIcon, LoaderIcon, DownloadIcon, SettingsIcon, InstagramIcon, ThreadsIcon, MoonIcon, SunIcon, AvatarIcon, LogoutIcon, HashtagIcon, HomeIcon, BoldIcon, ItalicIcon, UnderlineIcon, StrikethroughIcon, CaseIcon, AlignLeftIcon, AlignCenterIcon, AlignRightIcon, AlignJustifyIcon, LeftArrowIcon, RightArrowIcon } from './components/icons';
 import { generateCarouselContent, getAiAssistance, generateHashtags } from './services/geminiService';
 import html2canvas from 'html2canvas';
@@ -22,7 +22,7 @@ const translations = {
     loginButton: 'Generate Your Carousel Instantly',
     heroTagline: 'CarouMate AI',
     heroTitle1: 'Create Viral Carousels',
-    heroTitle2: 'in Seconds',
+    heroTitle2: 'in Minutes',
     featuresTitle: 'Features',
     featuresSubtitle: 'Everything you need to go viral',
     featuresDescription: 'Stop wasting time on tedious design. Focus on your message, and let our AI handle the rest.',
@@ -39,6 +39,7 @@ const translations = {
     profileSubtitle: 'This helps our AI tailor content just for you.',
     profileNameLabel: 'Your Name',
     profileNicheLabel: 'Your Primary Content Niche',
+    profileNichePlaceholder: 'e.g., "Software Development"',
     profileButton: 'Get Started',
 
     // Dashboard
@@ -68,7 +69,7 @@ const translations = {
     generatorFontColorLabel: 'Font Color',
     generatorCustomBgLabel: 'Background Image',
     generatorRemoveBgButton: 'Remove image',
-    generatorCreateButton: 'Create Carousel',
+    generatorCreateButton: 'Create Carousel!',
     generatorGeneratingButton: 'Generating...',
     generatorAssistantButton: 'AI Assistant',
     generatorHashtagButton: 'Generate Hashtags',
@@ -80,7 +81,8 @@ const translations = {
     downloadAllButton: 'Download All',
     downloadingButton: 'Downloading...',
     previewEmptyTitle: "Let's create something amazing!",
-    previewEmptySubtitle: 'Fill in the details on the left and click "Create Carousel" to begin.',
+    previewEmptySubtitleDesktop: 'Fill in the details on the left and click "Create Carousel!" to begin.',
+    previewEmptySubtitleMobile: 'Fill in the details above and click "Create Carousel!" to begin.',
     errorTitle: 'An Error Occurred',
     errorUnknown: 'An unknown error occurred.',
     errorImageGen: 'An unknown image generation error occurred.',
@@ -116,11 +118,15 @@ const translations = {
     settingsTitle: 'Settings',
     aiModelLabel: 'AI Model',
     aiModelHint: "Choose the AI model. 'gemini-2.5-flash' is fast, while 'gemini-2.5-pro' is more powerful for complex content.",
+    apiKeySourceLabel: 'API Key Source',
+    apiKeySourceCarouMate: 'Use CarouMate API Key (Default)',
+    apiKeySourceCustom: 'Use your own Google AI API Key',
     apiKeyLabel: 'Google AI API Key',
     apiKeyPlaceholder: 'Enter your Google AI API key',
     apiKeyHint: 'Your API key is stored securely in your browser and is required for all AI features.',
     systemPromptLabel: 'System Prompt',
     systemPromptPlaceholder: 'e.g., You are a witty content creator...',
+    setDefaultButton: 'Set to default',
     cancelButton: 'Cancel',
     saveButton: 'Save Changes',
   },
@@ -138,7 +144,7 @@ const translations = {
     loginButton: 'Hasilkan Carousel Anda Seketika',
     heroTagline: 'CarouMate AI',
     heroTitle1: 'Buat Carousel Viral',
-    heroTitle2: 'dalam Detik',
+    heroTitle2: 'dalam Menit',
     featuresTitle: 'Fitur',
     featuresSubtitle: 'Semua yang Anda butuhkan untuk menjadi viral',
     featuresDescription: 'Berhentilah membuang waktu untuk desain yang membosankan. Fokus pada pesan Anda, dan biarkan AI kami yang mengurus sisanya.',
@@ -154,6 +160,7 @@ const translations = {
     profileSubtitle: 'Ini membantu AI kami menyesuaikan konten khusus untuk Anda.',
     profileNameLabel: 'Nama Anda',
     profileNicheLabel: 'Niche Konten Utama Anda',
+    profileNichePlaceholder: 'cth., "Pengembangan Perangkat Lunak"',
     profileButton: 'Mulai',
 
     // Dashboard
@@ -183,7 +190,7 @@ const translations = {
     generatorFontColorLabel: 'Warna Font',
     generatorCustomBgLabel: 'Gambar Latar',
     generatorRemoveBgButton: 'Hapus Gambar',
-    generatorCreateButton: 'Buat Carousel',
+    generatorCreateButton: 'Buat Carousel!',
     generatorGeneratingButton: 'Membuat...',
     generatorAssistantButton: 'Asisten AI',
     generatorHashtagButton: 'Buat Hashtag',
@@ -195,7 +202,8 @@ const translations = {
     downloadAllButton: 'Unduh Semua',
     downloadingButton: 'Mengunduh...',
     previewEmptyTitle: 'Ayo buat sesuatu yang luar biasa!',
-    previewEmptySubtitle: 'Isi detail di sebelah kiri dan klik "Buat Carousel" untuk memulai.',
+    previewEmptySubtitleDesktop: 'Isi detail di sebelah kiri dan klik "Buat Carousel!" untuk memulai.',
+    previewEmptySubtitleMobile: 'Isi detail di atas dan klik "Buat Carousel!" untuk memulai.',
     errorTitle: 'Terjadi Kesalahan',
     errorUnknown: 'Terjadi kesalahan yang tidak diketahui.',
     errorImageGen: 'Terjadi kesalahan pembuatan gambar yang tidak diketahui.',
@@ -231,11 +239,15 @@ const translations = {
     settingsTitle: 'Pengaturan',
     aiModelLabel: 'Model AI',
     aiModelHint: "Pilih model AI. 'gemini-2.5-flash' cepat, sedangkan 'gemini-2.5-pro' lebih kuat untuk konten yang kompleks.",
+    apiKeySourceLabel: 'Sumber Kunci API',
+    apiKeySourceCarouMate: 'Gunakan Kunci API CarouMate (Default)',
+    apiKeySourceCustom: 'Gunakan Kunci API Google AI Anda sendiri',
     apiKeyLabel: 'Kunci API Google AI',
     apiKeyPlaceholder: 'Masukkan kunci API Google AI Anda',
     apiKeyHint: 'Kunci API Anda disimpan dengan aman di browser Anda dan diperlukan untuk semua fitur AI.',
     systemPromptLabel: 'Prompt Sistem',
     systemPromptPlaceholder: 'cth., Anda adalah seorang pembuat konten yang jenaka...',
+    setDefaultButton: 'Kembalikan ke default',
     cancelButton: 'Batal',
     saveButton: 'Simpan Perubahan',
   },
@@ -253,6 +265,7 @@ const DOWNLOADS_STORAGE_KEY = 'caroumate-downloads';
 
 const defaultSettings: AppSettings = {
     aiModel: AIModel.GEMINI_2_5_FLASH,
+    apiKeySource: 'caroumate',
     apiKey: '',
     systemPrompt: 'You are an expert social media content strategist specializing in creating viral carousels.'
 };
@@ -673,7 +686,7 @@ export default function App() {
             name: '',
             email: 'guest@example.com',
             picture: '', // No picture for guest
-            niche: ContentNiche.MARKETING,
+            niche: '',
             profileComplete: false
         };
         setUser(guestUser);
@@ -857,7 +870,7 @@ export default function App() {
                 title: topicValue, // Will be set by topic input
                 createdAt: new Date().toISOString(),
                 slides: [],
-                category: user?.niche || ContentNiche.MARKETING, // Use user's niche if available
+                category: user?.niche || 'General', // Use user's niche if available
                 preferences: {
                     // Start with defaults
                     backgroundColor: '#FFFFFF',
@@ -1150,7 +1163,7 @@ const LoginScreen: React.FC<{ onLogin: () => void; t: TFunction; }> = ({ onLogin
 
 const ProfileSetupModal: React.FC<{ user: UserProfile, onSetupComplete: (profile: Omit<UserProfile, 'profileComplete'>) => void; t: TFunction; }> = ({ user, onSetupComplete, t }) => {
     const [name, setName] = React.useState(user.name || '');
-    const [niche, setNiche] = React.useState<ContentNiche>(user.niche || ContentNiche.MARKETING);
+    const [niche, setNiche] = React.useState(user.niche || '');
     
     const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -1169,9 +1182,7 @@ const ProfileSetupModal: React.FC<{ user: UserProfile, onSetupComplete: (profile
                     </div>
                     <div>
                         <label htmlFor="niche" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('profileNicheLabel')}</label>
-                        <select id="niche" value={niche} onChange={e => setNiche(e.target.value as ContentNiche)} className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-white dark:bg-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md">
-                            {Object.values(ContentNiche).map(n => <option key={n} value={n}>{n}</option>)}
-                        </select>
+                        <input type="text" id="niche" value={niche} onChange={e => setNiche(e.target.value)} required placeholder={t('profileNichePlaceholder')} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500" />
                     </div>
                     <button type="submit" className="w-full inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
                         {t('profileButton')}
@@ -1427,20 +1438,20 @@ const Generator: React.FC<{
                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                               <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorStyleLabel')}</label>
-                                <select value={preferences.style} onChange={e => onUpdateCarouselPreferences({style: e.target.value as DesignStyle}, topic)} className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-white dark:bg-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md">
+                                <select value={preferences.style} onChange={e => onUpdateCarouselPreferences({style: e.target.value as DesignStyle}, topic)} className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-gray-100 dark:bg-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md">
                                     {Object.values(DesignStyle).map(s => <option key={s} value={s}>{s}</option>)}
                                </select>
                               </div>
                               <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorAspectRatioLabel')}</label>
-                                <select value={preferences.aspectRatio} onChange={e => onUpdateCarouselPreferences({aspectRatio: e.target.value as AspectRatio}, topic)} className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-white dark:bg-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md">
+                                <select value={preferences.aspectRatio} onChange={e => onUpdateCarouselPreferences({aspectRatio: e.target.value as AspectRatio}, topic)} className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-gray-100 dark:bg-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md">
                                     {Object.values(AspectRatio).map(value => <option key={value} value={value}>{aspectRatioDisplayMap[value]}</option>)}
                                 </select>
                               </div>
                            </div>
                            <div>
                               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorFontLabel')}</label>
-                              <select value={preferences.font} onChange={e => onUpdateCarouselPreferences({font: e.target.value as FontChoice}, topic)} className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-white dark:bg-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md">
+                              <select value={preferences.font} onChange={e => onUpdateCarouselPreferences({font: e.target.value as FontChoice}, topic)} className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-gray-100 dark:bg-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md">
                                   {Object.values(FontChoice).map(f => <option key={f} value={f}>{f}</option>)}
                               </select>
                            </div>
@@ -1574,7 +1585,10 @@ const Generator: React.FC<{
                      <div className="text-center p-8">
                         <SparklesIcon className="w-16 h-16 text-gray-400 dark:text-gray-500 mx-auto mb-4"/>
                         <h2 className="text-2xl font-bold text-gray-700 dark:text-gray-300 mb-2">{t('previewEmptyTitle')}</h2>
-                        <p className="text-gray-500 dark:text-gray-400">{t('previewEmptySubtitle')}</p>
+                        <p className="text-gray-500 dark:text-gray-400">
+                            <span className="lg:hidden">{t('previewEmptySubtitleMobile')}</span>
+                            <span className="hidden lg:inline">{t('previewEmptySubtitleDesktop')}</span>
+                        </p>
                     </div>
                 )}
             </div>
@@ -1713,7 +1727,7 @@ const SettingsModal: React.FC<{
                             name="aiModel"
                             value={localSettings.aiModel}
                             onChange={handleChange}
-                            className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-white dark:bg-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md"
+                            className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-gray-100 dark:bg-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md"
                         >
                             {Object.values(AIModel).map(model => (
                                 <option key={model} value={model}>{model}</option>
@@ -1722,8 +1736,26 @@ const SettingsModal: React.FC<{
                         <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">{t('aiModelHint')}</p>
                     </div>
 
-                    {/* API Key */}
+                    {/* API Key Source */}
                     <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('apiKeySourceLabel')}</label>
+                        <fieldset className="mt-2">
+                            <legend className="sr-only">API Key Source</legend>
+                            <div className="space-y-2">
+                                <div className="flex items-center">
+                                    <input id="apiKeySourceCarouMate" name="apiKeySource" type="radio" value="caroumate" checked={localSettings.apiKeySource === 'caroumate'} onChange={handleChange} className="h-4 w-4 text-primary-600 border-gray-300 focus:ring-primary-500"/>
+                                    <label htmlFor="apiKeySourceCarouMate" className="ml-3 block text-sm font-medium text-gray-700 dark:text-gray-300">{t('apiKeySourceCarouMate')}</label>
+                                </div>
+                                <div className="flex items-center">
+                                    <input id="apiKeySourceCustom" name="apiKeySource" type="radio" value="custom" checked={localSettings.apiKeySource === 'custom'} onChange={handleChange} className="h-4 w-4 text-primary-600 border-gray-300 focus:ring-primary-500"/>
+                                    <label htmlFor="apiKeySourceCustom" className="ml-3 block text-sm font-medium text-gray-700 dark:text-gray-300">{t('apiKeySourceCustom')}</label>
+                                </div>
+                            </div>
+                        </fieldset>
+                    </div>
+
+                    {/* API Key Input */}
+                    <div className={`transition-opacity duration-300 ${localSettings.apiKeySource === 'custom' ? 'opacity-100' : 'opacity-50'}`}>
                         <label htmlFor="apiKey" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('apiKeyLabel')}</label>
                         <input
                             type="password"
@@ -1732,14 +1764,24 @@ const SettingsModal: React.FC<{
                             placeholder={t('apiKeyPlaceholder')}
                             value={localSettings.apiKey}
                             onChange={handleChange}
-                            className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                            disabled={localSettings.apiKeySource !== 'custom'}
+                            className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 disabled:cursor-not-allowed"
                         />
                          <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">{t('apiKeyHint')}</p>
                     </div>
 
                     {/* System Prompt */}
                     <div>
-                        <label htmlFor="systemPrompt" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('systemPromptLabel')}</label>
+                        <div className="flex justify-between items-center">
+                            <label htmlFor="systemPrompt" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('systemPromptLabel')}</label>
+                            <button
+                                type="button"
+                                onClick={() => setLocalSettings(prev => ({...prev, systemPrompt: defaultSettings.systemPrompt}))}
+                                className="text-xs font-medium text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-200"
+                            >
+                                {t('setDefaultButton')}
+                            </button>
+                        </div>
                          <textarea
                             id="systemPrompt"
                             name="systemPrompt"
