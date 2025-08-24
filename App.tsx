@@ -129,6 +129,7 @@ const translations = {
     setDefaultButton: 'Set to default',
     cancelButton: 'Cancel',
     saveButton: 'Save Changes',
+    savedButton: 'Saved!',
     donate: 'Buy me a coffee',
   },
   id: {
@@ -251,6 +252,7 @@ const translations = {
     setDefaultButton: 'Kembalikan ke default',
     cancelButton: 'Batal',
     saveButton: 'Simpan Perubahan',
+    savedButton: 'Tersimpan!',
     donate: 'Traktir Kopi',
   },
 };
@@ -1774,10 +1776,15 @@ const SettingsModal: React.FC<{
     t: TFunction;
 }> = ({ currentSettings, onClose, onSave, t }) => {
     const [localSettings, setLocalSettings] = React.useState<AppSettings>(currentSettings);
+    const [saveState, setSaveState] = React.useState<'idle' | 'saved'>('idle');
 
     const handleSave = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        onSave(localSettings);
+        if (saveState === 'saved') return;
+        setSaveState('saved');
+        setTimeout(() => {
+            onSave(localSettings);
+        }, 200);
     };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -1872,8 +1879,8 @@ const SettingsModal: React.FC<{
                          <button type="button" onClick={onClose} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 dark:text-gray-300 dark:bg-gray-700 dark:border-gray-500 dark:hover:bg-gray-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary-500">
                             {t('cancelButton')}
                          </button>
-                         <button type="submit" className="inline-flex justify-center px-4 py-2 text-sm font-medium text-white bg-primary-600 border border-transparent rounded-md hover:bg-primary-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary-500">
-                            {t('saveButton')}
+                         <button type="submit" disabled={saveState === 'saved'} className="transition-colors inline-flex justify-center px-4 py-2 text-sm font-medium text-white bg-primary-600 border border-transparent rounded-md hover:bg-primary-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary-500 disabled:bg-green-500 disabled:cursor-not-allowed">
+                            {saveState === 'saved' ? t('savedButton') : t('saveButton')}
                          </button>
                     </div>
                 </form>
@@ -1889,10 +1896,15 @@ const SettingsScreen: React.FC<{
     t: TFunction;
 }> = ({ currentSettings, onClose, onSave, t }) => {
     const [localSettings, setLocalSettings] = React.useState<AppSettings>(currentSettings);
+    const [saveState, setSaveState] = React.useState<'idle' | 'saved'>('idle');
 
     const handleSave = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        onSave(localSettings);
+        if (saveState === 'saved') return;
+        setSaveState('saved');
+        setTimeout(() => {
+            onSave(localSettings);
+        }, 200);
     };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -1984,8 +1996,8 @@ const SettingsScreen: React.FC<{
                          <button type="button" onClick={onClose} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 dark:text-gray-300 dark:bg-gray-700 dark:border-gray-500 dark:hover:bg-gray-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary-500">
                             {t('cancelButton')}
                          </button>
-                         <button type="submit" className="inline-flex justify-center px-4 py-2 text-sm font-medium text-white bg-primary-600 border border-transparent rounded-md hover:bg-primary-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary-500">
-                            {t('saveButton')}
+                         <button type="submit" disabled={saveState === 'saved'} className="transition-colors inline-flex justify-center px-4 py-2 text-sm font-medium text-white bg-primary-600 border border-transparent rounded-md hover:bg-primary-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary-500 disabled:bg-green-500 disabled:cursor-not-allowed">
+                            {saveState === 'saved' ? t('savedButton') : t('saveButton')}
                          </button>
                     </div>
                 </form>
