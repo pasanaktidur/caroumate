@@ -1,7 +1,7 @@
 import * as React from 'react';
 import type { AppView, UserProfile, Carousel, SlideData, DesignPreferences, AppSettings, Language, TextStyle } from './types';
 import { DesignStyle, FontChoice, AspectRatio, AIModel } from './types';
-import { GoogleIcon, SparklesIcon, LoaderIcon, DownloadIcon, SettingsIcon, InstagramIcon, ThreadsIcon, MoonIcon, SunIcon, AvatarIcon, LogoutIcon, HashtagIcon, HomeIcon, BoldIcon, ItalicIcon, UnderlineIcon, StrikethroughIcon, CaseIcon, AlignLeftIcon, AlignCenterIcon, AlignRightIcon, AlignJustifyIcon, LeftArrowIcon, RightArrowIcon } from './components/icons';
+import { GoogleIcon, SparklesIcon, LoaderIcon, DownloadIcon, SettingsIcon, InstagramIcon, ThreadsIcon, MoonIcon, SunIcon, AvatarIcon, LogoutIcon, HashtagIcon, HomeIcon, BoldIcon, ItalicIcon, UnderlineIcon, StrikethroughIcon, CaseIcon, AlignLeftIcon, AlignCenterIcon, AlignRightIcon, AlignJustifyIcon, LeftArrowIcon, RightArrowIcon, GiftIcon } from './components/icons';
 import { generateCarouselContent, getAiAssistance, generateHashtags } from './services/geminiService';
 import html2canvas from 'html2canvas';
 import JSZip from 'jszip';
@@ -129,6 +129,7 @@ const translations = {
     setDefaultButton: 'Set to default',
     cancelButton: 'Cancel',
     saveButton: 'Save Changes',
+    donate: 'Buy me a coffee',
   },
   id: {
     // Header
@@ -250,6 +251,7 @@ const translations = {
     setDefaultButton: 'Kembalikan ke default',
     cancelButton: 'Batal',
     saveButton: 'Simpan Perubahan',
+    donate: 'Traktir Kopi',
   },
 };
 
@@ -391,6 +393,16 @@ const Header: React.FC<{
                         >
                             <SettingsIcon className="w-5 h-5" />
                         </button>
+                        <a
+                            href="http://lynk.id/pasanaktidur/s/re2yoep3v6r0"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="hidden md:inline-flex items-center text-sm font-medium text-accent-700 dark:text-accent-300 bg-accent-100 dark:bg-accent-900/50 border border-transparent rounded-md hover:bg-accent-200 dark:hover:bg-accent-800/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-accent-500 transition-colors px-4 py-2"
+                            aria-label={t('donate')}
+                        >
+                            <GiftIcon className="w-5 h-5 mr-2" />
+                            {t('donate')}
+                        </a>
                         <button
                             onClick={onLogout}
                             className="text-sm font-medium text-primary-600 dark:text-primary-300 bg-primary-100 dark:bg-primary-900/50 border border-transparent rounded-md hover:bg-primary-200 dark:hover:bg-primary-800/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary-500 transition-colors sm:px-4 sm:py-2 p-2"
@@ -479,7 +491,7 @@ const SlideCard: React.FC<{ slide: SlideData; preferences: DesignPreferences; is
         <div
             data-carousel-slide={slide.id}
             onClick={onClick}
-            className={`w-64 sm:w-72 flex-shrink-0 relative flex flex-col justify-center items-center p-6 pb-10 text-center rounded-lg cursor-pointer transition-all duration-300 transform ${styleClasses} ${font} ${aspectRatioClass} ${isSelected ? 'ring-4 ring-primary-500 ring-offset-2 scale-105 shadow-2xl shadow-primary-600/50' : 'hover:scale-102'}`}
+            className={`w-64 sm:w-72 flex-shrink-0 relative rounded-lg cursor-pointer transition-all duration-300 transform ${styleClasses} ${font} ${aspectRatioClass} ${isSelected ? 'ring-4 ring-primary-500 ring-offset-2 scale-105 shadow-2xl shadow-primary-600/50' : 'hover:scale-102'}`}
             style={{
                 backgroundColor: finalPrefs.style !== DesignStyle.COLORFUL && !finalBackgroundImage ? finalPrefs.backgroundColor : undefined,
                 color: finalPrefs.fontColor
@@ -493,10 +505,13 @@ const SlideCard: React.FC<{ slide: SlideData; preferences: DesignPreferences; is
                 </>
             )}
 
-            {/* Content Layer */}
-            <div className="z-10 flex flex-col items-center">
-                <h2 className="font-bold leading-tight mb-4" style={{...headlineStyles, lineHeight: '1.2' }}>{slide.headline}</h2>
-                <p className="" style={{ ...bodyStyles, lineHeight: '1.5' }}>{slide.body}</p>
+            {/* Content Wrapper */}
+            <div className="absolute inset-0 flex flex-col justify-center items-center p-6 pb-10 text-center overflow-hidden">
+                {/* Content Layer */}
+                <div className="z-10 flex flex-col items-center">
+                    <h2 className="font-bold leading-tight mb-4" style={{...headlineStyles, lineHeight: '1.2' }}>{slide.headline}</h2>
+                    <p className="" style={{ ...bodyStyles, lineHeight: '1.5' }}>{slide.body}</p>
+                </div>
             </div>
             
             {/* Branding Text */}
@@ -549,6 +564,16 @@ const MobileFooter: React.FC<{
                     <SettingsIcon className="w-6 h-6 mx-auto mb-1" />
                     <span>{t('settingsTitle')}</span>
                 </button>
+                <a
+                    href="http://lynk.id/pasanaktidur/s/re2yoep3v6r0"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex flex-col items-center justify-center w-full h-full text-xs font-medium text-accent-600 dark:text-accent-400 hover:text-accent-700 dark:hover:text-accent-300 transition-colors duration-200"
+                    aria-label={t('donate')}
+                >
+                    <GiftIcon className="w-6 h-6 mx-auto mb-1" />
+                    <span>{t('donate')}</span>
+                </a>
             </div>
         </div>
     );
