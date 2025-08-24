@@ -422,7 +422,7 @@ const SlideCard: React.FC<{ slide: SlideData; preferences: DesignPreferences; is
     const font = fontClassMap[finalPrefs.font] || 'font-sans';
     const aspectRatioClass = aspectRatioClassMap[finalPrefs.aspectRatio] || 'aspect-square';
 
-    const getDynamicStyles = (style: TextStyle) => {
+    const getDynamicStyles = (style: TextStyle, type: 'headline' | 'body') => {
         const cssStyle: React.CSSProperties = {
             fontWeight: style.fontWeight,
             fontStyle: style.fontStyle,
@@ -431,13 +431,26 @@ const SlideCard: React.FC<{ slide: SlideData; preferences: DesignPreferences; is
             textTransform: style.textTransform,
         };
         if (style.fontSize) {
-            cssStyle.fontSize = `${style.fontSize}rem`;
+            const baseRem = style.fontSize;
+
+            // Define viewport-based scaling. This creates fluid typography.
+            // A common pattern is a small base REM value plus a VW unit.
+            const preferredVw = type === 'headline' ? '2.5vw' : '1.2vw';
+            const preferredRem = type === 'headline' ? '0.75rem' : '0.6rem';
+            const preferredValue = `calc(${preferredRem} + ${preferredVw})`;
+
+            // Set a minimum font size to prevent text from becoming unreadably small
+            const minRem = baseRem * 0.65;
+            
+            // Use clamp() to smoothly scale the font size between a min, a preferred, and a max value.
+            // The font size set by the user acts as the maximum size.
+            cssStyle.fontSize = `clamp(${minRem.toFixed(2)}rem, ${preferredValue}, ${baseRem}rem)`;
         }
         return cssStyle;
     };
     
-    const headlineStyles = getDynamicStyles(finalPrefs.headlineStyle);
-    const bodyStyles = getDynamicStyles(finalPrefs.bodyStyle);
+    const headlineStyles = getDynamicStyles(finalPrefs.headlineStyle, 'headline');
+    const bodyStyles = getDynamicStyles(finalPrefs.bodyStyle, 'body');
 
 
     const styleClasses = React.useMemo(() => {
