@@ -1,6 +1,6 @@
 
 
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenAI, Type, HarmCategory, HarmBlockThreshold } from "@google/genai";
 import type { DesignPreferences, SlideData, AppSettings, AspectRatio } from '../types';
 
 // Helper to get the Gemini API client
@@ -15,6 +15,26 @@ const getAiClient = (settings: AppSettings) => {
     
     return new GoogleGenAI({ apiKey });
 };
+
+const safetySettings = [
+    {
+        category: HarmCategory.HARM_CATEGORY_HARASSMENT,
+        threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH,
+    },
+    {
+        category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+        threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH,
+    },
+    {
+        category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+        threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH,
+    },
+    {
+        category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+        threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH,
+    },
+];
+
 
 export const generateCarouselContent = async (
     topic: string,
@@ -63,13 +83,18 @@ export const generateCarouselContent = async (
                 responseSchema: {
                     type: Type.ARRAY,
                     items: slideSchema
-                }
+                },
+                safetySettings: safetySettings
             }
         });
         
         const text = response.text;
         if (!text) {
-            throw new Error("Respons AI kosong. Prompt mungkin diblokir karena alasan keamanan. Silakan coba topik yang berbeda.");
+            const blockReason = response.candidates?.[0]?.finishReason;
+            if (blockReason === 'SAFETY') {
+                 throw new Error("Konten diblokir karena melanggar kebijakan keselamatan. Silakan coba topik atau petunjuk yang berbeda.");
+            }
+            throw new Error(`Respons AI kosong. Alasan: ${blockReason || 'Tidak diketahui'}. Silakan coba topik yang berbeda.`);
         }
 
         const jsonResponse = text.trim();
@@ -115,13 +140,18 @@ export const getAiAssistance = async (topic: string, type: 'hook' | 'cta', setti
                 responseSchema: {
                     type: Type.ARRAY,
                     items: { type: Type.STRING }
-                }
+                },
+                safetySettings: safetySettings
             }
         });
         
         const text = response.text;
         if (!text) {
-            throw new Error("Respons asisten AI kosong. Silakan coba topik lain atau ubah kalimat Anda.");
+             const blockReason = response.candidates?.[0]?.finishReason;
+            if (blockReason === 'SAFETY') {
+                 throw new Error("Saran diblokir karena melanggar kebijakan keselamatan. Silakan coba topik yang berbeda.");
+            }
+            throw new Error(`Respons asisten AI kosong. Alasan: ${blockReason || 'Tidak diketahui'}. Silakan coba topik yang berbeda.`);
         }
         const jsonResponse = text.trim();
         const parsedSuggestions = JSON.parse(jsonResponse);
@@ -165,13 +195,18 @@ export const generateHashtags = async (topic: string, settings: AppSettings): Pr
                 responseSchema: {
                     type: Type.ARRAY,
                     items: { type: Type.STRING }
-                }
+                },
+                safetySettings: safetySettings
             }
         });
 
         const text = response.text;
         if (!text) {
-            throw new Error("Respons hashtag AI kosong. Silakan coba topik yang berbeda.");
+            const blockReason = response.candidates?.[0]?.finishReason;
+            if (blockReason === 'SAFETY') {
+                 throw new Error("Hashtag diblokir karena melanggar kebijakan keselamatan. Silakan coba topik yang berbeda.");
+            }
+            throw new Error(`Respons hashtag AI kosong. Alasan: ${blockReason || 'Tidak diketahui'}. Silakan coba topik yang berbeda.`);
         }
         const jsonResponse = text.trim();
         const parsedHashtags = JSON.parse(jsonResponse);
