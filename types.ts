@@ -51,7 +51,7 @@ export interface Carousel {
   preferences: DesignPreferences;
 }
 
-export type AppView = 'LOGIN' | 'PROFILE_SETUP' | 'DASHBOARD' | 'GENERATOR';
+export type AppView = 'LOGIN' | 'PROFILE_SETUP' | 'DASHBOARD' | 'GENERATOR' | 'SETTINGS';
 
 export enum AIModel {
     GEMINI_2_5_FLASH = 'gemini-2.5-flash', // Fast and cost-effective for most tasks.

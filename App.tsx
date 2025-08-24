@@ -529,9 +529,8 @@ const SlideCard: React.FC<{ slide: SlideData; preferences: DesignPreferences; is
 const MobileFooter: React.FC<{
     currentView: AppView;
     onNavigate: (view: AppView) => void;
-    onOpenSettings: () => void;
     t: TFunction;
-}> = ({ currentView, onNavigate, onOpenSettings, t }) => {
+}> = ({ currentView, onNavigate, t }) => {
     
     const navItems = [
         { view: 'DASHBOARD' as AppView, label: t('dashboardTitle'), icon: <HomeIcon className="w-6 h-6 mx-auto mb-1" /> },
@@ -557,8 +556,13 @@ const MobileFooter: React.FC<{
                     </button>
                 ))}
                  <button
-                    onClick={onOpenSettings}
-                    className="flex flex-col items-center justify-center w-full h-full text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors duration-200"
+                    onClick={() => onNavigate('SETTINGS')}
+                    className={`flex flex-col items-center justify-center w-full h-full text-xs font-medium transition-colors duration-200 ${
+                        currentView === 'SETTINGS'
+                            ? 'text-primary-600 dark:text-primary-400'
+                            : 'text-gray-500 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400'
+                    }`}
+                    aria-current={currentView === 'SETTINGS' ? 'page' : undefined}
                     aria-label={t('settingsAriaLabel')}
                 >
                     <SettingsIcon className="w-6 h-6 mx-auto mb-1" />
@@ -626,6 +630,8 @@ export default function App() {
         } catch {}
         return 'LOGIN';
     });
+
+    const [previousView, setPreviousView] = React.useState<AppView>('DASHBOARD');
     
     const [carouselHistory, setCarouselHistory] = React.useState<Carousel[]>(() => {
         try {
@@ -991,6 +997,17 @@ export default function App() {
                     t={t}
                 />
             );
+            case 'SETTINGS': return (
+                <SettingsScreen
+                    currentSettings={settings}
+                    onSave={(newSettings) => {
+                        handleSaveSettings(newSettings);
+                        setView(previousView);
+                    }}
+                    onClose={() => setView(previousView)}
+                    t={t}
+                />
+            );
             default: return <LoginScreen onLogin={handleLogin} t={t} />;
         }
     };
@@ -1042,10 +1059,15 @@ export default function App() {
                 <MobileFooter
                     currentView={view}
                     onNavigate={(targetView) => {
-                        if (targetView === 'DASHBOARD') goToDashboard();
-                        else setView(targetView);
+                        if (targetView === 'DASHBOARD') {
+                            goToDashboard();
+                        } else if (targetView === 'SETTINGS') {
+                            setPreviousView(view);
+                            setView('SETTINGS');
+                        } else {
+                            setView(targetView);
+                        }
                     }}
-                    onOpenSettings={() => setIsSettingsOpen(true)}
                     t={t}
                 />
             )}
@@ -1836,6 +1858,118 @@ const SettingsModal: React.FC<{
                         </div>
                          <textarea
                             id="systemPrompt"
+                            name="systemPrompt"
+                            value={localSettings.systemPrompt}
+                            onChange={handleChange}
+                            rows={4}
+                            className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                            placeholder={t('systemPromptPlaceholder')}
+                        />
+                    </div>
+                    
+                    {/* Buttons */}
+                    <div className="flex justify-end space-x-4 pt-4">
+                         <button type="button" onClick={onClose} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 dark:text-gray-300 dark:bg-gray-700 dark:border-gray-500 dark:hover:bg-gray-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary-500">
+                            {t('cancelButton')}
+                         </button>
+                         <button type="submit" className="inline-flex justify-center px-4 py-2 text-sm font-medium text-white bg-primary-600 border border-transparent rounded-md hover:bg-primary-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary-500">
+                            {t('saveButton')}
+                         </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+};
+
+const SettingsScreen: React.FC<{
+    currentSettings: AppSettings;
+    onClose: () => void;
+    onSave: (settings: AppSettings) => void;
+    t: TFunction;
+}> = ({ currentSettings, onClose, onSave, t }) => {
+    const [localSettings, setLocalSettings] = React.useState<AppSettings>(currentSettings);
+
+    const handleSave = (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        onSave(localSettings);
+    };
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+        const { name, value } = e.target;
+        setLocalSettings(prev => ({ ...prev, [name]: value }));
+    };
+
+    return (
+        <div className="container mx-auto p-4 sm:p-6 lg:p-8">
+            <div className="max-w-2xl mx-auto">
+                <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-4">{t('settingsTitle')}</h2>
+                <form onSubmit={handleSave} className="space-y-6 bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
+                    {/* AI Model */}
+                    <div>
+                        <label htmlFor="aiModel-screen" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('aiModelLabel')}</label>
+                        <select
+                            id="aiModel-screen"
+                            name="aiModel"
+                            value={localSettings.aiModel}
+                            onChange={handleChange}
+                            className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-gray-100 dark:bg-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md"
+                        >
+                            {Object.values(AIModel).map(model => (
+                                <option key={model} value={model}>{model}</option>
+                            ))}
+                        </select>
+                        <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">{t('aiModelHint')}</p>
+                    </div>
+
+                    {/* API Key Source */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('apiKeySourceLabel')}</label>
+                        <fieldset className="mt-2">
+                            <legend className="sr-only">API Key Source</legend>
+                            <div className="space-y-2">
+                                <div className="flex items-center">
+                                    <input id="apiKeySourceCarouMate-screen" name="apiKeySource" type="radio" value="caroumate" checked={localSettings.apiKeySource === 'caroumate'} onChange={handleChange} className="h-4 w-4 text-primary-600 border-gray-300 focus:ring-primary-500"/>
+                                    <label htmlFor="apiKeySourceCarouMate-screen" className="ml-3 block text-sm font-medium text-gray-700 dark:text-gray-300">{t('apiKeySourceCarouMate')}</label>
+                                </div>
+                                <div className="flex items-center">
+                                    <input id="apiKeySourceCustom-screen" name="apiKeySource" type="radio" value="custom" checked={localSettings.apiKeySource === 'custom'} onChange={handleChange} className="h-4 w-4 text-primary-600 border-gray-300 focus:ring-primary-500"/>
+                                    <label htmlFor="apiKeySourceCustom-screen" className="ml-3 block text-sm font-medium text-gray-700 dark:text-gray-300">{t('apiKeySourceCustom')}</label>
+                                </div>
+                            </div>
+                        </fieldset>
+                    </div>
+
+                    {/* API Key Input */}
+                    <div className={`transition-opacity duration-300 ${localSettings.apiKeySource === 'custom' ? 'opacity-100' : 'opacity-50'}`}>
+                        <label htmlFor="apiKey-screen" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('apiKeyLabel')}</label>
+                        <input
+                            type="password"
+                            name="apiKey"
+                            id="apiKey-screen"
+                            placeholder={t('apiKeyPlaceholder')}
+                            value={localSettings.apiKey}
+                            onChange={handleChange}
+                            disabled={localSettings.apiKeySource !== 'custom'}
+                            className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 disabled:cursor-not-allowed"
+                        />
+                         <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">{t('apiKeyHint')}</p>
+                    </div>
+
+                    {/* System Prompt */}
+                    <div>
+                        <div className="flex justify-between items-center">
+                            <label htmlFor="systemPrompt-screen" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('systemPromptLabel')}</label>
+                            <button
+                                type="button"
+                                onClick={() => setLocalSettings(prev => ({...prev, systemPrompt: defaultSettings.systemPrompt}))}
+                                className="text-xs font-medium text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-200"
+                            >
+                                {t('setDefaultButton')}
+                            </button>
+                        </div>
+                         <textarea
+                            id="systemPrompt-screen"
                             name="systemPrompt"
                             value={localSettings.systemPrompt}
                             onChange={handleChange}
