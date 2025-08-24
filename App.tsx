@@ -433,18 +433,17 @@ const SlideCard: React.FC<{ slide: SlideData; preferences: DesignPreferences; is
         if (style.fontSize) {
             const baseRem = style.fontSize;
 
-            // Define viewport-based scaling. This creates fluid typography.
-            // A common pattern is a small base REM value plus a VW unit.
-            const preferredVw = type === 'headline' ? '2.5vw' : '1.2vw';
-            const preferredRem = type === 'headline' ? '0.75rem' : '0.6rem';
-            const preferredValue = `calc(${preferredRem} + ${preferredVw})`;
+            // Based on user request for mobile, let's set a floor.
+            // 12 for headline -> 12px -> 0.75rem.
+            // 6 for body -> 6px is too small, let's use a more readable 9.6px -> 0.6rem.
+            const minRem = type === 'headline' ? 0.75 : 0.6;
 
-            // Set a minimum font size to prevent text from becoming unreadably small
-            const minRem = baseRem * 0.65;
+            // A simple, scalable preferred value that grows with viewport width.
+            const preferredVw = type === 'headline' ? '2.5vw' : '1.5vw';
+            const preferredValue = `calc(${minRem}rem + ${preferredVw})`;
             
-            // Use clamp() to smoothly scale the font size between a min, a preferred, and a max value.
-            // The font size set by the user acts as the maximum size.
-            cssStyle.fontSize = `clamp(${minRem.toFixed(2)}rem, ${preferredValue}, ${baseRem}rem)`;
+            // Use clamp() to smoothly scale the font size between a mobile-friendly minimum, a responsive preferred value, and the user's configured maximum size.
+            cssStyle.fontSize = `clamp(${minRem}rem, ${preferredValue}, ${baseRem}rem)`;
         }
         return cssStyle;
     };
