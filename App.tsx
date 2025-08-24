@@ -479,7 +479,7 @@ const SlideCard: React.FC<{ slide: SlideData; preferences: DesignPreferences; is
         <div
             data-carousel-slide={slide.id}
             onClick={onClick}
-            className={`w-full h-[85%] flex-shrink-0 relative flex flex-col justify-center items-center p-6 pb-10 text-center rounded-lg cursor-pointer transition-all duration-300 transform ${styleClasses} ${font} ${aspectRatioClass} ${isSelected ? 'ring-4 ring-primary-500 ring-offset-2 scale-105 shadow-2xl shadow-primary-600/50' : 'hover:scale-102'}`}
+            className={`w-64 sm:w-72 flex-shrink-0 relative flex flex-col justify-center items-center p-6 pb-10 text-center rounded-lg cursor-pointer transition-all duration-300 transform ${styleClasses} ${font} ${aspectRatioClass} ${isSelected ? 'ring-4 ring-primary-500 ring-offset-2 scale-105 shadow-2xl shadow-primary-600/50' : 'hover:scale-102'}`}
             style={{
                 backgroundColor: finalPrefs.style !== DesignStyle.COLORFUL && !finalBackgroundImage ? finalPrefs.backgroundColor : undefined,
                 color: finalPrefs.fontColor
@@ -1564,7 +1564,7 @@ const Generator: React.FC<{
                                 {isDownloading ? t('downloadingButton') : t('downloadAllButton')}
                             </button>
                         </div>
-                        <div className="flex-grow flex items-center justify-center overflow-hidden h-full">
+                        <div className="flex-grow flex items-center justify-center overflow-hidden">
                              <div className="flex items-center space-x-4 overflow-x-auto py-4 px-4 w-full h-full">
                                 {currentCarousel.slides.map(slide => (
                                     <SlideCard
