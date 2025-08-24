@@ -1428,6 +1428,33 @@ const Generator: React.FC<{
         }
     };
     
+    const handleAspectRatioChange = (newAspectRatio: AspectRatio) => {
+        let newHeadlineSize: number;
+        let newBodySize: number;
+
+        switch (newAspectRatio) {
+            case AspectRatio.PORTRAIT:
+                newHeadlineSize = 2.4;
+                newBodySize = 1.2;
+                break;
+            case AspectRatio.STORY:
+                newHeadlineSize = 2.8;
+                newBodySize = 1.4;
+                break;
+            case AspectRatio.SQUARE:
+            default:
+                newHeadlineSize = 2.2;
+                newBodySize = 1.1;
+                break;
+        }
+
+        onUpdateCarouselPreferences({
+            aspectRatio: newAspectRatio,
+            headlineStyle: { ...preferences.headlineStyle, fontSize: newHeadlineSize },
+            bodyStyle: { ...preferences.bodyStyle, fontSize: newBodySize },
+        }, topic);
+    };
+
     const handleGlobalImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (file) {
@@ -1469,7 +1496,7 @@ const Generator: React.FC<{
                               </div>
                               <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorAspectRatioLabel')}</label>
-                                <select value={preferences.aspectRatio} onChange={e => onUpdateCarouselPreferences({aspectRatio: e.target.value as AspectRatio}, topic)} className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-gray-100 dark:bg-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md">
+                                <select value={preferences.aspectRatio} onChange={e => handleAspectRatioChange(e.target.value as AspectRatio)} className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-gray-100 dark:bg-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md">
                                     {Object.values(AspectRatio).map(value => <option key={value} value={value}>{aspectRatioDisplayMap[value]}</option>)}
                                 </select>
                               </div>
