@@ -434,9 +434,7 @@ const SlideCard: React.FC<{ slide: SlideData; preferences: DesignPreferences; is
             const baseRem = style.fontSize;
 
             // Based on user request for mobile, let's set a floor.
-            // 12 for headline -> 12px -> 0.75rem.
-            // 6 for body -> 6px is too small, let's use a more readable 9.6px -> 0.6rem.
-            const minRem = type === 'headline' ? 0.75 : 0.6;
+            const minRem = type === 'headline' ? 0.75 : 0.6; // 12px for headline, 9.6px for body
 
             // A simple, scalable preferred value that grows with viewport width.
             const preferredVw = type === 'headline' ? '2.5vw' : '1.5vw';
@@ -468,7 +466,7 @@ const SlideCard: React.FC<{ slide: SlideData; preferences: DesignPreferences; is
         <div
             data-carousel-slide={slide.id}
             onClick={onClick}
-            className={`h-[280px] sm:h-[320px] md:h-[400px] flex-shrink-0 relative flex flex-col justify-center items-center p-6 pb-10 text-center rounded-lg cursor-pointer transition-all duration-300 transform ${styleClasses} ${font} ${aspectRatioClass} ${isSelected ? 'ring-4 ring-primary-500 ring-offset-2 scale-105 shadow-2xl shadow-primary-600/50' : 'hover:scale-102'}`}
+            className={`w-full h-[85%] flex-shrink-0 relative flex flex-col justify-center items-center p-6 pb-10 text-center rounded-lg cursor-pointer transition-all duration-300 transform ${styleClasses} ${font} ${aspectRatioClass} ${isSelected ? 'ring-4 ring-primary-500 ring-offset-2 scale-105 shadow-2xl shadow-primary-600/50' : 'hover:scale-102'}`}
             style={{
                 backgroundColor: finalPrefs.style !== DesignStyle.COLORFUL && !finalBackgroundImage ? finalPrefs.backgroundColor : undefined,
                 color: finalPrefs.fontColor
@@ -1545,7 +1543,7 @@ const Generator: React.FC<{
                 {!isGenerating && currentCarousel && (
                     <div className="w-full h-full flex flex-col">
                         <div className="flex flex-col sm:flex-row justify-between items-center mb-4 flex-shrink-0">
-                            <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200 truncate pr-4 mb-2 sm:mb-0">{currentCarousel.title}</h2>
+                            <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200 truncate pr-4 mb-2 sm:mb-0">{currentCarousel.title}</h2>
                             <button
                                 onClick={onDownload}
                                 disabled={isDownloading}
@@ -1555,8 +1553,8 @@ const Generator: React.FC<{
                                 {isDownloading ? t('downloadingButton') : t('downloadAllButton')}
                             </button>
                         </div>
-                        <div className="flex-grow flex items-center justify-center overflow-hidden">
-                             <div className="flex items-center space-x-4 overflow-x-auto py-4 px-4 w-full">
+                        <div className="flex-grow flex items-center justify-center overflow-hidden h-full">
+                             <div className="flex items-center space-x-4 overflow-x-auto py-4 px-4 w-full h-full">
                                 {currentCarousel.slides.map(slide => (
                                     <SlideCard
                                         key={slide.id}
