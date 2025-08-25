@@ -5,6 +5,8 @@
 
 
 
+
+
 import * as React from 'react';
 import type { AppView, UserProfile, Carousel, SlideData, DesignPreferences, AppSettings, Language, TextStyle, BrandKit } from './types';
 import { DesignStyle, FontChoice, AspectRatio, AIModel } from './types';
@@ -1196,13 +1198,13 @@ export default function App() {
                     isHashtagModalOpen={isHashtagModalOpen}
                     isGeneratingImageForSlide={isGeneratingImageForSlide}
                     onGenerateImageForSlide={handleGenerateImageForSlide}
-                    regeneratingPart={regeneratingPart}
                     onRegenerateContent={handleRegenerateContent}
                     onUploadImageForSlide={handleUploadImageForSlide}
                     onRemoveImageForSlide={handleRemoveImageForSlide}
                     onApplyBrandKit={handleApplyBrandKit}
                     brandKitConfigured={!!settings.brandKit}
                     t={t}
+                    regeneratingPart={regeneratingPart}
                 />
             );
             case 'SETTINGS': return (
@@ -2426,50 +2428,42 @@ const TutorialScreen: React.FC<{ onBack: () => void; t: TFunction }> = ({ onBack
                         <h1>Selamat Datang di CarouMate!</h1>
                         <p>Panduan ini akan memandu Anda melalui semua fitur hebat CarouMate untuk membantu Anda membuat konten viral dalam hitungan menit.</p>
 
-                        <h2>Langkah 1: Memulai</h2>
+                        <h2>1. Memulai: Dalam Satu Menit Pertama</h2>
                         <ol>
-                            <li><strong>Masuk:</strong> Di halaman utama, klik tombol "Hasilkan Carousel Anda Seketika".</li>
-                            <li><strong>Pengaturan Profil:</strong> Masukkan nama dan <em>niche</em> konten utama Anda (misalnya, "Pemasaran Digital", "Kebugaran", "Kuliner"). Ini membantu AI kami memberikan konten yang lebih relevan untuk Anda.</li>
+                            <li><strong>Masuk & Pengaturan Profil:</strong> Cukup klik tombol utama, lalu isi nama dan <em>niche</em> konten Anda (misalnya, "Pemasaran Digital," "Kebugaran," "Kuliner"). Ini membantu AI kami memberikan konten yang lebih relevan untuk Anda.</li>
                         </ol>
 
-                        <h2>Langkah 2: Membuat Carousel Pertama Anda</h2>
+                        <h2>2. Generator: Pusat Kreatif Anda</h2>
+                        <p>Ini adalah tempat keajaiban terjadi. Prosesnya sederhana:</p>
                         <ol>
-                            <li><strong>Masukkan Ide Anda:</strong> Di kolom "Tentang apa carousel Anda?", masukkan topik yang ingin Anda bahas. Semakin spesifik, semakin baik! Contoh: "5 cara meningkatkan produktivitas saat bekerja dari rumah".</li>
-                            <li><strong>Sesuaikan Desain:</strong> Pilih <strong>Gaya</strong> (misalnya, Minimalist, Bold), <strong>Rasio Aspek</strong> (1:1 untuk Instagram feed, 9:16 untuk Stories/Reels), <strong>Font</strong>, dan <strong>Warna</strong> yang sesuai dengan merek Anda. Anda juga bisa menambahkan teks <em>branding</em> seperti @username Anda.</li>
+                            <li><strong>Masukkan Ide Anda:</strong> Di kolom pertama, masukkan topik carousel Anda. Semakin spesifik, semakin baik! <em>Contoh: "5 cara meningkatkan produktivitas saat WFH".</em></li>
+                            <li><strong>Tentukan Gaya Anda:</strong> Pilih <strong>Gaya, Rasio Aspek, Font,</strong> dan <strong>Warna</strong> yang sesuai dengan merek Anda. Anda juga bisa menambahkan teks branding seperti @username Anda.</li>
                             <li><strong>Klik "Buat Carousel!":</strong> Duduk dan rileks sementara AI kami menyusun draf pertama carousel Anda, lengkap dengan teks dan ide visual untuk setiap slide.</li>
                         </ol>
 
-                        <h2>Langkah 3: Mengedit dan Kustomisasi</h2>
-                        <p>Setelah carousel dibuat, Anda akan melihat pratinjau slide. Klik pada slide mana pun untuk memilihnya dan mulai mengedit di panel kiri.</p>
+                        <h2>3. Menyempurnakan Karya Anda</h2>
+                        <p>Setelah carousel dibuat, klik pada slide mana pun untuk memilihnya dan mulai mengedit di panel kiri.</p>
                         <ul>
-                            <li><strong>Edit Teks:</strong> Ubah <strong>Judul</strong> dan <strong>Teks Isi</strong> sesuai keinginan Anda. Gunakan toolbar pemformatan untuk membuat teks tebal, miring, mengubah ukuran, perataan, dan lainnya.</li>
-                            <li><strong>Regenerasi AI:</strong> Tidak suka dengan judul atau teks? Klik ikon segarkan <RefreshIcon className="w-5 h-5 inline-block"/> di sebelah kolom teks untuk meminta AI membuat versi baru.</li>
-                            <li><strong>Visual:</strong>
-                                <ul>
-                                    <li>Edit <strong>Prompt Visual</strong> (dalam Bahasa Inggris) untuk mengubah arahan gambar yang akan dibuat AI.</li>
-                                    <li>Klik <strong>"Hasilkan Gambar"</strong> untuk membuat visual menggunakan AI.</li>
-                                    <li>Atau, klik <strong>"Unggah Visual"</strong> untuk menggunakan gambar Anda sendiri.</li>
-                                </ul>
-                            </li>
-                            <li><strong>Pindahkan Slide:</strong> Gunakan tombol panah <LeftArrowIcon className="w-5 h-5 inline-block"/> <RightArrowIcon className="w-5 h-5 inline-block"/> untuk mengatur ulang urutan slide Anda.</li>
+                            <li><strong>Edit Teks & AI Refresh:</strong> Ubah <strong>Judul</strong> dan <strong>Teks Isi</strong>. Tidak puas? Klik ikon segarkan <RefreshIcon className="w-5 h-5 inline-block"/> di sebelah kolom teks untuk meminta AI membuat versi baru. Gunakan toolbar pemformatan untuk membuat teks tebal, miring, mengubah ukuran, dan lainnya.</li>
+                            <li><strong>Kustomisasi Visual:</strong> Edit <strong>Prompt Visual</strong> (dalam Bahasa Inggris), lalu klik <strong>"Hasilkan Gambar"</strong> untuk membuat visual dengan AI. Atau, klik <strong>"Unggah Visual"</strong> untuk menggunakan gambar Anda sendiri.</li>
+                            <li><strong>Atur Ulang Slide:</strong> Gunakan tombol panah <LeftArrowIcon className="w-5 h-5 inline-block"/> <RightArrowIcon className="w-5 h-5 inline-block"/> untuk mengubah urutan slide Anda dengan mudah.</li>
                         </ul>
 
-                        <h2>Langkah 4: Manfaatkan Fitur Canggih</h2>
-                        <p>Di bawah tombol "Buat Carousel", Anda akan menemukan alat bantu yang sangat berguna:</p>
+                        <h2>4. Tingkatkan Konten dengan AI Tools</h2>
+                        <p>Di bawah tombol "Buat Carousel", Anda akan menemukan alat bantu canggih:</p>
                         <ul>
-                            <li><strong>Asisten AI:</strong> Butuh ide untuk judul yang menarik (hook) atau ajakan bertindak (CTA) yang kuat? Gunakan fitur ini untuk mendapatkan saran instan dari AI.</li>
+                            <li><strong>Asisten AI:</strong> Butuh ide untuk judul yang menarik (hook) atau ajakan bertindak (CTA) yang kuat? Fitur ini memberikan saran instan dari AI.</li>
                             <li><strong>Buat Hashtag:</strong> Dapatkan daftar hashtag yang relevan dan efektif untuk postingan Anda secara otomatis.</li>
-                            <li><strong>ThreadMate (Ubah jadi Thread):</strong> Ini adalah fitur andalan! Setelah carousel Anda selesai, klik tombol ini untuk mengubah semua teks Anda menjadi format <em>thread</em> yang siap diposting di X (Twitter) atau Threads.</li>
+                            <li><strong>Ubah jadi Thread:</strong> Fitur andalan! Setelah carousel Anda selesai, klik tombol ini untuk mengubah semua konten Anda menjadi format <em>thread</em> yang siap diposting di X (Twitter) atau Threads.</li>
                         </ul>
 
-                        <h2>Langkah 5: Unduh Karya Anda</h2>
+                        <h2>5. Unduh & Jadilah Viral</h2>
                         <p>Setelah semuanya sempurna, klik tombol <strong>"Unduh Semua"</strong>. CarouMate akan mengemas semua slide Anda ke dalam file .zip berisi gambar PNG berkualitas tinggi, siap untuk diunggah.</p>
                         
-                        <h2>Tips Pro: Gunakan Brand Kit</h2>
-                        <p>Di <strong>Pengaturan</strong> (ikon gerigi <SettingsIcon className="w-5 h-5 inline-block"/>), konfigurasikan <strong>Brand Kit</strong> Anda. Atur warna, font, logo, dan teks branding Anda sekali saja. Kemudian, di halaman generator, klik tombol "Terapkan Brand Kit" untuk langsung menerapkan gaya merek Anda ke carousel. Ini menghemat banyak waktu!</p>
+                        <h2>Tips Pro: Manfaatkan Brand Kit</h2>
+                        <p>Buka <strong>Pengaturan</strong> <SettingsIcon className="w-5 h-5 inline-block"/>. Konfigurasikan <strong>Brand Kit</strong> Anda dengan mengatur warna, font, logo, dan teks branding. Setelah itu, di halaman generator, cukup klik tombol <strong>"Terapkan Brand Kit"</strong> untuk menerapkan gaya merek Anda secara instan. Ini adalah penghemat waktu yang luar biasa!</p>
                         
                         <p className="mt-8 font-bold text-center">Selamat Mencipta!</p>
-
                     </article>
                 </div>
             </div>
