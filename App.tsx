@@ -1819,12 +1819,12 @@ const Generator: React.FC<{
                                         type="button"
                                         onClick={() => onRegenerateContent(selectedSlide.id, 'headline')}
                                         disabled={!!regeneratingPart}
-                                        className="p-1.5 rounded-full text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        className="p-2 rounded-full text-primary-600 dark:text-primary-400 hover:bg-primary-100 dark:hover:bg-primary-900/50 disabled:opacity-50 disabled:cursor-not-allowed"
                                         aria-label={t('regenerateHeadlineAria')}
                                     >
                                         {regeneratingPart?.slideId === selectedSlide.id && regeneratingPart?.part === 'headline'
-                                            ? <LoaderIcon className="w-4 h-4 animate-spin" />
-                                            : <RefreshIcon className="w-4 h-4" />
+                                            ? <LoaderIcon className="w-5 h-5 animate-spin" />
+                                            : <RefreshIcon className="w-5 h-5" />
                                         }
                                     </button>
                                 </div>
@@ -1841,12 +1841,12 @@ const Generator: React.FC<{
                                         type="button"
                                         onClick={() => onRegenerateContent(selectedSlide.id, 'body')}
                                         disabled={!!regeneratingPart}
-                                        className="p-1.5 rounded-full text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        className="p-2 rounded-full text-primary-600 dark:text-primary-400 hover:bg-primary-100 dark:hover:bg-primary-900/50 disabled:opacity-50 disabled:cursor-not-allowed"
                                         aria-label={t('regenerateBodyAria')}
                                     >
                                         {regeneratingPart?.slideId === selectedSlide.id && regeneratingPart?.part === 'body'
-                                            ? <LoaderIcon className="w-4 h-4 animate-spin" />
-                                            : <RefreshIcon className="w-4 h-4" />
+                                            ? <LoaderIcon className="w-5 h-5 animate-spin" />
+                                            : <RefreshIcon className="w-5 h-5" />
                                         }
                                     </button>
                                 </div>
