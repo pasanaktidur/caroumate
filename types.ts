@@ -1,5 +1,18 @@
 
 
+export interface BrandKit {
+  colors: {
+    primary: string;
+    secondary: string;
+    text: string;
+  };
+  fonts: {
+    headline: FontChoice;
+    body: FontChoice;
+  };
+  logo?: string; // base64 data URL
+  brandingText?: string;
+}
 
 export interface TextStyle {
   fontWeight?: 'bold' | 'normal';
@@ -38,6 +51,7 @@ export interface SlideData {
   // Per-slide style overrides
   backgroundColor?: string;
   fontColor?: string;
+  backgroundImage?: string;
   headlineStyle?: TextStyle;
   bodyStyle?: TextStyle;
 }
@@ -63,6 +77,7 @@ export interface AppSettings {
   apiKey: string;
   apiKeySource: 'caroumate' | 'custom';
   systemPrompt: string;
+  brandKit?: BrandKit;
 }
 
 export type Language = 'en' | 'id';
@@ -77,7 +92,7 @@ export enum DesignStyle {
 
 export enum AspectRatio {
     SQUARE = '1:1',
-    PORTRAIT = '4:5',
+    PORTRAIT = '3:4',
     STORY = '9:16',
 }
 

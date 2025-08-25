@@ -1,12 +1,14 @@
+
+
 import * as React from 'react';
-import type { AppView, UserProfile, Carousel, SlideData, DesignPreferences, AppSettings, Language, TextStyle } from './types';
+import type { AppView, UserProfile, Carousel, SlideData, DesignPreferences, AppSettings, Language, TextStyle, BrandKit } from './types';
 import { DesignStyle, FontChoice, AspectRatio, AIModel } from './types';
-import { GoogleIcon, SparklesIcon, LoaderIcon, DownloadIcon, SettingsIcon, InstagramIcon, ThreadsIcon, MoonIcon, SunIcon, AvatarIcon, LogoutIcon, HashtagIcon, HomeIcon, BoldIcon, ItalicIcon, UnderlineIcon, StrikethroughIcon, CaseIcon, AlignLeftIcon, AlignCenterIcon, AlignRightIcon, AlignJustifyIcon, LeftArrowIcon, RightArrowIcon, GiftIcon } from './components/icons';
-import { generateCarouselContent, getAiAssistance, generateHashtags } from './services/geminiService';
+import { GoogleIcon, SparklesIcon, LoaderIcon, DownloadIcon, SettingsIcon, InstagramIcon, ThreadsIcon, MoonIcon, SunIcon, AvatarIcon, LogoutIcon, HashtagIcon, HomeIcon, BoldIcon, ItalicIcon, UnderlineIcon, StrikethroughIcon, CaseIcon, AlignLeftIcon, AlignCenterIcon, AlignRightIcon, AlignJustifyIcon, LeftArrowIcon, RightArrowIcon, GiftIcon, ImageIcon, TrashIcon, PaletteIcon, UploadIcon } from './components/icons';
+import { generateCarouselContent, getAiAssistance, generateHashtags, generateImage } from './services/geminiService';
 import html2canvas from 'html2canvas';
 import JSZip from 'jszip';
 
-// --- TRANSLATIONS & I18N ---
+// --- TRANSLATIONS & I1N ---
 const translations = {
   en: {
     // Header
@@ -85,15 +87,18 @@ const translations = {
     previewEmptySubtitleMobile: 'Fill in the details above and click "Create Carousel!" to begin.',
     errorTitle: 'An Error Occurred',
     errorUnknown: 'An unknown error occurred.',
-    errorImageGen: 'An unknown image generation error occurred.',
+    errorImageGen: 'Failed to generate image. Please check your prompt or API key.',
     errorHashtagGen: 'Failed to generate hashtags.',
     errorDownload: 'Sorry, there was an issue creating the download file.',
     generatingContentMessage: 'Crafting your carousel content...',
+    generatingImageMessage: 'Generating your image...',
     applyTo: 'Apply to:',
     applyToAll: 'All Slides',
     applyToSelected: 'Selected Slide',
     uploadVisual: 'Upload Visual',
     removeButton: 'Remove',
+    generateImageButton: 'Generate Image',
+    applyBrandKit: 'Apply Brand Kit',
 
     // SlideCard
     generatingVisual: 'Generating visual...',
@@ -131,6 +136,17 @@ const translations = {
     saveButton: 'Save Changes',
     savedButton: 'Saved!',
     donate: 'Buy me a coffee',
+    brandKitTitle: 'Brand Kit',
+    brandKitSubtitle: 'Set your brand colors, fonts, and logo for one-click styling.',
+    brandKitPrimaryColor: 'Primary Color',
+    brandKitSecondaryColor: 'Secondary Color',
+    brandKitTextColor: 'Text Color',
+    brandKitHeadlineFont: 'Headline Font',
+    brandKitBodyFont: 'Body Font',
+    brandKitLogo: 'Logo',
+    brandKitUploadLogo: 'Upload Logo',
+    brandKitBrandingText: 'Branding Text',
+
   },
   id: {
     // Header
@@ -208,15 +224,18 @@ const translations = {
     previewEmptySubtitleMobile: 'Isi detail di atas dan klik "Buat Carousel!" untuk memulai.',
     errorTitle: 'Terjadi Kesalahan',
     errorUnknown: 'Terjadi kesalahan yang tidak diketahui.',
-    errorImageGen: 'Terjadi kesalahan pembuatan gambar yang tidak diketahui.',
+    errorImageGen: 'Gagal membuat gambar. Silakan periksa prompt atau kunci API Anda.',
     errorHashtagGen: 'Gagal membuat hashtag.',
     errorDownload: 'Maaf, terjadi masalah saat membuat file unduhan.',
     generatingContentMessage: 'Menyusun konten carousel Anda...',
+    generatingImageMessage: 'Menghasilkan gambar Anda...',
     applyTo: 'Terapkan ke:',
     applyToAll: 'Semua Slide',
     applyToSelected: 'Slide Terpilih',
     uploadVisual: 'Unggah Visual',
     removeButton: 'Hapus',
+    generateImageButton: 'Hasilkan Gambar',
+    applyBrandKit: 'Terapkan Brand Kit',
 
     // SlideCard
     generatingVisual: 'Membuat visual...',
@@ -254,6 +273,16 @@ const translations = {
     saveButton: 'Simpan Perubahan',
     savedButton: 'Tersimpan!',
     donate: 'Traktir Kopi',
+    brandKitTitle: 'Brand Kit',
+    brandKitSubtitle: 'Atur warna, font, dan logo merek Anda untuk styling sekali klik.',
+    brandKitPrimaryColor: 'Warna Primer',
+    brandKitSecondaryColor: 'Warna Sekunder',
+    brandKitTextColor: 'Warna Teks',
+    brandKitHeadlineFont: 'Font Judul',
+    brandKitBodyFont: 'Font Isi',
+    brandKitLogo: 'Logo',
+    brandKitUploadLogo: 'Unggah Logo',
+    brandKitBrandingText: 'Teks Branding',
   },
 };
 
@@ -271,7 +300,20 @@ const defaultSettings: AppSettings = {
     aiModel: AIModel.GEMINI_2_5_FLASH,
     apiKeySource: 'caroumate',
     apiKey: '',
-    systemPrompt: 'You are an expert social media content strategist specializing in creating viral carousels.'
+    systemPrompt: 'You are an expert social media content strategist specializing in creating viral carousels.',
+    brandKit: {
+        colors: {
+            primary: '#FFFFFF',
+            secondary: '#00C2CB',
+            text: '#111827',
+        },
+        fonts: {
+            headline: FontChoice.POPPINS,
+            body: FontChoice.SANS,
+        },
+        logo: '',
+        brandingText: ''
+    }
 };
 
 const fontClassMap: { [key in FontChoice]: string } = {
@@ -326,31 +368,14 @@ const fontClassMap: { [key in FontChoice]: string } = {
 
 const aspectRatioClassMap: { [key in AspectRatio]: string } = {
     [AspectRatio.SQUARE]: 'aspect-square',
-    [AspectRatio.PORTRAIT]: 'aspect-[4/5]',
+    [AspectRatio.PORTRAIT]: 'aspect-[3/4]',
     [AspectRatio.STORY]: 'aspect-[9/16]',
 };
 
 const aspectRatioDisplayMap: { [key in AspectRatio]: string } = {
     [AspectRatio.SQUARE]: '1:1 (Square)',
-    [AspectRatio.PORTRAIT]: '4:5 (Portrait)',
+    [AspectRatio.PORTRAIT]: '3:4 (Portrait)',
     [AspectRatio.STORY]: '9:16 (Story)',
-};
-
-const parseGeminiErrorMessage = (error: any, fallbackMessage: string): string => {
-    const message = error?.message || fallbackMessage;
-    try {
-        // The error message from the Gemini SDK might be a JSON string
-        if (typeof message === 'string' && message.startsWith('{') && message.endsWith('}')) {
-            const parsedError = JSON.parse(message);
-            // Following the structure like {"error":{"code":400,"message":"..."}}
-            return parsedError?.error?.message || message;
-        }
-        // If it's not a JSON string, return as is
-        return message;
-    } catch (e) {
-        // In case of parsing error, return the original message
-        return message;
-    }
 };
 
 const Header: React.FC<{
@@ -427,12 +452,20 @@ const Loader: React.FC<{ text: string }> = ({ text }) => (
     </div>
 );
 
-const SlideCard: React.FC<{ slide: SlideData; preferences: DesignPreferences; isSelected: boolean; onClick: () => void; t: TFunction; }> = ({ slide, preferences, isSelected, onClick, t }) => {
+const SlideCard: React.FC<{
+    slide: SlideData;
+    preferences: DesignPreferences;
+    isSelected: boolean;
+    onClick: () => void;
+    isGeneratingImage: boolean;
+    t: TFunction;
+}> = ({ slide, preferences, isSelected, onClick, isGeneratingImage, t }) => {
     
     const finalPrefs = React.useMemo(() => {
         const slideOverrides = {
             backgroundColor: slide.backgroundColor,
             fontColor: slide.fontColor,
+            backgroundImage: slide.backgroundImage,
             headlineStyle: slide.headlineStyle,
             bodyStyle: slide.bodyStyle
         };
@@ -441,6 +474,7 @@ const SlideCard: React.FC<{ slide: SlideData; preferences: DesignPreferences; is
             ...preferences,
             backgroundColor: slideOverrides.backgroundColor ?? preferences.backgroundColor,
             fontColor: slideOverrides.fontColor ?? preferences.fontColor,
+            backgroundImage: slideOverrides.backgroundImage ?? preferences.backgroundImage,
             headlineStyle: { ...preferences.headlineStyle, ...(slideOverrides.headlineStyle || {}) },
             bodyStyle: { ...preferences.bodyStyle, ...(slideOverrides.bodyStyle || {}) },
         };
@@ -499,6 +533,13 @@ const SlideCard: React.FC<{ slide: SlideData; preferences: DesignPreferences; is
                 color: finalPrefs.fontColor
             }}
         >
+            {isGeneratingImage && (
+                <div className="absolute inset-0 bg-black/60 rounded-md z-30 flex flex-col items-center justify-center space-y-2">
+                    <LoaderIcon className="w-12 h-12" />
+                    <span className="text-sm text-white">{t('generatingVisual')}</span>
+                </div>
+            )}
+            
             {/* Background Image Layer */}
             {finalBackgroundImage && (
                 <>
@@ -652,6 +693,7 @@ export default function App() {
     const [currentCarousel, setCurrentCarousel] = React.useState<Carousel | null>(null);
     const [selectedSlideId, setSelectedSlideId] = React.useState<string | null>(null);
     const [isGenerating, setIsGenerating] = React.useState(false);
+    const [isGeneratingImageForSlide, setIsGeneratingImageForSlide] = React.useState<string | null>(null);
     const [isDownloading, setIsDownloading] = React.useState(false);
     const [generationMessage, setGenerationMessage] = React.useState('');
     const [error, setError] = React.useState<string | null>(null);
@@ -665,7 +707,18 @@ export default function App() {
     const [settings, setSettings] = React.useState<AppSettings>(() => {
         try {
             const savedSettings = localStorage.getItem(SETTINGS_STORAGE_KEY);
-            return savedSettings ? { ...defaultSettings, ...JSON.parse(savedSettings) } : defaultSettings;
+            const parsedSettings = savedSettings ? JSON.parse(savedSettings) : {};
+            // Deep merge to ensure brandKit and its nested properties are not lost if not present in saved settings
+            return {
+                ...defaultSettings,
+                ...parsedSettings,
+                brandKit: {
+                    ...defaultSettings.brandKit,
+                    ...(parsedSettings.brandKit || {}),
+                    colors: { ...defaultSettings.brandKit!.colors, ...(parsedSettings.brandKit?.colors || {}) },
+                    fonts: { ...defaultSettings.brandKit!.fonts, ...(parsedSettings.brandKit?.fonts || {}) }
+                }
+            };
         } catch (error) {
             console.error("Could not load settings:", error);
             return defaultSettings;
@@ -814,6 +867,24 @@ export default function App() {
         }
     }, [user, settings, t]);
 
+    const handleGenerateImageForSlide = async (slideId: string) => {
+        if (!currentCarousel) return;
+        const slide = currentCarousel.slides.find(s => s.id === slideId);
+        if (!slide) return;
+    
+        setIsGeneratingImageForSlide(slideId);
+        setError(null);
+    
+        try {
+            const imageUrl = await generateImage(slide.visual_prompt, settings, currentCarousel.preferences.aspectRatio);
+            handleUpdateSlide(slideId, { backgroundImage: imageUrl });
+        } catch (err: any) {
+            setError(err.message || t('errorImageGen'));
+        } finally {
+            setIsGeneratingImageForSlide(null);
+        }
+    };
+
     const handleGenerateHashtags = async () => {
         if (!currentTopic) return;
         setIsHashtagModalOpen(true);
@@ -889,6 +960,22 @@ export default function App() {
             return { ...prev, slides: updatedSlides };
         });
     };
+    
+    const handleUploadImageForSlide = (e: React.ChangeEvent<HTMLInputElement>, slideId: string) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                const imageUrl = reader.result as string;
+                handleUpdateSlide(slideId, { backgroundImage: imageUrl });
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const handleRemoveImageForSlide = (slideId: string) => {
+        handleUpdateSlide(slideId, { backgroundImage: undefined });
+    };
 
     const handleUpdateCarouselPreferences = (updates: Partial<DesignPreferences>, topicValue: string) => {
         setCurrentCarousel(prev => {
@@ -923,6 +1010,34 @@ export default function App() {
         });
     };
     
+    const handleApplyBrandKit = () => {
+        if (!settings.brandKit) return;
+    
+        const { colors, fonts, brandingText } = settings.brandKit;
+    
+        // A simple heuristic to choose the headline font based on what the user set.
+        // For the main font, we use the body font for readability.
+        const mainFont = fonts.body || FontChoice.SANS;
+    
+        // Update carousel preferences with brand kit values
+        handleUpdateCarouselPreferences({
+            backgroundColor: colors.primary,
+            fontColor: colors.text,
+            font: mainFont, // Apply the main body font to the whole carousel
+            brandingText: brandingText,
+            headlineStyle: {
+                ...currentCarousel?.preferences.headlineStyle, // Keep existing styles like alignment, weight
+            },
+            bodyStyle: {
+                ...currentCarousel?.preferences.bodyStyle,
+            }
+        }, currentTopic);
+        
+        // As applying brand kit should be a global change, we clear any slide-specific color overrides.
+        handleClearSlideOverrides('backgroundColor');
+        handleClearSlideOverrides('fontColor');
+    };
+
     const handleClearSlideOverrides = (property: keyof SlideData) => {
         setCurrentCarousel(prev => {
             if (!prev) return null;
@@ -996,6 +1111,12 @@ export default function App() {
                     onDownload={handleDownloadCarousel}
                     isDownloading={isDownloading}
                     isHashtagModalOpen={isHashtagModalOpen}
+                    isGeneratingImageForSlide={isGeneratingImageForSlide}
+                    onGenerateImageForSlide={handleGenerateImageForSlide}
+                    onUploadImageForSlide={handleUploadImageForSlide}
+                    onRemoveImageForSlide={handleRemoveImageForSlide}
+                    onApplyBrandKit={handleApplyBrandKit}
+                    brandKitConfigured={!!settings.brandKit}
                     t={t}
                 />
             );
@@ -1406,11 +1527,18 @@ const Generator: React.FC<{
     onDownload: () => void;
     isDownloading: boolean;
     isHashtagModalOpen: boolean;
+    isGeneratingImageForSlide: string | null;
+    onGenerateImageForSlide: (slideId: string) => void;
+    onUploadImageForSlide: (e: React.ChangeEvent<HTMLInputElement>, slideId: string) => void;
+    onRemoveImageForSlide: (slideId: string) => void;
+    onApplyBrandKit: () => void;
+    brandKitConfigured: boolean;
     t: TFunction;
 }> = (props) => {
     const { onGenerate, currentCarousel, selectedSlide, onUpdateSlide, onUpdateCarouselPreferences, onClearSlideOverrides, onSelectSlide, onMoveSlide, ...rest } = props;
-    const { isGenerating, generationMessage, error, onOpenAssistant, onOpenHashtag, onDownload, isDownloading, isHashtagModalOpen, t } = rest;
-
+    const { isGenerating, generationMessage, error, onOpenAssistant, onOpenHashtag, onDownload, isDownloading, isHashtagModalOpen, isGeneratingImageForSlide, onGenerateImageForSlide, onUploadImageForSlide, onRemoveImageForSlide, onApplyBrandKit, brandKitConfigured, t } = rest;
+    
+    const fileInputRef = React.useRef<HTMLInputElement>(null);
     const [topic, setTopic] = React.useState('');
     
     // Scopes for applying styles
@@ -1431,240 +1559,279 @@ const Generator: React.FC<{
     React.useEffect(() => {
         if (currentCarousel) {
             setTopic(currentCarousel.title);
-        } else {
-             setTopic('');
         }
-    }, [currentCarousel]);
+    }, [currentCarousel?.id]);
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        onGenerate(topic, preferences);
+    };
     
-    const handleStyleChange = <K extends keyof DesignPreferences, V extends DesignPreferences[K]>(
-        scope: 'all' | 'selected',
-        key: K,
-        value: V,
-        slideKey: keyof SlideData
-    ) => {
-        if (scope === 'all') {
-            onUpdateCarouselPreferences({ [key]: value }, topic);
-            onClearSlideOverrides(slideKey);
+    const handleBgImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                const imageUrl = reader.result as string;
+                if (colorScope === 'selected' && selectedSlide) {
+                    onUpdateSlide(selectedSlide.id, { backgroundImage: imageUrl });
+                } else {
+                    onUpdateCarouselPreferences({ backgroundImage: imageUrl }, topic);
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const handleRemoveBgImage = () => {
+         if (colorScope === 'selected' && selectedSlide) {
+            onUpdateSlide(selectedSlide.id, { backgroundImage: undefined });
         } else {
-            if (selectedSlide) {
-                onUpdateSlide(selectedSlide.id, { [slideKey]: value });
+            onUpdateCarouselPreferences({ backgroundImage: undefined }, topic);
+            // Also clear per-slide overrides if applying to all
+            onClearSlideOverrides('backgroundImage');
+        }
+    };
+
+    const handleStyleChange = (key: keyof DesignPreferences, value: any) => {
+        if (colorScope === 'selected' && selectedSlide) {
+            onUpdateSlide(selectedSlide.id, { [key]: value } as Partial<SlideData>);
+        } else {
+            onUpdateCarouselPreferences({ [key]: value }, topic);
+            if(key === 'backgroundColor' || key === 'fontColor'){
+                onClearSlideOverrides(key as keyof SlideData);
             }
         }
     };
     
-    const handleAspectRatioChange = (newAspectRatio: AspectRatio) => {
-        let newHeadlineSize: number;
-        let newBodySize: number;
-
-        switch (newAspectRatio) {
-            case AspectRatio.PORTRAIT:
-                newHeadlineSize = 2.4;
-                newBodySize = 1.2;
-                break;
-            case AspectRatio.STORY:
-                newHeadlineSize = 2.8;
-                newBodySize = 1.4;
-                break;
-            case AspectRatio.SQUARE:
-            default:
-                newHeadlineSize = 2.2;
-                newBodySize = 1.1;
-                break;
+    const handleTextStyleChange = (type: 'headlineStyle' | 'bodyStyle', style: TextStyle) => {
+        if (colorScope === 'selected' && selectedSlide) {
+            onUpdateSlide(selectedSlide.id, { [type]: style });
+        } else {
+            onUpdateCarouselPreferences({ [type]: style }, topic);
+            onClearSlideOverrides(type);
         }
-
-        onUpdateCarouselPreferences({
-            aspectRatio: newAspectRatio,
-            headlineStyle: { ...preferences.headlineStyle, fontSize: newHeadlineSize },
-            bodyStyle: { ...preferences.bodyStyle, fontSize: newBodySize },
-        }, topic);
     };
+    
+    const slideFileInputRef = React.useRef<HTMLInputElement>(null);
 
-    const handleGlobalImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          const imageUrl = reader.result as string;
-          onUpdateCarouselPreferences({ backgroundImage: imageUrl }, topic);
-        };
-        reader.readAsDataURL(file);
-      }
-    };
-
-    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        onGenerate(topic, preferences);
-    };
+    const isDesktop = typeof window !== 'undefined' ? window.innerWidth >= 1024 : false;
 
     return (
-        <div className="flex flex-col lg:flex-row">
-            {/* Left Panel: Input & Editor */}
-            <div className="w-full lg:w-1/3 xl:w-1/4 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 p-6 lg:h-[calc(100vh-112px)] lg:overflow-y-auto">
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200">{t('generatorStep1Title')}</h2>
+        <div className="flex-grow flex flex-col lg:flex-row h-full">
+            {/* Left Panel: Controls */}
+            <div className="lg:w-1/3 xl:w-1/4 bg-white dark:bg-gray-800 border-r dark:border-gray-700 p-4 sm:p-6 overflow-y-auto">
+                <form onSubmit={handleSubmit} className="space-y-6">
+                    {/* Step 1: Idea */}
                     <div>
+                        <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">{t('generatorStep1Title')}</h3>
                         <label htmlFor="topic" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorTopicLabel')}</label>
-                        <textarea id="topic" value={topic} onChange={e => setTopic(e.target.value)} rows={3} placeholder={t('generatorTopicPlaceholder')} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500" required />
+                        <textarea
+                            id="topic"
+                            value={topic}
+                            onChange={e => setTopic(e.target.value)}
+                            required
+                            placeholder={t('generatorTopicPlaceholder')}
+                            className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                            rows={3}
+                        />
                     </div>
-
-                    {/* Design Preferences */}
-                    <details className="space-y-4 border-t dark:border-gray-700 pt-6" open>
-                        <summary className="text-xl font-bold text-gray-800 dark:text-gray-200 cursor-pointer">{t('generatorStep2Title')}</summary>
-                        <div className="pt-4 space-y-4">
-                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                              <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorStyleLabel')}</label>
-                                <select value={preferences.style} onChange={e => onUpdateCarouselPreferences({style: e.target.value as DesignStyle}, topic)} className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-gray-100 dark:bg-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md">
-                                    {Object.values(DesignStyle).map(s => <option key={s} value={s}>{s}</option>)}
-                               </select>
-                              </div>
-                              <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorAspectRatioLabel')}</label>
-                                <select value={preferences.aspectRatio} onChange={e => handleAspectRatioChange(e.target.value as AspectRatio)} className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-gray-100 dark:bg-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md">
-                                    {Object.values(AspectRatio).map(value => <option key={value} value={value}>{aspectRatioDisplayMap[value]}</option>)}
-                                </select>
-                              </div>
-                           </div>
-                           <div>
-                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorFontLabel')}</label>
-                              <select value={preferences.font} onChange={e => onUpdateCarouselPreferences({font: e.target.value as FontChoice}, topic)} className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-gray-100 dark:bg-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md">
-                                  {Object.values(FontChoice).map(f => <option key={f} value={f}>{f}</option>)}
-                              </select>
-                           </div>
-                           <div>
-                                <label htmlFor="brandingText" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorBrandingLabel')}</label>
-                                <input type="text" id="brandingText" value={preferences.brandingText || ''} onChange={e => onUpdateCarouselPreferences({brandingText: e.target.value}, topic)} placeholder={t('generatorBrandingPlaceholder')} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500" />
-                           </div>
-                            <div className="space-y-4">
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <div>
-                                        <label htmlFor="bgColor" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorBgColorLabel')}</label>
-                                        <div className="mt-1 flex items-center">
-                                            <input id="bgColor" type="color" value={selectedSlide?.backgroundColor ?? preferences.backgroundColor} onChange={e => handleStyleChange(colorScope, 'backgroundColor', e.target.value, 'backgroundColor')} className="h-10 w-12 p-1 block rounded-l-md border border-gray-300 dark:border-gray-600 cursor-pointer" />
-                                            <input type="text" value={selectedSlide?.backgroundColor ?? preferences.backgroundColor} onChange={e => handleStyleChange(colorScope, 'backgroundColor', e.target.value, 'backgroundColor')} className="block w-full h-10 px-3 py-2 bg-white dark:bg-gray-700 dark:text-gray-200 border border-l-0 border-gray-300 dark:border-gray-600 rounded-r-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm" />
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <label htmlFor="fontColor" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorFontColorLabel')}</label>
-                                        <div className="mt-1 flex items-center">
-                                            <input id="fontColor" type="color" value={selectedSlide?.fontColor ?? preferences.fontColor} onChange={e => handleStyleChange(colorScope, 'fontColor', e.target.value, 'fontColor')} className="h-10 w-12 p-1 block rounded-l-md border border-gray-300 dark:border-gray-600 cursor-pointer" />
-                                            <input type="text" value={selectedSlide?.fontColor ?? preferences.fontColor} onChange={e => handleStyleChange(colorScope, 'fontColor', e.target.value, 'fontColor')} className="block w-full h-10 px-3 py-2 bg-white dark:bg-gray-700 dark:text-gray-200 border border-l-0 border-gray-300 dark:border-gray-600 rounded-r-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm" />
-                                        </div>
-                                    </div>
-                               </div>
-                               <ApplyScopeControl scope={colorScope} setScope={setColorScope} isDisabled={!selectedSlide} t={t} fieldId="color" />
-                           </div>
-                           <div className="space-y-2">
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorCustomBgLabel')}</label>
-                                <input type="file" accept="image/*" onChange={handleGlobalImageUpload} className="mt-1 block w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary-50 dark:file:bg-primary-900/50 file:text-primary-700 dark:file:text-primary-300 hover:file:bg-primary-100 dark:hover:file:bg-primary-800/50"/>
-                                {preferences.backgroundImage && (
-                                    <button onClick={() => onUpdateCarouselPreferences({ backgroundImage: undefined }, topic)} type="button" className="text-xs text-red-500 hover:text-red-700 mt-1">{t('generatorRemoveBgButton')}</button>
-                                )}
-                           </div>
-                        </div>
-                    </details>
                     
-                    <div className="border-t dark:border-gray-700 pt-6 space-y-4">
-                        <button type="submit" disabled={isGenerating} className="w-full inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 disabled:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 shadow-lg shadow-primary-600/40 hover:shadow-xl hover:shadow-primary-500/40 transition-shadow">
-                            <SparklesIcon className="w-5 h-5 mr-2" />
-                            {isGenerating ? t('generatorGeneratingButton') : t('generatorCreateButton')}
+                    {/* Step 2: Design */}
+                    <div>
+                        <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">{t('generatorStep2Title')}</h3>
+                        <div className="space-y-4">
+                            {/* Style Select */}
+                            <div>
+                                <label htmlFor="style" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorStyleLabel')}</label>
+                                <select id="style" value={preferences.style} onChange={e => onUpdateCarouselPreferences({ style: e.target.value as DesignStyle }, topic)} className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md">
+                                    {Object.values(DesignStyle).map(s => <option key={s} value={s}>{s}</option>)}
+                                </select>
+                            </div>
+                            {/* Aspect Ratio */}
+                            <div>
+                                <label htmlFor="aspectRatio" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorAspectRatioLabel')}</label>
+                                <select id="aspectRatio" value={preferences.aspectRatio} onChange={e => onUpdateCarouselPreferences({ aspectRatio: e.target.value as AspectRatio }, topic)} className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md">
+                                    {Object.values(AspectRatio).map(ar => <option key={ar} value={ar}>{aspectRatioDisplayMap[ar]}</option>)}
+                                </select>
+                            </div>
+                            {/* Font Select */}
+                            <div>
+                                <label htmlFor="font" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorFontLabel')}</label>
+                                <select id="font" value={preferences.font} onChange={e => onUpdateCarouselPreferences({ font: e.target.value as FontChoice }, topic)} className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md">
+                                    {Object.entries(FontChoice).map(([key, value]) => <option key={key} value={value}>{key}</option>)}
+                                </select>
+                            </div>
+                             {/* Branding */}
+                            <div>
+                                <label htmlFor="branding" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorBrandingLabel')}</label>
+                                <input type="text" id="branding" value={preferences.brandingText} onChange={e => onUpdateCarouselPreferences({ brandingText: e.target.value }, topic)} placeholder={t('generatorBrandingPlaceholder')} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm" />
+                            </div>
+                             {/* Colors & BG */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Colors & Background</label>
+                                <div className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-md mt-1 space-y-3">
+                                    <div className="flex items-center space-x-4">
+                                        <div className="flex-1">
+                                            <label htmlFor="bgColor" className="block text-xs font-medium text-gray-500 dark:text-gray-400">{t('generatorBgColorLabel')}</label>
+                                            <input type="color" id="bgColor" value={selectedSlide?.backgroundColor ?? preferences.backgroundColor} onChange={e => handleStyleChange('backgroundColor', e.target.value)} className="mt-1 w-full h-8 p-0 border-none rounded cursor-pointer bg-transparent" />
+                                        </div>
+                                        <div className="flex-1">
+                                            <label htmlFor="fontColor" className="block text-xs font-medium text-gray-500 dark:text-gray-400">{t('generatorFontColorLabel')}</label>
+                                            <input type="color" id="fontColor" value={selectedSlide?.fontColor ?? preferences.fontColor} onChange={e => handleStyleChange('fontColor', e.target.value)} className="mt-1 w-full h-8 p-0 border-none rounded cursor-pointer bg-transparent" />
+                                        </div>
+                                    </div>
+                                    <div>
+                                         <button type="button" onClick={() => fileInputRef.current?.click()} className="w-full text-sm font-medium text-primary-700 dark:text-primary-300 bg-primary-100 dark:bg-primary-900/50 rounded-md py-2 hover:bg-primary-200 dark:hover:bg-primary-800/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary-500 transition-colors">{t('generatorCustomBgLabel')}</button>
+                                        <input ref={fileInputRef} type="file" accept="image/*" onChange={handleBgImageUpload} className="hidden" />
+                                        {(preferences.backgroundImage || selectedSlide?.backgroundImage) && (
+                                            <button type="button" onClick={handleRemoveBgImage} className="w-full text-sm mt-2 text-red-600">{t('generatorRemoveBgButton')}</button>
+                                        )}
+                                    </div>
+                                    <ApplyScopeControl scope={colorScope} setScope={setColorScope} isDisabled={!selectedSlide} t={t} fieldId="color" />
+                                </div>
+                            </div>
+                            
+                            {brandKitConfigured && (
+                                <button
+                                    type="button"
+                                    onClick={onApplyBrandKit}
+                                    className="w-full inline-flex items-center justify-center px-4 py-2 border border-primary-600 text-sm font-medium rounded-md text-primary-600 dark:text-primary-300 bg-white dark:bg-gray-800 hover:bg-primary-50 dark:hover:bg-primary-900/30 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+                                >
+                                    <PaletteIcon className="w-4 h-4 mr-2"/>
+                                    {t('applyBrandKit')}
+                                </button>
+                            )}
+
+                        </div>
+                    </div>
+                    
+                    {/* Action Buttons */}
+                    <div className="space-y-3">
+                        <button type="submit" disabled={isGenerating} className="w-full inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:bg-primary-300 disabled:cursor-not-allowed">
+                            {isGenerating ? <><LoaderIcon className="w-5 h-5 mr-2 animate-spin" /> {t('generatorGeneratingButton')}</> : <><SparklesIcon className="w-5 h-5 mr-2" /> {t('generatorCreateButton')}</>}
                         </button>
-                        <div className="flex space-x-4">
-                            <button type="button" onClick={onOpenAssistant} disabled={!topic} className="w-full inline-flex items-center justify-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50">
+                         <div className="grid grid-cols-2 gap-3">
+                            <button type="button" disabled={!topic} onClick={onOpenAssistant} className="w-full inline-flex items-center justify-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50">
                                 {t('generatorAssistantButton')}
                             </button>
-                            <button type="button" onClick={onOpenHashtag} disabled={!topic} className="w-full inline-flex items-center justify-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50">
-                                <HashtagIcon className="w-4 h-4 mr-2" />
+                            <button type="button" disabled={!topic} onClick={onOpenHashtag} className="w-full inline-flex items-center justify-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50">
                                 {t('generatorHashtagButton')}
                             </button>
                         </div>
                     </div>
                 </form>
 
-                {/* Slide Editor */}
-                {selectedSlide && (
-                    <div className="space-y-4 border-t dark:border-gray-700 pt-6 mt-6">
-                        <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200">{t('generatorStep3Title')}</h2>
-                        <div className="space-y-2">
-                            <label htmlFor="headline" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorHeadlineLabel')}</label>
-                            <TextFormatToolbar 
-                                style={selectedSlide.headlineStyle ?? preferences.headlineStyle}
-                                onStyleChange={(newStyle) => onUpdateSlide(selectedSlide.id, { headlineStyle: newStyle })}
-                            />
-                            <textarea id="headline" value={selectedSlide.headline} onChange={e => onUpdateSlide(selectedSlide.id, { headline: e.target.value })} rows={2} className="block w-full px-3 py-2 bg-white dark:bg-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500" />
-                        </div>
-                        <div className="space-y-2">
-                            <label htmlFor="body" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorBodyLabel')}</label>
-                             <TextFormatToolbar 
-                                style={selectedSlide.bodyStyle ?? preferences.bodyStyle}
-                                onStyleChange={(newStyle) => onUpdateSlide(selectedSlide.id, { bodyStyle: newStyle })}
-                            />
-                            <textarea id="body" value={selectedSlide.body} onChange={e => onUpdateSlide(selectedSlide.id, { body: e.target.value })} rows={4} className="block w-full px-3 py-2 bg-white dark:bg-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500" />
-                        </div>
-                         <div>
-                            <label htmlFor="visual_prompt" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorVisualPromptLabel')}</label>
-                            <textarea id="visual_prompt" value={selectedSlide.visual_prompt} onChange={e => onUpdateSlide(selectedSlide.id, { visual_prompt: e.target.value })} rows={3} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500" />
-                        </div>
-                        <div className="flex justify-between items-center pt-2">
-                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorMoveSlideLabel')}</label>
-                             <div className="flex space-x-2">
-                                <button type="button" onClick={() => onMoveSlide(selectedSlide.id, 'left')} className="p-2 border dark:border-gray-600 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 transition-colors">
-                                    <span className="sr-only">Move slide left</span>
-                                    <LeftArrowIcon className="w-5 h-5" />
-                                </button>
-                                <button type="button" onClick={() => onMoveSlide(selectedSlide.id, 'right')} className="p-2 border dark:border-gray-600 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 transition-colors">
-                                    <span className="sr-only">Move slide right</span>
-                                    <RightArrowIcon className="w-5 h-5" />
-                                </button>
-                             </div>
+                {/* Step 3: Edit */}
+                {currentCarousel && selectedSlide && (
+                    <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
+                        <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">{t('generatorStep3Title')}</h3>
+                        <div className="space-y-4">
+                            {/* Headline */}
+                            <div>
+                                <label htmlFor="headline" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorHeadlineLabel')}</label>
+                                <textarea id="headline" value={selectedSlide.headline} onChange={e => onUpdateSlide(selectedSlide.id, { headline: e.target.value })} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm" rows={2} />
+                                <div className="mt-2">
+                                     <TextFormatToolbar style={selectedSlide.headlineStyle ?? preferences.headlineStyle} onStyleChange={(newStyle) => handleTextStyleChange('headlineStyle', newStyle)} />
+                                </div>
+                            </div>
+                            {/* Body */}
+                            <div>
+                                <label htmlFor="body" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorBodyLabel')}</label>
+                                <textarea id="body" value={selectedSlide.body} onChange={e => onUpdateSlide(selectedSlide.id, { body: e.target.value })} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm" rows={4} />
+                                <div className="mt-2">
+                                    <TextFormatToolbar style={selectedSlide.bodyStyle ?? preferences.bodyStyle} onStyleChange={(newStyle) => handleTextStyleChange('bodyStyle', newStyle)} />
+                                </div>
+                            </div>
+                            {/* Visual Prompt */}
+                            <div>
+                                <label htmlFor="visual_prompt" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorVisualPromptLabel')}</label>
+                                <textarea id="visual_prompt" value={selectedSlide.visual_prompt} onChange={e => onUpdateSlide(selectedSlide.id, { visual_prompt: e.target.value })} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm" rows={3} />
+                                <div className="grid grid-cols-2 gap-2 mt-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => onGenerateImageForSlide(selectedSlide.id)}
+                                        disabled={!!isGeneratingImageForSlide}
+                                        className="w-full inline-flex items-center justify-center text-sm py-2 px-3 border border-transparent rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus-ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50"
+                                    >
+                                        {isGeneratingImageForSlide === selectedSlide.id ? <LoaderIcon className="w-4 h-4 animate-spin"/> : <SparklesIcon className="w-4 h-4 mr-1" />}
+                                        {t('generateImageButton')}
+                                    </button>
+                                     <button
+                                        type="button"
+                                        onClick={() => slideFileInputRef.current?.click()}
+                                        className="w-full inline-flex items-center justify-center text-sm py-2 px-3 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+                                    >
+                                        <ImageIcon className="w-4 h-4 mr-1"/>
+                                        {t('uploadVisual')}
+                                    </button>
+                                    <input type="file" ref={slideFileInputRef} onChange={(e) => onUploadImageForSlide(e, selectedSlide.id)} accept="image/*" className="hidden"/>
+                                </div>
+                                {selectedSlide.backgroundImage && (
+                                    <button
+                                        type="button"
+                                        onClick={() => onRemoveImageForSlide(selectedSlide.id)}
+                                        className="w-full text-sm mt-2 text-red-600 hover:underline"
+                                    >
+                                        <TrashIcon className="w-4 h-4 inline-block mr-1"/>
+                                        {t('removeButton')}
+                                    </button>
+                                )}
+                            </div>
+                            
+                            {/* Move Slide */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorMoveSlideLabel')}</label>
+                                <div className="flex items-center space-x-2 mt-1">
+                                    <button type="button" onClick={() => onMoveSlide(selectedSlide.id, 'left')} className="p-2 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600"><LeftArrowIcon className="w-5 h-5" /></button>
+                                    <button type="button" onClick={() => onMoveSlide(selectedSlide.id, 'right')} className="p-2 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600"><RightArrowIcon className="w-5 h-5" /></button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 )}
             </div>
 
             {/* Right Panel: Preview */}
-            <div className="w-full lg:w-2/3 xl:w-3/4 bg-gray-100 dark:bg-gray-900 p-6 flex flex-col items-center justify-center min-h-[500px] lg:min-h-0 lg:h-[calc(100vh-112px)]">
+            <div className="flex-grow bg-gray-100 dark:bg-gray-900 flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8">
+                {error && (
+                    <div className="absolute top-20 z-50 max-w-xl w-full bg-red-100 dark:bg-red-900/50 border border-red-400 dark:border-red-600 text-red-700 dark:text-red-200 px-4 py-3 rounded-md shadow-lg" role="alert">
+                        <strong className="font-bold">{t('errorTitle')}: </strong>
+                        <span className="block sm:inline">{error}</span>
+                    </div>
+                )}
                 {isGenerating && <Loader text={generationMessage} />}
-                {error && !isHashtagModalOpen && <div className="text-center p-8 bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300 rounded-lg"><h3 className="font-bold">{t('errorTitle')}</h3><p>{error}</p></div>}
 
                 {!isGenerating && currentCarousel && (
-                    <div className="w-full h-full flex flex-col">
-                        <div className="flex justify-end sm:justify-between items-center mb-4 flex-shrink-0">
-                            <h2 className="hidden sm:block text-xl font-bold text-gray-800 dark:text-gray-200 truncate pr-4">{currentCarousel.title}</h2>
-                            <button
-                                onClick={onDownload}
-                                disabled={isDownloading}
-                                className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 disabled:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-                            >
-                                <DownloadIcon className="w-5 h-5 mr-2" />
-                                {isDownloading ? t('downloadingButton') : t('downloadAllButton')}
-                            </button>
-                        </div>
-                        <div className="flex-grow flex items-center justify-center overflow-hidden">
-                             <div className="flex items-center space-x-4 overflow-x-auto py-4 px-4 w-full h-full">
-                                {currentCarousel.slides.map(slide => (
+                    <div className="w-full flex flex-col items-center">
+                         <div className="flex items-center space-x-4 overflow-x-auto py-4 px-4 w-full snap-x snap-mandatory">
+                            {currentCarousel.slides.map(slide => (
+                                <div key={slide.id} className="snap-center">
                                     <SlideCard
-                                        key={slide.id}
                                         slide={slide}
-                                        preferences={preferences}
-                                        isSelected={selectedSlide?.id === slide.id}
+                                        preferences={currentCarousel.preferences}
+                                        isSelected={slide.id === selectedSlide?.id}
                                         onClick={() => onSelectSlide(slide.id)}
+                                        isGeneratingImage={isGeneratingImageForSlide === slide.id}
                                         t={t}
                                     />
-                                ))}
-                            </div>
+                                </div>
+                            ))}
                         </div>
+                        <button
+                            onClick={onDownload}
+                            disabled={isDownloading}
+                            className="mt-8 inline-flex items-center justify-center px-8 py-4 border border-transparent text-lg font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:bg-green-300"
+                        >
+                           {isDownloading ? <><LoaderIcon className="w-6 h-6 mr-3 animate-spin" /> {t('downloadingButton')}</> : <><DownloadIcon className="w-6 h-6 mr-3" /> {t('downloadAllButton')}</>}
+                        </button>
                     </div>
                 )}
 
                 {!isGenerating && !currentCarousel && (
-                     <div className="text-center p-8">
-                        <SparklesIcon className="w-16 h-16 text-gray-400 dark:text-gray-500 mx-auto mb-4"/>
-                        <h2 className="text-2xl font-bold text-gray-700 dark:text-gray-300 mb-2">{t('previewEmptyTitle')}</h2>
-                        <p className="text-gray-500 dark:text-gray-400">
-                            <span className="lg:hidden">{t('previewEmptySubtitleMobile')}</span>
-                            <span className="hidden lg:inline">{t('previewEmptySubtitleDesktop')}</span>
-                        </p>
+                    <div className="text-center">
+                        <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200">{t('previewEmptyTitle')}</h2>
+                        <p className="mt-2 text-gray-600 dark:text-gray-400">{isDesktop ? t('previewEmptySubtitleDesktop') : t('previewEmptySubtitleMobile')}</p>
                     </div>
                 )}
             </div>
@@ -1672,49 +1839,49 @@ const Generator: React.FC<{
     );
 };
 
+
 const AiAssistantModal: React.FC<{
     topic: string;
     onClose: () => void;
     settings: AppSettings;
     t: TFunction;
 }> = ({ topic, onClose, settings, t }) => {
-    const [isLoading, setIsLoading] = React.useState(false);
     const [suggestions, setSuggestions] = React.useState<string[]>([]);
-    const [type, setType] = React.useState<'hook' | 'cta' | null>(null);
+    const [isLoading, setIsLoading] = React.useState(false);
+    const [error, setError] = React.useState<string | null>(null);
 
-    const fetchSuggestions = async (suggestionType: 'hook' | 'cta') => {
+    const fetchSuggestions = async (type: 'hook' | 'cta') => {
         setIsLoading(true);
-        setType(suggestionType);
+        setError(null);
         setSuggestions([]);
-        const results = await getAiAssistance(topic, suggestionType, settings);
-        setSuggestions(results);
-        setIsLoading(false);
+        try {
+            const result = await getAiAssistance(topic, type, settings);
+            setSuggestions(result);
+        } catch (err: any) {
+            setError(err.message || t('errorUnknown'));
+        } finally {
+            setIsLoading(false);
+        }
     };
-    
-    return (
-        <div className="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 transition-opacity" onClick={onClose}>
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl p-6 max-w-2xl w-full m-4" onClick={e => e.stopPropagation()}>
-                <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200">{t('assistantTitle')}</h2>
-                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-2xl font-bold">&times;</button>
-                </div>
-                <p className="text-gray-600 dark:text-gray-400 mb-4">{t('assistantSubtitle1')}<strong>{topic}</strong>{t('assistantSubtitle2')}</p>
-                
-                <div className="flex space-x-4 mb-4">
-                    <button onClick={() => fetchSuggestions('hook')} disabled={isLoading} className="flex-1 px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700 disabled:bg-gray-400">{t('getHookButton')}</button>
-                    <button onClick={() => fetchSuggestions('cta')} disabled={isLoading} className="flex-1 px-4 py-2 text-sm font-medium text-white bg-accent-500 rounded-md hover:bg-accent-600 disabled:bg-gray-400">{t('getCTAButton')}</button>
-                </div>
 
-                <div className="h-64 overflow-y-auto p-4 bg-gray-50 dark:bg-gray-900/50 rounded-md border dark:border-gray-700">
-                    {isLoading && <div className="flex justify-center items-center h-full"><LoaderIcon className="w-12 h-12" /></div>}
-                    {!isLoading && suggestions.length === 0 && <p className="text-center text-gray-500 dark:text-gray-400 h-full flex items-center justify-center">{t('assistantEmpty')}</p>}
-                    {suggestions.length > 0 && (
+    return (
+        <div className="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50" onClick={onClose}>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl p-6 max-w-2xl w-full m-4 space-y-4" onClick={e => e.stopPropagation()}>
+                <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200">{t('assistantTitle')}</h2>
+                <p className="text-gray-600 dark:text-gray-400">{t('assistantSubtitle1')}"<span className="font-semibold">{topic}</span>"{t('assistantSubtitle2')}</p>
+                <div className="flex space-x-4">
+                    <button onClick={() => fetchSuggestions('hook')} className="flex-1 px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700">{t('getHookButton')}</button>
+                    <button onClick={() => fetchSuggestions('cta')} className="flex-1 px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-accent-500 hover:bg-accent-600">{t('getCTAButton')}</button>
+                </div>
+                <div className="mt-4 p-4 h-64 overflow-y-auto bg-gray-50 dark:bg-gray-700/50 rounded-md">
+                    {isLoading && <Loader text="..." />}
+                    {error && <p className="text-red-500">{error}</p>}
+                    {!isLoading && !error && suggestions.length > 0 && (
                         <ul className="space-y-3">
-                            {suggestions.map((s, i) => (
-                                <li key={i} className="p-3 bg-white dark:bg-gray-700 rounded-md shadow-sm border border-gray-200 dark:border-gray-600">{s}</li>
-                            ))}
+                            {suggestions.map((s, i) => <li key={i} className="p-3 bg-white dark:bg-gray-800 rounded shadow-sm text-gray-700 dark:text-gray-300">{s}</li>)}
                         </ul>
                     )}
+                    {!isLoading && !error && suggestions.length === 0 && <p className="text-gray-500 text-center pt-8">{t('assistantEmpty')}</p>}
                 </div>
             </div>
         </div>
@@ -1729,161 +1896,33 @@ const HashtagModal: React.FC<{
     error: string | null;
     t: TFunction;
 }> = ({ topic, onClose, isLoading, hashtags, error, t }) => {
-    const [copyText, setCopyText] = React.useState(t('hashtagModalCopyButton'));
+    const [copied, setCopied] = React.useState(false);
 
     const handleCopy = () => {
-        const hashtagString = hashtags.map(h => `#${h}`).join(' ');
-        navigator.clipboard.writeText(hashtagString);
-        setCopyText(t('hashtagModalCopiedButton'));
-        setTimeout(() => setCopyText(t('hashtagModalCopyButton')), 2000);
-    };
-
-    return (
-        <div className="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 transition-opacity" onClick={onClose}>
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl p-6 max-w-2xl w-full m-4" onClick={e => e.stopPropagation()}>
-                <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200">{t('hashtagModalTitle')}</h2>
-                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-2xl font-bold">&times;</button>
-                </div>
-                <p className="text-gray-600 dark:text-gray-400 mb-4">{t('hashtagModalSubtitle1')}<strong>{topic}</strong>{t('hashtagModalSubtitle2')}</p>
-                
-                <div className="h-64 overflow-y-auto p-4 bg-gray-50 dark:bg-gray-900/50 rounded-md border dark:border-gray-700 mb-4">
-                    {isLoading && <div className="flex justify-center items-center h-full"><LoaderIcon className="w-12 h-12" /></div>}
-                    {!isLoading && error && <p className="text-center text-red-500 h-full flex items-center justify-center">{error}</p>}
-                    {!isLoading && !error && hashtags.length === 0 && <p className="text-center text-gray-500 dark:text-gray-400 h-full flex items-center justify-center">{t('hashtagModalEmpty')}</p>}
-                    {!isLoading && !error && hashtags.length > 0 && (
-                        <div className="flex flex-wrap gap-2">
-                            {hashtags.map((tag, i) => (
-                                <span key={i} className="px-3 py-1 bg-gold-100 text-gold-800 text-sm font-medium rounded-full dark:bg-gold-900 dark:text-gold-300">#{tag}</span>
-                            ))}
-                        </div>
-                    )}
-                </div>
-                {!isLoading && hashtags.length > 0 && (
-                     <button onClick={handleCopy} className="w-full px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700 disabled:bg-gray-400 transition-colors">
-                        {copyText}
-                     </button>
-                )}
-            </div>
-        </div>
-    );
-};
-
-const SettingsModal: React.FC<{
-    currentSettings: AppSettings;
-    onClose: () => void;
-    onSave: (settings: AppSettings) => void;
-    t: TFunction;
-}> = ({ currentSettings, onClose, onSave, t }) => {
-    const [localSettings, setLocalSettings] = React.useState<AppSettings>(currentSettings);
-    const [saveState, setSaveState] = React.useState<'idle' | 'saved'>('idle');
-
-    const handleSave = (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        if (saveState === 'saved') return;
-        setSaveState('saved');
-        setTimeout(() => {
-            onSave(localSettings);
-        }, 200);
-    };
-
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-        const { name, value } = e.target;
-        setLocalSettings(prev => ({ ...prev, [name]: value }));
+        const textToCopy = hashtags.map(h => `#${h}`).join(' ');
+        navigator.clipboard.writeText(textToCopy);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
     };
 
     return (
         <div className="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50" onClick={onClose}>
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl p-6 max-w-2xl w-full m-4" onClick={e => e.stopPropagation()}>
-                <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200">{t('settingsTitle')}</h2>
-                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-2xl font-bold">&times;</button>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl p-6 max-w-2xl w-full m-4 space-y-4" onClick={e => e.stopPropagation()}>
+                <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200">{t('hashtagModalTitle')}</h2>
+                <p className="text-gray-600 dark:text-gray-400">{t('hashtagModalSubtitle1')}"<span className="font-semibold">{topic}</span>"{t('hashtagModalSubtitle2')}</p>
+                <div className="mt-4 p-4 h-64 overflow-y-auto bg-gray-50 dark:bg-gray-700/50 rounded-md flex flex-wrap gap-2">
+                    {isLoading && <Loader text="..." />}
+                    {error && <p className="text-red-500">{error}</p>}
+                    {!isLoading && !error && hashtags.length > 0 && (
+                       hashtags.map((h, i) => <span key={i} className="px-2 py-1 bg-primary-100 dark:bg-primary-900/50 text-primary-800 dark:text-primary-200 rounded-full text-sm">#{h}</span>)
+                    )}
+                    {!isLoading && !error && hashtags.length === 0 && <p className="text-gray-500 text-center w-full pt-8">{t('hashtagModalEmpty')}</p>}
                 </div>
-                <form onSubmit={handleSave} className="space-y-6">
-                    {/* AI Model */}
-                    <div>
-                        <label htmlFor="aiModel" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('aiModelLabel')}</label>
-                        <select
-                            id="aiModel"
-                            name="aiModel"
-                            value={localSettings.aiModel}
-                            onChange={handleChange}
-                            className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-gray-100 dark:bg-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md"
-                        >
-                            {Object.values(AIModel).map(model => (
-                                <option key={model} value={model}>{model}</option>
-                            ))}
-                        </select>
-                        <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">{t('aiModelHint')}</p>
-                    </div>
-
-                    {/* API Key Source */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('apiKeySourceLabel')}</label>
-                        <fieldset className="mt-2">
-                            <legend className="sr-only">API Key Source</legend>
-                            <div className="space-y-2">
-                                <div className="flex items-center">
-                                    <input id="apiKeySourceCarouMate" name="apiKeySource" type="radio" value="caroumate" checked={localSettings.apiKeySource === 'caroumate'} onChange={handleChange} className="h-4 w-4 text-primary-600 border-gray-300 focus:ring-primary-500"/>
-                                    <label htmlFor="apiKeySourceCarouMate" className="ml-3 block text-sm font-medium text-gray-700 dark:text-gray-300">{t('apiKeySourceCarouMate')}</label>
-                                </div>
-                                <div className="flex items-center">
-                                    <input id="apiKeySourceCustom" name="apiKeySource" type="radio" value="custom" checked={localSettings.apiKeySource === 'custom'} onChange={handleChange} className="h-4 w-4 text-primary-600 border-gray-300 focus:ring-primary-500"/>
-                                    <label htmlFor="apiKeySourceCustom" className="ml-3 block text-sm font-medium text-gray-700 dark:text-gray-300">{t('apiKeySourceCustom')}</label>
-                                </div>
-                            </div>
-                        </fieldset>
-                    </div>
-
-                    {/* API Key Input */}
-                    <div className={`transition-opacity duration-300 ${localSettings.apiKeySource === 'custom' ? 'opacity-100' : 'opacity-50'}`}>
-                        <label htmlFor="apiKey" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('apiKeyLabel')}</label>
-                        <input
-                            type="password"
-                            name="apiKey"
-                            id="apiKey"
-                            placeholder={t('apiKeyPlaceholder')}
-                            value={localSettings.apiKey}
-                            onChange={handleChange}
-                            disabled={localSettings.apiKeySource !== 'custom'}
-                            className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 disabled:cursor-not-allowed"
-                        />
-                         <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">{t('apiKeyHint')}</p>
-                    </div>
-
-                    {/* System Prompt */}
-                    <div>
-                        <div className="flex justify-between items-center">
-                            <label htmlFor="systemPrompt" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('systemPromptLabel')}</label>
-                            <button
-                                type="button"
-                                onClick={() => setLocalSettings(prev => ({...prev, systemPrompt: defaultSettings.systemPrompt}))}
-                                className="text-xs font-medium text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-200"
-                            >
-                                {t('setDefaultButton')}
-                            </button>
-                        </div>
-                         <textarea
-                            id="systemPrompt"
-                            name="systemPrompt"
-                            value={localSettings.systemPrompt}
-                            onChange={handleChange}
-                            rows={4}
-                            className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
-                            placeholder={t('systemPromptPlaceholder')}
-                        />
-                    </div>
-                    
-                    {/* Buttons */}
-                    <div className="flex justify-end space-x-4 pt-4">
-                         <button type="button" onClick={onClose} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 dark:text-gray-300 dark:bg-gray-700 dark:border-gray-500 dark:hover:bg-gray-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary-500">
-                            {t('cancelButton')}
-                         </button>
-                         <button type="submit" disabled={saveState === 'saved'} className="transition-colors inline-flex justify-center px-4 py-2 text-sm font-medium text-white bg-primary-600 border border-transparent rounded-md hover:bg-primary-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary-500 disabled:bg-green-500 disabled:cursor-not-allowed">
-                            {saveState === 'saved' ? t('savedButton') : t('saveButton')}
-                         </button>
-                    </div>
-                </form>
+                {hashtags.length > 0 && (
+                    <button onClick={handleCopy} className="w-full px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700">
+                        {copied ? t('hashtagModalCopiedButton') : t('hashtagModalCopyButton')}
+                    </button>
+                )}
             </div>
         </div>
     );
@@ -1891,134 +1930,202 @@ const SettingsModal: React.FC<{
 
 const SettingsScreen: React.FC<{
     currentSettings: AppSettings;
-    onClose: () => void;
     onSave: (settings: AppSettings) => void;
+    onClose: () => void;
     t: TFunction;
-}> = ({ currentSettings, onClose, onSave, t }) => {
-    const [localSettings, setLocalSettings] = React.useState<AppSettings>(currentSettings);
-    const [saveState, setSaveState] = React.useState<'idle' | 'saved'>('idle');
+    isModal?: boolean;
+}> = ({ currentSettings, onSave, onClose, t, isModal = false }) => {
+    const [settings, setSettings] = React.useState(currentSettings);
+    const [saved, setSaved] = React.useState(false);
 
-    const handleSave = (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        if (saveState === 'saved') return;
-        setSaveState('saved');
-        setTimeout(() => {
-            onSave(localSettings);
-        }, 200);
+    React.useEffect(() => {
+        setSettings(currentSettings); // Sync with external changes
+    }, [currentSettings]);
+
+    const handleSave = () => {
+        onSave(settings);
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2000);
     };
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-        const { name, value } = e.target;
-        setLocalSettings(prev => ({ ...prev, [name]: value }));
+    const handleBrandKitChange = (key: keyof BrandKit, value: any) => {
+        setSettings(prev => ({
+            ...prev,
+            brandKit: { ...(prev.brandKit!), [key]: value }
+        }));
     };
+
+    const handleBrandKitColorChange = (key: keyof BrandKit['colors'], value: string) => {
+        setSettings(prev => ({
+            ...prev,
+            brandKit: {
+                ...prev.brandKit!,
+                colors: { ...prev.brandKit!.colors, [key]: value }
+            }
+        }));
+    };
+
+    const handleBrandKitFontChange = (key: keyof BrandKit['fonts'], value: FontChoice) => {
+         setSettings(prev => ({
+            ...prev,
+            brandKit: {
+                ...prev.brandKit!,
+                fonts: { ...prev.brandKit!.fonts, [key]: value }
+            }
+        }));
+    };
+
+    const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                handleBrandKitChange('logo', reader.result as string);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+    
+    const settingsForm = (
+        <div className="space-y-6">
+            {/* AI Settings */}
+            <div className="space-y-4 p-4 border dark:border-gray-700 rounded-md">
+                 <h3 className="text-lg font-medium text-gray-900 dark:text-white">AI Settings</h3>
+                <div>
+                    <label htmlFor="aiModel" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('aiModelLabel')}</label>
+                    <select id="aiModel" value={settings.aiModel} onChange={e => setSettings({ ...settings, aiModel: e.target.value as AIModel })} className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md">
+                        {Object.values(AIModel).map(m => <option key={m} value={m}>{m}</option>)}
+                    </select>
+                    <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">{t('aiModelHint')}</p>
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('apiKeySourceLabel')}</label>
+                    <fieldset className="mt-2">
+                        <div className="space-y-2">
+                             <div className="flex items-center">
+                                <input id="apiKeySourceCarouMate" name="apiKeySource" type="radio" value="caroumate" checked={settings.apiKeySource === 'caroumate'} onChange={e => setSettings({ ...settings, apiKeySource: e.target.value as 'caroumate' | 'custom' })} className="h-4 w-4 text-primary-600 border-gray-300 focus:ring-primary-500"/>
+                                <label htmlFor="apiKeySourceCarouMate" className="ml-3 block text-sm font-medium text-gray-700 dark:text-gray-300">{t('apiKeySourceCarouMate')}</label>
+                            </div>
+                             <div className="flex items-center">
+                                <input id="apiKeySourceCustom" name="apiKeySource" type="radio" value="custom" checked={settings.apiKeySource === 'custom'} onChange={e => setSettings({ ...settings, apiKeySource: e.target.value as 'caroumate' | 'custom' })} className="h-4 w-4 text-primary-600 border-gray-300 focus:ring-primary-500"/>
+                                <label htmlFor="apiKeySourceCustom" className="ml-3 block text-sm font-medium text-gray-700 dark:text-gray-300">{t('apiKeySourceCustom')}</label>
+                            </div>
+                        </div>
+                    </fieldset>
+                </div>
+                {settings.apiKeySource === 'custom' && (
+                    <div>
+                        <label htmlFor="apiKey" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('apiKeyLabel')}</label>
+                        <input type="password" id="apiKey" value={settings.apiKey} onChange={e => setSettings({ ...settings, apiKey: e.target.value })} placeholder={t('apiKeyPlaceholder')} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"/>
+                        <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">{t('apiKeyHint')}</p>
+                    </div>
+                )}
+                 <div>
+                    <label htmlFor="systemPrompt" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('systemPromptLabel')}</label>
+                    <textarea id="systemPrompt" value={settings.systemPrompt} onChange={e => setSettings({ ...settings, systemPrompt: e.target.value })} rows={3} placeholder={t('systemPromptPlaceholder')} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"/>
+                    <button type="button" onClick={() => setSettings({...settings, systemPrompt: defaultSettings.systemPrompt })} className="text-xs text-primary-600 hover:underline mt-1">{t('setDefaultButton')}</button>
+                </div>
+            </div>
+
+            {/* Brand Kit */}
+            <div className="space-y-4 p-4 border dark:border-gray-700 rounded-md">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white">{t('brandKitTitle')}</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{t('brandKitSubtitle')}</p>
+                <div className="grid grid-cols-3 gap-4">
+                    <div>
+                        <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">{t('brandKitPrimaryColor')}</label>
+                        <input type="color" value={settings.brandKit?.colors.primary} onChange={e => handleBrandKitColorChange('primary', e.target.value)} className="mt-1 w-full h-8 p-0 border-none rounded cursor-pointer bg-transparent" />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">{t('brandKitSecondaryColor')}</label>
+                        <input type="color" value={settings.brandKit?.colors.secondary} onChange={e => handleBrandKitColorChange('secondary', e.target.value)} className="mt-1 w-full h-8 p-0 border-none rounded cursor-pointer bg-transparent" />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">{t('brandKitTextColor')}</label>
+                        <input type="color" value={settings.brandKit?.colors.text} onChange={e => handleBrandKitColorChange('text', e.target.value)} className="mt-1 w-full h-8 p-0 border-none rounded cursor-pointer bg-transparent" />
+                    </div>
+                </div>
+                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                     <div>
+                        <label htmlFor="headlineFont" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('brandKitHeadlineFont')}</label>
+                        <select id="headlineFont" value={settings.brandKit?.fonts.headline} onChange={e => handleBrandKitFontChange('headline', e.target.value as FontChoice)} className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md">
+                            {Object.entries(FontChoice).map(([key, value]) => <option key={key} value={value}>{key}</option>)}
+                        </select>
+                    </div>
+                    <div>
+                        <label htmlFor="bodyFont" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('brandKitBodyFont')}</label>
+                        <select id="bodyFont" value={settings.brandKit?.fonts.body} onChange={e => handleBrandKitFontChange('body', e.target.value as FontChoice)} className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md">
+                            {Object.entries(FontChoice).map(([key, value]) => <option key={key} value={value}>{key}</option>)}
+                        </select>
+                    </div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('brandKitLogo')}</label>
+                        <div className="mt-1 flex items-center space-x-4">
+                            <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded flex items-center justify-center">
+                                {settings.brandKit?.logo ? <img src={settings.brandKit.logo} alt="logo preview" className="max-w-full max-h-full object-contain" /> : <ImageIcon className="w-8 h-8 text-gray-400" />}
+                            </div>
+                            <input type="file" accept="image/*" onChange={handleLogoUpload} id="logo-upload" className="hidden"/>
+                            <label htmlFor="logo-upload" className="cursor-pointer text-sm font-medium text-primary-600 hover:text-primary-500">
+                                {t('brandKitUploadLogo')}
+                            </label>
+                        </div>
+                    </div>
+                    <div>
+                        <label htmlFor="brandingText" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('brandKitBrandingText')}</label>
+                        <input type="text" id="brandingText" value={settings.brandKit?.brandingText} onChange={e => handleBrandKitChange('brandingText', e.target.value)} placeholder="@yourhandle" className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm" />
+                    </div>
+                </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex justify-end space-x-4">
+                <button type="button" onClick={onClose} className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700">{t('cancelButton')}</button>
+                <button type="button" onClick={handleSave} className="px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 w-28 text-center">
+                    {saved ? t('savedButton') : t('saveButton')}
+                </button>
+            </div>
+        </div>
+    );
+    
+    if (isModal) {
+         return (
+            <div className="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50" onClick={onClose}>
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl p-6 max-w-2xl w-full m-4" onClick={e => e.stopPropagation()}>
+                    <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-4">{t('settingsTitle')}</h2>
+                    <div className="max-h-[70vh] overflow-y-auto pr-2">
+                        {settingsForm}
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="container mx-auto p-4 sm:p-6 lg:p-8">
+            <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-200 mb-4">{t('settingsTitle')}</h2>
             <div className="max-w-2xl mx-auto">
-                <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-4">{t('settingsTitle')}</h2>
-                <form onSubmit={handleSave} className="space-y-6 bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
-                    {/* AI Model */}
-                    <div>
-                        <label htmlFor="aiModel-screen" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('aiModelLabel')}</label>
-                        <select
-                            id="aiModel-screen"
-                            name="aiModel"
-                            value={localSettings.aiModel}
-                            onChange={handleChange}
-                            className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-gray-100 dark:bg-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md"
-                        >
-                            {Object.values(AIModel).map(model => (
-                                <option key={model} value={model}>{model}</option>
-                            ))}
-                        </select>
-                        <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">{t('aiModelHint')}</p>
-                    </div>
-
-                    {/* API Key Source */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('apiKeySourceLabel')}</label>
-                        <fieldset className="mt-2">
-                            <legend className="sr-only">API Key Source</legend>
-                            <div className="space-y-2">
-                                <div className="flex items-center">
-                                    <input id="apiKeySourceCarouMate-screen" name="apiKeySource" type="radio" value="caroumate" checked={localSettings.apiKeySource === 'caroumate'} onChange={handleChange} className="h-4 w-4 text-primary-600 border-gray-300 focus:ring-primary-500"/>
-                                    <label htmlFor="apiKeySourceCarouMate-screen" className="ml-3 block text-sm font-medium text-gray-700 dark:text-gray-300">{t('apiKeySourceCarouMate')}</label>
-                                </div>
-                                <div className="flex items-center">
-                                    <input id="apiKeySourceCustom-screen" name="apiKeySource" type="radio" value="custom" checked={localSettings.apiKeySource === 'custom'} onChange={handleChange} className="h-4 w-4 text-primary-600 border-gray-300 focus:ring-primary-500"/>
-                                    <label htmlFor="apiKeySourceCustom-screen" className="ml-3 block text-sm font-medium text-gray-700 dark:text-gray-300">{t('apiKeySourceCustom')}</label>
-                                </div>
-                            </div>
-                        </fieldset>
-                    </div>
-
-                    {/* API Key Input */}
-                    <div className={`transition-opacity duration-300 ${localSettings.apiKeySource === 'custom' ? 'opacity-100' : 'opacity-50'}`}>
-                        <label htmlFor="apiKey-screen" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('apiKeyLabel')}</label>
-                        <input
-                            type="password"
-                            name="apiKey"
-                            id="apiKey-screen"
-                            placeholder={t('apiKeyPlaceholder')}
-                            value={localSettings.apiKey}
-                            onChange={handleChange}
-                            disabled={localSettings.apiKeySource !== 'custom'}
-                            className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 disabled:cursor-not-allowed"
-                        />
-                         <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">{t('apiKeyHint')}</p>
-                    </div>
-
-                    {/* System Prompt */}
-                    <div>
-                        <div className="flex justify-between items-center">
-                            <label htmlFor="systemPrompt-screen" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('systemPromptLabel')}</label>
-                            <button
-                                type="button"
-                                onClick={() => setLocalSettings(prev => ({...prev, systemPrompt: defaultSettings.systemPrompt}))}
-                                className="text-xs font-medium text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-200"
-                            >
-                                {t('setDefaultButton')}
-                            </button>
-                        </div>
-                         <textarea
-                            id="systemPrompt-screen"
-                            name="systemPrompt"
-                            value={localSettings.systemPrompt}
-                            onChange={handleChange}
-                            rows={4}
-                            className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
-                            placeholder={t('systemPromptPlaceholder')}
-                        />
-                    </div>
-                    
-                    {/* Buttons */}
-                    <div className="flex justify-end space-x-4 pt-4">
-                         <button type="button" onClick={onClose} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 dark:text-gray-300 dark:bg-gray-700 dark:border-gray-500 dark:hover:bg-gray-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary-500">
-                            {t('cancelButton')}
-                         </button>
-                         <button type="submit" disabled={saveState === 'saved'} className="transition-colors inline-flex justify-center px-4 py-2 text-sm font-medium text-white bg-primary-600 border border-transparent rounded-md hover:bg-primary-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary-500 disabled:bg-green-500 disabled:cursor-not-allowed">
-                            {saveState === 'saved' ? t('savedButton') : t('saveButton')}
-                         </button>
-                    </div>
-                </form>
+                {settingsForm}
             </div>
         </div>
     );
 };
 
+const SettingsModal: React.FC<{
+    currentSettings: AppSettings;
+    onSave: (settings: AppSettings) => void;
+    onClose: () => void;
+    t: TFunction;
+}> = (props) => <SettingsScreen {...props} isModal={true} />;
+
 const Footer: React.FC = () => (
-    <footer className="w-full bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 py-4 px-6">
-        <div className="container mx-auto flex flex-col sm:flex-row items-center justify-between text-center">
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-2 sm:mb-0">
-                &copy; {new Date().getFullYear()} Pasanaktidur. All rights reserved.
-            </p>
-            <div className="flex items-center space-x-4">
-                <a href="#" target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors">
-                    <InstagramIcon className="w-5 h-5" />
-                </a>
-                 <a href="#" target="_blank" rel="noopener noreferrer" aria-label="Threads" className="text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors">
-                    <ThreadsIcon className="w-5 h-5" />
-                </a>
+    <footer className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 mt-auto hidden md:block">
+        <div className="container mx-auto py-6 px-4 sm:px-6 lg:px-8 text-center text-gray-500 dark:text-gray-400">
+            <p>&copy; {new Date().getFullYear()} CarouMate. All rights reserved.</p>
+            <div className="flex justify-center space-x-6 mt-4">
+                <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="hover:text-primary-500"><InstagramIcon className="w-6 h-6" /></a>
+                <a href="https://threads.net" target="_blank" rel="noopener noreferrer" className="hover:text-primary-500"><ThreadsIcon className="w-6 h-6" /></a>
             </div>
         </div>
     </footer>

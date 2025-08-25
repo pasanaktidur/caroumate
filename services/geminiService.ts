@@ -1,5 +1,3 @@
-
-
 import { GoogleGenAI, Type, HarmCategory, HarmBlockThreshold } from "@google/genai";
 import type { DesignPreferences, SlideData, AppSettings, AspectRatio } from '../types';
 
@@ -115,6 +113,44 @@ export const generateCarouselContent = async (
         throw new Error("Gagal membuat konten carousel dari AI. Silakan periksa prompt dan kunci API Anda.");
     }
 };
+
+export const generateImage = async (
+    prompt: string,
+    settings: AppSettings,
+    aspectRatio: AspectRatio,
+): Promise<string> => {
+    try {
+        const ai = getAiClient(settings);
+        
+        const response = await ai.models.generateImages({
+            model: 'imagen-3.0-generate-002',
+            prompt: prompt,
+            config: {
+                numberOfImages: 1,
+                outputMimeType: 'image/png',
+                aspectRatio: aspectRatio,
+            },
+        });
+
+        const image = response.generatedImages[0]?.image?.imageBytes;
+        if (!image) {
+             throw new Error("AI tidak mengembalikan gambar apa pun. Coba prompt yang berbeda.");
+        }
+
+        return `data:image/png;base64,${image}`;
+
+    } catch (error) {
+        console.error("Error generating image:", error);
+        if (error instanceof Error) {
+            if (error.message.includes('SAFETY')) {
+                 throw new Error("Pembuatan gambar diblokir karena kebijakan keselamatan. Harap sesuaikan prompt Anda.");
+            }
+            throw error;
+        }
+        throw new Error("Gagal membuat gambar dari AI. Silakan periksa prompt dan kunci API Anda.");
+    }
+};
+
 
 export const getAiAssistance = async (topic: string, type: 'hook' | 'cta', settings: AppSettings): Promise<string[]> => {
     try {
