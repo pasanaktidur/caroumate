@@ -260,3 +260,72 @@ export const generateHashtags = async (topic: string, settings: AppSettings): Pr
         throw new Error("Gagal membuat hashtag dari AI.");
     }
 };
+
+export const regenerateSlideContent = async (
+    topic: string,
+    slide: SlideData,
+    partToRegenerate: 'headline' | 'body',
+    settings: AppSettings,
+): Promise<string> => {
+    try {
+        const ai = getAiClient(settings);
+
+        const otherPart = partToRegenerate === 'headline' ? `body text: "${slide.body}"` : `headline: "${slide.headline}"`;
+
+        const prompt = `
+            You are an expert social media copywriter.
+            You are working on a carousel about "${topic}".
+            The current slide has the following content:
+            - ${otherPart}
+            - ${partToRegenerate}: "${slide[partToRegenerate]}"
+
+            Your task is to regenerate ONLY the '${partToRegenerate}' to make it more engaging, creative, or clear.
+            Provide one new alternative for the '${partToRegenerate}'.
+            The new version should be different from the current one.
+            Keep it concise and impactful.
+
+            Strictly follow the JSON schema provided.
+        `;
+
+        const response = await ai.models.generateContent({
+            model: settings.aiModel,
+            contents: prompt,
+            config: {
+                systemInstruction: settings.systemPrompt,
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        new_text: { type: Type.STRING, description: `The new, regenerated ${partToRegenerate}.` }
+                    },
+                    required: ['new_text']
+                },
+                safetySettings: safetySettings
+            }
+        });
+
+        const text = response.text;
+        if (!text) {
+            const blockReason = response.candidates?.[0]?.finishReason;
+            if (blockReason === 'SAFETY') {
+                 throw new Error("Regenerasi diblokir karena kebijakan keselamatan. Silakan coba pendekatan yang berbeda.");
+            }
+            throw new Error(`Respons AI kosong. Alasan: ${blockReason || 'Tidak diketahui'}.`);
+        }
+        
+        const jsonResponse = text.trim();
+        const parsedResponse = JSON.parse(jsonResponse);
+
+        if (typeof parsedResponse.new_text !== 'string') {
+            throw new Error("Respons AI tidak dalam format yang diharapkan.");
+        }
+
+        return parsedResponse.new_text;
+    } catch (error) {
+        console.error(`Error regenerating slide ${partToRegenerate}:`, error);
+        if (error instanceof Error) {
+            throw error;
+        }
+        throw new Error(`Gagal mendapatkan ${partToRegenerate} yang dibuat ulang dari AI.`);
+    }
+};

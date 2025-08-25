@@ -1,11 +1,12 @@
 
 
 
+
 import * as React from 'react';
 import type { AppView, UserProfile, Carousel, SlideData, DesignPreferences, AppSettings, Language, TextStyle, BrandKit } from './types';
 import { DesignStyle, FontChoice, AspectRatio, AIModel } from './types';
-import { GoogleIcon, SparklesIcon, LoaderIcon, DownloadIcon, SettingsIcon, InstagramIcon, ThreadsIcon, MoonIcon, SunIcon, AvatarIcon, LogoutIcon, HashtagIcon, HomeIcon, BoldIcon, ItalicIcon, UnderlineIcon, StrikethroughIcon, CaseIcon, AlignLeftIcon, AlignCenterIcon, AlignRightIcon, AlignJustifyIcon, LeftArrowIcon, RightArrowIcon, GiftIcon, ImageIcon, TrashIcon, PaletteIcon, UploadIcon } from './components/icons';
-import { generateCarouselContent, getAiAssistance, generateHashtags, generateImage } from './services/geminiService';
+import { GoogleIcon, SparklesIcon, LoaderIcon, DownloadIcon, SettingsIcon, InstagramIcon, ThreadsIcon, MoonIcon, SunIcon, AvatarIcon, LogoutIcon, HashtagIcon, HomeIcon, BoldIcon, ItalicIcon, UnderlineIcon, StrikethroughIcon, CaseIcon, AlignLeftIcon, AlignCenterIcon, AlignRightIcon, AlignJustifyIcon, LeftArrowIcon, RightArrowIcon, GiftIcon, ImageIcon, TrashIcon, PaletteIcon, UploadIcon, RefreshIcon } from './components/icons';
+import { generateCarouselContent, getAiAssistance, generateHashtags, generateImage, regenerateSlideContent } from './services/geminiService';
 import html2canvas from 'html2canvas';
 import JSZip from 'jszip';
 
@@ -81,6 +82,8 @@ const translations = {
     generatorBodyLabel: 'Body Text',
     generatorVisualPromptLabel: 'Visual Prompt',
     generatorMoveSlideLabel: 'Move Slide',
+    regenerateHeadlineAria: 'Regenerate headline',
+    regenerateBodyAria: 'Regenerate body text',
     downloadAllButton: 'Download All',
     downloadingButton: 'Downloading...',
     previewEmptyTitle: "Let's create something amazing!",
@@ -218,6 +221,8 @@ const translations = {
     generatorBodyLabel: 'Teks Isi',
     generatorVisualPromptLabel: 'Prompt Visual',
     generatorMoveSlideLabel: 'Pindahkan Slide',
+    regenerateHeadlineAria: 'Buat ulang judul',
+    regenerateBodyAria: 'Buat ulang isi teks',
     downloadAllButton: 'Unduh Semua',
     downloadingButton: 'Mengunduh...',
     previewEmptyTitle: 'Ayo buat sesuatu yang luar biasa!',
@@ -704,6 +709,7 @@ export default function App() {
     const [isGeneratingHashtags, setIsGeneratingHashtags] = React.useState(false);
     const [generatedHashtags, setGeneratedHashtags] = React.useState<string[]>([]);
     const [currentTopic, setCurrentTopic] = React.useState('');
+    const [regeneratingPart, setRegeneratingPart] = React.useState<{ slideId: string; part: 'headline' | 'body' } | null>(null);
 
     const [settings, setSettings] = React.useState<AppSettings>(() => {
         try {
@@ -883,6 +889,25 @@ export default function App() {
             setError(err.message || t('errorImageGen'));
         } finally {
             setIsGeneratingImageForSlide(null);
+        }
+    };
+
+    const handleRegenerateContent = async (slideId: string, part: 'headline' | 'body') => {
+        if (!currentCarousel || regeneratingPart) return;
+    
+        const slide = currentCarousel.slides.find(s => s.id === slideId);
+        if (!slide) return;
+    
+        setRegeneratingPart({ slideId, part });
+        setError(null);
+    
+        try {
+            const newText = await regenerateSlideContent(currentCarousel.title, slide, part, settings);
+            handleUpdateSlide(slideId, { [part]: newText });
+        } catch (err: any) {
+            setError(err.message || t('errorUnknown'));
+        } finally {
+            setRegeneratingPart(null);
         }
     };
 
@@ -1114,6 +1139,8 @@ export default function App() {
                     isHashtagModalOpen={isHashtagModalOpen}
                     isGeneratingImageForSlide={isGeneratingImageForSlide}
                     onGenerateImageForSlide={handleGenerateImageForSlide}
+                    regeneratingPart={regeneratingPart}
+                    onRegenerateContent={handleRegenerateContent}
                     onUploadImageForSlide={handleUploadImageForSlide}
                     onRemoveImageForSlide={handleRemoveImageForSlide}
                     onApplyBrandKit={handleApplyBrandKit}
@@ -1578,10 +1605,12 @@ const Generator: React.FC<{
     onRemoveImageForSlide: (slideId: string) => void;
     onApplyBrandKit: () => void;
     brandKitConfigured: boolean;
+    regeneratingPart: { slideId: string; part: 'headline' | 'body' } | null;
+    onRegenerateContent: (slideId: string, part: 'headline' | 'body') => void;
     t: TFunction;
 }> = (props) => {
-    const { onGenerate, currentCarousel, selectedSlide, onUpdateSlide, onUpdateCarouselPreferences, onClearSlideOverrides, onSelectSlide, onMoveSlide, ...rest } = props;
-    const { isGenerating, generationMessage, error, onOpenAssistant, onOpenHashtag, onDownload, isDownloading, isHashtagModalOpen, isGeneratingImageForSlide, onGenerateImageForSlide, onUploadImageForSlide, onRemoveImageForSlide, onApplyBrandKit, brandKitConfigured, t } = rest;
+    const { onGenerate, currentCarousel, selectedSlide, onUpdateSlide, onUpdateCarouselPreferences, onClearSlideOverrides, onSelectSlide, onMoveSlide, onRegenerateContent, ...rest } = props;
+    const { isGenerating, generationMessage, error, onOpenAssistant, onOpenHashtag, onDownload, isDownloading, isHashtagModalOpen, isGeneratingImageForSlide, onGenerateImageForSlide, onUploadImageForSlide, onRemoveImageForSlide, onApplyBrandKit, brandKitConfigured, t, regeneratingPart } = rest;
     
     const fileInputRef = React.useRef<HTMLInputElement>(null);
     const [topic, setTopic] = React.useState('');
@@ -1782,7 +1811,21 @@ const Generator: React.FC<{
                         <div className="space-y-4">
                             {/* Headline */}
                             <div>
-                                <label htmlFor="headline" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorHeadlineLabel')}</label>
+                                <div className="flex justify-between items-center">
+                                    <label htmlFor="headline" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorHeadlineLabel')}</label>
+                                    <button
+                                        type="button"
+                                        onClick={() => onRegenerateContent(selectedSlide.id, 'headline')}
+                                        disabled={!!regeneratingPart}
+                                        className="p-1.5 rounded-full text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        aria-label={t('regenerateHeadlineAria')}
+                                    >
+                                        {regeneratingPart?.slideId === selectedSlide.id && regeneratingPart?.part === 'headline'
+                                            ? <LoaderIcon className="w-4 h-4 animate-spin" />
+                                            : <RefreshIcon className="w-4 h-4" />
+                                        }
+                                    </button>
+                                </div>
                                 <textarea id="headline" value={selectedSlide.headline} onChange={e => onUpdateSlide(selectedSlide.id, { headline: e.target.value })} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm" rows={2} />
                                 <div className="mt-2">
                                      <TextFormatToolbar style={selectedSlide.headlineStyle ?? preferences.headlineStyle} onStyleChange={(newStyle) => handleTextStyleChange('headlineStyle', newStyle)} />
@@ -1790,7 +1833,21 @@ const Generator: React.FC<{
                             </div>
                             {/* Body */}
                             <div>
-                                <label htmlFor="body" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorBodyLabel')}</label>
+                                <div className="flex justify-between items-center">
+                                    <label htmlFor="body" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorBodyLabel')}</label>
+                                    <button
+                                        type="button"
+                                        onClick={() => onRegenerateContent(selectedSlide.id, 'body')}
+                                        disabled={!!regeneratingPart}
+                                        className="p-1.5 rounded-full text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        aria-label={t('regenerateBodyAria')}
+                                    >
+                                        {regeneratingPart?.slideId === selectedSlide.id && regeneratingPart?.part === 'body'
+                                            ? <LoaderIcon className="w-4 h-4 animate-spin" />
+                                            : <RefreshIcon className="w-4 h-4" />
+                                        }
+                                    </button>
+                                </div>
                                 <textarea id="body" value={selectedSlide.body} onChange={e => onUpdateSlide(selectedSlide.id, { body: e.target.value })} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm" rows={4} />
                                 <div className="mt-2">
                                     <TextFormatToolbar style={selectedSlide.bodyStyle ?? preferences.bodyStyle} onStyleChange={(newStyle) => handleTextStyleChange('bodyStyle', newStyle)} />
