@@ -2,6 +2,8 @@
 
 
 
+
+
 import * as React from 'react';
 import type { AppView, UserProfile, Carousel, SlideData, DesignPreferences, AppSettings, Language, TextStyle, BrandKit } from './types';
 import { DesignStyle, FontChoice, AspectRatio, AIModel } from './types';
@@ -1718,22 +1720,22 @@ const Generator: React.FC<{
                             {/* Style Select */}
                             <div>
                                 <label htmlFor="style" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorStyleLabel')}</label>
-                                <select id="style" value={preferences.style} onChange={e => onUpdateCarouselPreferences({ style: e.target.value as DesignStyle }, topic)} className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md">
+                                <select id="style" value={preferences.style} onChange={e => onUpdateCarouselPreferences({ style: e.target.value as DesignStyle }, topic)} className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md">
                                     {Object.values(DesignStyle).map(s => <option key={s} value={s}>{s}</option>)}
                                 </select>
                             </div>
                             {/* Aspect Ratio */}
                             <div>
                                 <label htmlFor="aspectRatio" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorAspectRatioLabel')}</label>
-                                <select id="aspectRatio" value={preferences.aspectRatio} onChange={e => onUpdateCarouselPreferences({ aspectRatio: e.target.value as AspectRatio }, topic)} className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md">
+                                <select id="aspectRatio" value={preferences.aspectRatio} onChange={e => onUpdateCarouselPreferences({ aspectRatio: e.target.value as AspectRatio }, topic)} className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md">
                                     {Object.values(AspectRatio).map(ar => <option key={ar} value={ar}>{aspectRatioDisplayMap[ar]}</option>)}
                                 </select>
                             </div>
                             {/* Font Select */}
                             <div>
                                 <label htmlFor="font" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorFontLabel')}</label>
-                                <select id="font" value={preferences.font} onChange={e => onUpdateCarouselPreferences({ font: e.target.value as FontChoice }, topic)} className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md">
-                                    {Object.entries(FontChoice).map(([key, value]) => <option key={key} value={value}>{key}</option>)}
+                                <select id="font" value={preferences.font} onChange={e => onUpdateCarouselPreferences({ font: e.target.value as FontChoice }, topic)} className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md">
+                                    {Object.entries(FontChoice).map(([key, value]) => <option key={key} value={value} className={fontClassMap[value]}>{value}</option>)}
                                 </select>
                             </div>
                              {/* Branding */}
@@ -2103,7 +2105,7 @@ const SettingsScreen: React.FC<{
                  <h3 className="text-lg font-medium text-gray-900 dark:text-white">AI Settings</h3>
                 <div>
                     <label htmlFor="aiModel" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('aiModelLabel')}</label>
-                    <select id="aiModel" value={settings.aiModel} onChange={e => setSettings({ ...settings, aiModel: e.target.value as AIModel })} className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md">
+                    <select id="aiModel" value={settings.aiModel} onChange={e => setSettings({ ...settings, aiModel: e.target.value as AIModel })} className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md">
                         {Object.values(AIModel).map(m => <option key={m} value={m}>{m}</option>)}
                     </select>
                     <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">{t('aiModelHint')}</p>
@@ -2170,14 +2172,14 @@ const SettingsScreen: React.FC<{
                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                      <div>
                         <label htmlFor="headlineFont" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('brandKitHeadlineFont')}</label>
-                        <select id="headlineFont" value={settings.brandKit?.fonts.headline} onChange={e => handleBrandKitFontChange('headline', e.target.value as FontChoice)} className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md">
-                            {Object.entries(FontChoice).map(([key, value]) => <option key={key} value={value}>{key}</option>)}
+                        <select id="headlineFont" value={settings.brandKit?.fonts.headline} onChange={e => handleBrandKitFontChange('headline', e.target.value as FontChoice)} className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md">
+                            {Object.entries(FontChoice).map(([key, value]) => <option key={key} value={value} className={fontClassMap[value]}>{value}</option>)}
                         </select>
                     </div>
                     <div>
                         <label htmlFor="bodyFont" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('brandKitBodyFont')}</label>
-                        <select id="bodyFont" value={settings.brandKit?.fonts.body} onChange={e => handleBrandKitFontChange('body', e.target.value as FontChoice)} className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md">
-                            {Object.entries(FontChoice).map(([key, value]) => <option key={key} value={value}>{key}</option>)}
+                        <select id="bodyFont" value={settings.brandKit?.fonts.body} onChange={e => handleBrandKitFontChange('body', e.target.value as FontChoice)} className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md">
+                            {Object.entries(FontChoice).map(([key, value]) => <option key={key} value={value} className={fontClassMap[value]}>{value}</option>)}
                         </select>
                     </div>
                 </div>
