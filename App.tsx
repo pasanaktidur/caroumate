@@ -8,7 +8,7 @@ import * as React from 'react';
 import type { AppView, UserProfile, Carousel, SlideData, DesignPreferences, AppSettings, Language, TextStyle, BrandKit } from './types';
 import { DesignStyle, FontChoice, AspectRatio, AIModel } from './types';
 import { GoogleIcon, SparklesIcon, LoaderIcon, DownloadIcon, SettingsIcon, InstagramIcon, ThreadsIcon, MoonIcon, SunIcon, AvatarIcon, LogoutIcon, HashtagIcon, HomeIcon, BoldIcon, ItalicIcon, UnderlineIcon, StrikethroughIcon, CaseIcon, AlignLeftIcon, AlignCenterIcon, AlignRightIcon, AlignJustifyIcon, LeftArrowIcon, RightArrowIcon, GiftIcon, ImageIcon, TrashIcon, PaletteIcon, UploadIcon, RefreshIcon } from './components/icons';
-import { generateCarouselContent, getAiAssistance, generateHashtags, generateImage, regenerateSlideContent } from './services/geminiService';
+import { generateCarouselContent, getAiAssistance, generateHashtags, generateImage, regenerateSlideContent, generateThreadFromCarousel } from './services/geminiService';
 import html2canvas from 'html2canvas';
 import JSZip from 'jszip';
 
@@ -79,6 +79,7 @@ const translations = {
     generatorGeneratingButton: 'Generating...',
     generatorAssistantButton: 'AI Assistant',
     generatorHashtagButton: 'Generate Hashtags',
+    generatorThreadButton: 'Convert to Thread',
     generatorStep3Title: '3. Edit Your Content',
     generatorHeadlineLabel: 'Headline',
     generatorBodyLabel: 'Body Text',
@@ -95,6 +96,7 @@ const translations = {
     errorUnknown: 'An unknown error occurred.',
     errorImageGen: 'Failed to generate image. Please check your prompt or API key.',
     errorHashtagGen: 'Failed to generate hashtags.',
+    errorThreadGen: 'Failed to generate thread.',
     errorDownload: 'Sorry, there was an issue creating the download file.',
     generatingContentMessage: 'Crafting your carousel content...',
     generatingImageMessage: 'Generating your image...',
@@ -124,6 +126,13 @@ const translations = {
     hashtagModalCopyButton: 'Copy All',
     hashtagModalCopiedButton: 'Copied!',
     hashtagModalEmpty: 'Generate hashtags to see suggestions here.',
+
+    // ThreadModal
+    threadModalTitle: 'ThreadMate: AI Thread Converter',
+    threadModalSubtitle: 'Your carousel content, repurposed for Threads/X.',
+    threadModalCopyButton: 'Copy Thread',
+    threadModalCopiedButton: 'Copied!',
+    threadModalGenerating: 'Repurposing your content...',
 
     // SettingsModal
     settingsTitle: 'Settings',
@@ -218,6 +227,7 @@ const translations = {
     generatorGeneratingButton: 'Membuat...',
     generatorAssistantButton: 'Asisten AI',
     generatorHashtagButton: 'Buat Hashtag',
+    generatorThreadButton: 'Ubah jadi Thread',
     generatorStep3Title: '3. Edit Konten Anda',
     generatorHeadlineLabel: 'Judul',
     generatorBodyLabel: 'Teks Isi',
@@ -234,6 +244,7 @@ const translations = {
     errorUnknown: 'Terjadi kesalahan yang tidak diketahui.',
     errorImageGen: 'Gagal membuat gambar. Silakan periksa prompt atau kunci API Anda.',
     errorHashtagGen: 'Gagal membuat hashtag.',
+    errorThreadGen: 'Gagal membuat thread.',
     errorDownload: 'Maaf, terjadi masalah saat membuat file unduhan.',
     generatingContentMessage: 'Menyusun konten carousel Anda...',
     generatingImageMessage: 'Menghasilkan gambar Anda...',
@@ -263,6 +274,13 @@ const translations = {
     hashtagModalCopyButton: 'Salin Semua',
     hashtagModalCopiedButton: 'Tersalin!',
     hashtagModalEmpty: 'Buat hashtag untuk melihat saran di sini.',
+
+    // ThreadModal
+    threadModalTitle: 'ThreadMate: Konverter Thread AI',
+    threadModalSubtitle: 'Konten carousel Anda, diubah formatnya untuk Threads/X.',
+    threadModalCopyButton: 'Salin Thread',
+    threadModalCopiedButton: 'Tersalin!',
+    threadModalGenerating: 'Mengubah format konten Anda...',
 
     // SettingsModal
     settingsTitle: 'Pengaturan',
@@ -712,6 +730,9 @@ export default function App() {
     const [generatedHashtags, setGeneratedHashtags] = React.useState<string[]>([]);
     const [currentTopic, setCurrentTopic] = React.useState('');
     const [regeneratingPart, setRegeneratingPart] = React.useState<{ slideId: string; part: 'headline' | 'body' } | null>(null);
+    const [isThreadModalOpen, setIsThreadModalOpen] = React.useState(false);
+    const [isGeneratingThread, setIsGeneratingThread] = React.useState(false);
+    const [generatedThread, setGeneratedThread] = React.useState('');
 
     const [settings, setSettings] = React.useState<AppSettings>(() => {
         try {
@@ -929,6 +950,22 @@ export default function App() {
         }
     };
 
+    const handleGenerateThread = async () => {
+        if (!currentCarousel) return;
+        setIsThreadModalOpen(true);
+        setIsGeneratingThread(true);
+        setGeneratedThread('');
+        setError(null);
+        try {
+            const thread = await generateThreadFromCarousel(currentCarousel, settings);
+            setGeneratedThread(thread);
+        } catch (err: any) {
+            setError(err.message || t('errorThreadGen'));
+        } finally {
+            setIsGeneratingThread(false);
+        }
+    };
+
     const handleDownloadCarousel = async () => {
         if (!currentCarousel) return;
         setIsDownloading(true);
@@ -1136,6 +1173,7 @@ export default function App() {
                     onMoveSlide={handleMoveSlide}
                     onOpenAssistant={() => setIsAssistantOpen(true)}
                     onOpenHashtag={handleGenerateHashtags}
+                    onOpenThread={handleGenerateThread}
                     onDownload={handleDownloadCarousel}
                     isDownloading={isDownloading}
                     isHashtagModalOpen={isHashtagModalOpen}
@@ -1196,6 +1234,18 @@ export default function App() {
                     onClose={() => setIsHashtagModalOpen(false)}
                     isLoading={isGeneratingHashtags}
                     hashtags={generatedHashtags}
+                    error={error}
+                    t={t}
+                />
+            )}
+            {isThreadModalOpen && (
+                <ThreadModal
+                    onClose={() => {
+                        setIsThreadModalOpen(false);
+                        setError(null);
+                    }}
+                    isLoading={isGeneratingThread}
+                    threadContent={generatedThread}
                     error={error}
                     t={t}
                 />
@@ -1598,6 +1648,7 @@ const Generator: React.FC<{
     onMoveSlide: (id: string, direction: 'left' | 'right') => void;
     onOpenAssistant: () => void;
     onOpenHashtag: () => void;
+    onOpenThread: () => void;
     onDownload: () => void;
     isDownloading: boolean;
     isHashtagModalOpen: boolean;
@@ -1611,7 +1662,7 @@ const Generator: React.FC<{
     onRegenerateContent: (slideId: string, part: 'headline' | 'body') => void;
     t: TFunction;
 }> = (props) => {
-    const { onGenerate, currentCarousel, selectedSlide, onUpdateSlide, onUpdateCarouselPreferences, onClearSlideOverrides, onSelectSlide, onMoveSlide, onRegenerateContent, ...rest } = props;
+    const { onGenerate, currentCarousel, selectedSlide, onUpdateSlide, onUpdateCarouselPreferences, onClearSlideOverrides, onSelectSlide, onMoveSlide, onRegenerateContent, onOpenThread, ...rest } = props;
     const { isGenerating, generationMessage, error, onOpenAssistant, onOpenHashtag, onDownload, isDownloading, isHashtagModalOpen, isGeneratingImageForSlide, onGenerateImageForSlide, onUploadImageForSlide, onRemoveImageForSlide, onApplyBrandKit, brandKitConfigured, t, regeneratingPart } = rest;
     
     const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -1930,13 +1981,21 @@ const Generator: React.FC<{
                                 </div>
                             ))}
                         </div>
-                        <button
-                            onClick={onDownload}
-                            disabled={isDownloading}
-                            className="mt-8 inline-flex items-center justify-center px-8 py-4 border border-transparent text-lg font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:bg-green-300"
-                        >
-                           {isDownloading ? <><LoaderIcon className="w-6 h-6 mr-3 animate-spin" /> {t('downloadingButton')}</> : <><DownloadIcon className="w-6 h-6 mr-3" /> {t('downloadAllButton')}</>}
-                        </button>
+                        <div className="mt-8 flex flex-wrap justify-center gap-4">
+                            <button
+                                onClick={onDownload}
+                                disabled={isDownloading}
+                                className="inline-flex items-center justify-center px-8 py-4 border border-transparent text-lg font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:bg-green-300"
+                            >
+                               {isDownloading ? <><LoaderIcon className="w-6 h-6 mr-3 animate-spin" /> {t('downloadingButton')}</> : <><DownloadIcon className="w-6 h-6 mr-3" /> {t('downloadAllButton')}</>}
+                            </button>
+                             <button
+                                onClick={onOpenThread}
+                                className="inline-flex items-center justify-center px-8 py-4 border border-transparent text-lg font-medium rounded-md text-gray-800 dark:text-white bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                            >
+                               <ThreadsIcon className="w-6 h-6 mr-3" /> {t('generatorThreadButton')}
+                            </button>
+                        </div>
                     </div>
                 )}
 
@@ -2033,6 +2092,48 @@ const HashtagModal: React.FC<{
                 {hashtags.length > 0 && (
                     <button onClick={handleCopy} className="w-full px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700">
                         {copied ? t('hashtagModalCopiedButton') : t('hashtagModalCopyButton')}
+                    </button>
+                )}
+            </div>
+        </div>
+    );
+};
+
+const ThreadModal: React.FC<{
+    onClose: () => void;
+    isLoading: boolean;
+    threadContent: string;
+    error: string | null;
+    t: TFunction;
+}> = ({ onClose, isLoading, threadContent, error, t }) => {
+    const [copied, setCopied] = React.useState(false);
+
+    const handleCopy = () => {
+        navigator.clipboard.writeText(threadContent);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    };
+
+    return (
+        <div className="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50" onClick={onClose}>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl p-6 max-w-2xl w-full m-4 space-y-4 flex flex-col" onClick={e => e.stopPropagation()}>
+                <div className="flex items-center space-x-3">
+                    <ThreadsIcon className="w-8 h-8 text-primary-500"/>
+                    <div>
+                        <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200">{t('threadModalTitle')}</h2>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">{t('threadModalSubtitle')}</p>
+                    </div>
+                </div>
+                <div className="mt-4 p-4 min-h-[16rem] h-64 overflow-y-auto bg-gray-50 dark:bg-gray-700/50 rounded-md whitespace-pre-wrap font-sans">
+                    {isLoading && <Loader text={t('threadModalGenerating')} />}
+                    {error && <p className="text-red-500">{error}</p>}
+                    {!isLoading && !error && threadContent && (
+                       <p className="text-gray-800 dark:text-gray-200">{threadContent}</p>
+                    )}
+                </div>
+                {threadContent && !isLoading && (
+                    <button onClick={handleCopy} className="w-full px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700">
+                        {copied ? t('threadModalCopiedButton') : t('threadModalCopyButton')}
                     </button>
                 )}
             </div>

@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type, HarmCategory, HarmBlockThreshold } from "@google/genai";
-import type { DesignPreferences, SlideData, AppSettings, AspectRatio } from '../types';
+import type { DesignPreferences, SlideData, AppSettings, AspectRatio, Carousel } from '../types';
 
 // Helper to get the Gemini API client
 const getAiClient = (settings: AppSettings) => {
@@ -330,5 +330,63 @@ export const regenerateSlideContent = async (
             throw error;
         }
         throw new Error(`Gagal mendapatkan ${partToRegenerate} yang dibuat ulang dari AI.`);
+    }
+};
+
+export const generateThreadFromCarousel = async (
+    carousel: Carousel,
+    settings: AppSettings,
+): Promise<string> => {
+    try {
+        const ai = getAiClient(settings);
+
+        const carouselText = carousel.slides.map(slide => 
+            `Slide Headline: ${slide.headline}\nSlide Body: ${slide.body}`
+        ).join('\n\n---\n\n');
+
+        const prompt = `
+            You are an expert social media manager skilled at repurposing content.
+            Convert the following text content from an Instagram carousel into an engaging, ready-to-post thread for a platform like X or Threads.
+
+            Instructions:
+            1. Start with a strong, scroll-stopping hook in the first post.
+            2. Break the content down into a series of short, numbered posts (e.g., 1/5, 2/5, etc.).
+            3. Use clear and concise language.
+            4. Incorporate relevant emojis to increase engagement.
+            5. Ensure the final post is a clear and compelling Call To Action (CTA).
+            6. Do not use JSON format, just return the plain text of the thread.
+
+            Here is the carousel content:
+            ---
+            ${carouselText}
+            ---
+        `;
+
+        const response = await ai.models.generateContent({
+            model: settings.aiModel,
+            contents: prompt,
+            config: {
+                systemInstruction: settings.systemPrompt,
+                safetySettings: safetySettings
+            }
+        });
+
+        const text = response.text;
+        if (!text) {
+            const blockReason = response.candidates?.[0]?.finishReason;
+            if (blockReason === 'SAFETY') {
+                 throw new Error("Pembuatan thread diblokir karena kebijakan keselamatan. Silakan coba konten yang berbeda.");
+            }
+            throw new Error(`Respons AI kosong. Alasan: ${blockReason || 'Tidak diketahui'}.`);
+        }
+
+        return text.trim();
+
+    } catch (error) {
+        console.error("Error generating thread:", error);
+        if (error instanceof Error) {
+            throw error;
+        }
+        throw new Error("Gagal membuat thread dari AI.");
     }
 };
