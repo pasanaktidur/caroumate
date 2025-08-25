@@ -145,6 +145,9 @@ export const generateImage = async (
             if (error.message.includes('SAFETY')) {
                  throw new Error("Pembuatan gambar diblokir karena kebijakan keselamatan. Harap sesuaikan prompt Anda.");
             }
+            if (error.message.includes('only accessible to billed users')) {
+                throw new Error("Pembuatan gambar gagal. API Imagen memerlukan akun Google Cloud dengan penagihan aktif. Silakan periksa status penagihan akun Anda.");
+            }
             throw error;
         }
         throw new Error("Gagal membuat gambar dari AI. Silakan periksa prompt dan kunci API Anda.");
