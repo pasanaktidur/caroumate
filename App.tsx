@@ -1,5 +1,6 @@
 
 
+
 import * as React from 'react';
 import type { AppView, UserProfile, Carousel, SlideData, DesignPreferences, AppSettings, Language, TextStyle, BrandKit } from './types';
 import { DesignStyle, FontChoice, AspectRatio, AIModel } from './types';
@@ -368,13 +369,13 @@ const fontClassMap: { [key in FontChoice]: string } = {
 
 const aspectRatioClassMap: { [key in AspectRatio]: string } = {
     [AspectRatio.SQUARE]: 'aspect-square',
-    [AspectRatio.PORTRAIT]: 'aspect-[3/4]',
+    [AspectRatio.PORTRAIT]: 'aspect-[4/5]',
     [AspectRatio.STORY]: 'aspect-[9/16]',
 };
 
 const aspectRatioDisplayMap: { [key in AspectRatio]: string } = {
     [AspectRatio.SQUARE]: '1:1 (Square)',
-    [AspectRatio.PORTRAIT]: '3:4 (Portrait)',
+    [AspectRatio.PORTRAIT]: '4:5 (Portrait)',
     [AspectRatio.STORY]: '9:16 (Story)',
 };
 
@@ -1508,6 +1509,50 @@ const TextFormatToolbar: React.FC<{ style: TextStyle, onStyleChange: (newStyle: 
     );
 };
 
+const ColorInput: React.FC<{
+    id: string;
+    label: string;
+    value: string;
+    onChange: (value: string) => void;
+}> = ({ id, label, value, onChange }) => {
+    const [textValue, setTextValue] = React.useState(value);
+
+    React.useEffect(() => {
+        setTextValue(value);
+    }, [value]);
+
+    const handleTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const newText = e.target.value;
+        setTextValue(newText);
+        if (/^#([0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/i.test(newText)) {
+            onChange(newText);
+        }
+    };
+    
+    return (
+        <div>
+            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">{label}</label>
+            <div className="mt-1 flex items-center space-x-2">
+                <input
+                    type="color"
+                    id={id}
+                    value={value}
+                    onChange={(e) => onChange(e.target.value)}
+                    className="w-10 h-8 p-0 border-none rounded cursor-pointer bg-transparent"
+                    aria-label={`${label} color picker`}
+                />
+                <input
+                    type="text"
+                    value={textValue}
+                    onChange={handleTextChange}
+                    className="block w-full px-2 py-1 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                    aria-label={`${label} hex code`}
+                />
+            </div>
+        </div>
+    );
+};
+
 const Generator: React.FC<{
     user: UserProfile;
     isGenerating: boolean;
@@ -1673,12 +1718,20 @@ const Generator: React.FC<{
                                 <div className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-md mt-1 space-y-3">
                                     <div className="flex items-center space-x-4">
                                         <div className="flex-1">
-                                            <label htmlFor="bgColor" className="block text-xs font-medium text-gray-500 dark:text-gray-400">{t('generatorBgColorLabel')}</label>
-                                            <input type="color" id="bgColor" value={selectedSlide?.backgroundColor ?? preferences.backgroundColor} onChange={e => handleStyleChange('backgroundColor', e.target.value)} className="mt-1 w-full h-8 p-0 border-none rounded cursor-pointer bg-transparent" />
+                                            <ColorInput
+                                                id="bgColor"
+                                                label={t('generatorBgColorLabel')}
+                                                value={selectedSlide?.backgroundColor ?? preferences.backgroundColor}
+                                                onChange={value => handleStyleChange('backgroundColor', value)}
+                                            />
                                         </div>
                                         <div className="flex-1">
-                                            <label htmlFor="fontColor" className="block text-xs font-medium text-gray-500 dark:text-gray-400">{t('generatorFontColorLabel')}</label>
-                                            <input type="color" id="fontColor" value={selectedSlide?.fontColor ?? preferences.fontColor} onChange={e => handleStyleChange('fontColor', e.target.value)} className="mt-1 w-full h-8 p-0 border-none rounded cursor-pointer bg-transparent" />
+                                            <ColorInput
+                                                id="fontColor"
+                                                label={t('generatorFontColorLabel')}
+                                                value={selectedSlide?.fontColor ?? preferences.fontColor}
+                                                onChange={value => handleStyleChange('fontColor', value)}
+                                            />
                                         </div>
                                     </div>
                                     <div>
@@ -2033,16 +2086,28 @@ const SettingsScreen: React.FC<{
                 <p className="text-sm text-gray-500 dark:text-gray-400">{t('brandKitSubtitle')}</p>
                 <div className="grid grid-cols-3 gap-4">
                     <div>
-                        <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">{t('brandKitPrimaryColor')}</label>
-                        <input type="color" value={settings.brandKit?.colors.primary} onChange={e => handleBrandKitColorChange('primary', e.target.value)} className="mt-1 w-full h-8 p-0 border-none rounded cursor-pointer bg-transparent" />
+                        <ColorInput
+                            id="brandKitPrimaryColor"
+                            label={t('brandKitPrimaryColor')}
+                            value={settings.brandKit?.colors.primary || '#FFFFFF'}
+                            onChange={value => handleBrandKitColorChange('primary', value)}
+                        />
                     </div>
                     <div>
-                        <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">{t('brandKitSecondaryColor')}</label>
-                        <input type="color" value={settings.brandKit?.colors.secondary} onChange={e => handleBrandKitColorChange('secondary', e.target.value)} className="mt-1 w-full h-8 p-0 border-none rounded cursor-pointer bg-transparent" />
+                        <ColorInput
+                            id="brandKitSecondaryColor"
+                            label={t('brandKitSecondaryColor')}
+                            value={settings.brandKit?.colors.secondary || '#00C2CB'}
+                            onChange={value => handleBrandKitColorChange('secondary', value)}
+                        />
                     </div>
                     <div>
-                        <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">{t('brandKitTextColor')}</label>
-                        <input type="color" value={settings.brandKit?.colors.text} onChange={e => handleBrandKitColorChange('text', e.target.value)} className="mt-1 w-full h-8 p-0 border-none rounded cursor-pointer bg-transparent" />
+                        <ColorInput
+                            id="brandKitTextColor"
+                            label={t('brandKitTextColor')}
+                            value={settings.brandKit?.colors.text || '#111827'}
+                            onChange={value => handleBrandKitColorChange('text', value)}
+                        />
                     </div>
                 </div>
                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
