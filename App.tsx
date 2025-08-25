@@ -4,6 +4,7 @@
 
 
 
+
 import * as React from 'react';
 import type { AppView, UserProfile, Carousel, SlideData, DesignPreferences, AppSettings, Language, TextStyle, BrandKit } from './types';
 import { DesignStyle, FontChoice, AspectRatio, AIModel } from './types';
@@ -11,6 +12,7 @@ import { GoogleIcon, SparklesIcon, LoaderIcon, DownloadIcon, SettingsIcon, Insta
 import { generateCarouselContent, getAiAssistance, generateHashtags, generateImage, regenerateSlideContent, generateThreadFromCarousel } from './services/geminiService';
 import html2canvas from 'html2canvas';
 import JSZip from 'jszip';
+import { jsPDF } from 'jspdf';
 
 // --- TRANSLATIONS & I1N ---
 const translations = {
@@ -52,6 +54,7 @@ const translations = {
     dashboardTitle: 'Dashboard',
     dashboardSubtitle: 'Your creative workspace.',
     newCarouselButton: 'Create New Carousel',
+    tutorialButton: 'User Guide',
     statsTotalCarousels: 'Total Carousels',
     statsDownloads: 'Downloads',
     statsMostUsedCategory: 'Most Used Category',
@@ -162,6 +165,12 @@ const translations = {
     brandKitUploadLogo: 'Upload Logo',
     brandKitBrandingText: 'Branding Text',
 
+    // Tutorial Screen
+    tutorialTitle: 'CarouMate User Guide',
+    tutorialDownloadPDF: 'Download as PDF',
+    tutorialBackToDashboard: 'Back to Dashboard',
+    tutorialGeneratingPDF: 'Generating PDF...',
+
   },
   id: {
     // Header
@@ -200,6 +209,7 @@ const translations = {
     dashboardTitle: 'Dasbor',
     dashboardSubtitle: 'Ruang kerja kreatif Anda.',
     newCarouselButton: 'Buat Carousel Baru',
+    tutorialButton: 'Panduan Pengguna',
     statsTotalCarousels: 'Total Carousel',
     statsDownloads: 'Unduhan',
     statsMostUsedCategory: 'Kategori Paling Banyak Digunakan',
@@ -309,6 +319,12 @@ const translations = {
     brandKitLogo: 'Logo',
     brandKitUploadLogo: 'Unggah Logo',
     brandKitBrandingText: 'Teks Branding',
+
+    // Tutorial Screen
+    tutorialTitle: 'Panduan Pengguna CarouMate',
+    tutorialDownloadPDF: 'Unduh sebagai PDF',
+    tutorialBackToDashboard: 'Kembali ke Dasbor',
+    tutorialGeneratingPDF: 'Membuat PDF...',
   },
 };
 
@@ -1149,6 +1165,7 @@ export default function App() {
             case 'DASHBOARD': return (
                 <Dashboard
                     onNewCarousel={startNewCarousel}
+                    onShowTutorial={() => setView('TUTORIAL')}
                     history={carouselHistory}
                     onEdit={handleEditCarousel}
                     t={t}
@@ -1196,6 +1213,12 @@ export default function App() {
                         setView(previousView);
                     }}
                     onClose={() => setView(previousView)}
+                    t={t}
+                />
+            );
+            case 'TUTORIAL': return (
+                <TutorialScreen
+                    onBack={() => setView('DASHBOARD')}
                     t={t}
                 />
             );
@@ -1446,22 +1469,28 @@ const ProfileSetupModal: React.FC<{ user: UserProfile, onSetupComplete: (profile
 
 const Dashboard: React.FC<{
     onNewCarousel: () => void;
+    onShowTutorial: () => void;
     history: Carousel[];
     onEdit: (id: string) => void;
     t: TFunction;
     downloadCount: number;
     mostUsedCategory: string;
-}> = ({ onNewCarousel, history, onEdit, t, downloadCount, mostUsedCategory }) => (
+}> = ({ onNewCarousel, onShowTutorial, history, onEdit, t, downloadCount, mostUsedCategory }) => (
     <div className="container mx-auto p-4 sm:p-6 lg:p-8">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
             <div>
                 <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-200">{t('dashboardTitle')}</h2>
                 <p className="text-gray-600 dark:text-gray-400 mt-1">{t('dashboardSubtitle')}</p>
             </div>
-            <button onClick={onNewCarousel} className="mt-4 sm:mt-0 w-full sm:w-auto inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 shadow-lg shadow-primary-600/40 hover:shadow-xl hover:shadow-primary-500/40 transition-shadow">
-                <SparklesIcon className="w-5 h-5 mr-2 -ml-1" />
-                {t('newCarouselButton')}
-            </button>
+            <div className="flex w-full sm:w-auto space-x-4">
+                <button onClick={onShowTutorial} className="w-full sm:w-auto inline-flex items-center justify-center px-5 py-3 border border-gray-300 dark:border-gray-600 text-base font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors">
+                    {t('tutorialButton')}
+                </button>
+                <button onClick={onNewCarousel} className="w-full sm:w-auto inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 shadow-lg shadow-primary-600/40 hover:shadow-xl hover:shadow-primary-500/40 transition-shadow">
+                    <SparklesIcon className="w-5 h-5 mr-2 -ml-1" />
+                    {t('newCarouselButton')}
+                </button>
+            </div>
         </div>
         
         {/* Stats Section */}
@@ -2343,6 +2372,110 @@ const SettingsModal: React.FC<{
     onClose: () => void;
     t: TFunction;
 }> = (props) => <SettingsScreen {...props} isModal={true} />;
+
+const TutorialScreen: React.FC<{ onBack: () => void; t: TFunction }> = ({ onBack, t }) => {
+    const [isDownloading, setIsDownloading] = React.useState(false);
+
+    const handleDownloadPdf = async () => {
+        const tutorialContent = document.getElementById('tutorial-content');
+        if (!tutorialContent) return;
+
+        setIsDownloading(true);
+        try {
+            const canvas = await html2canvas(tutorialContent, {
+                scale: 2,
+                useCORS: true,
+                backgroundColor: document.documentElement.classList.contains('dark') ? '#0D0D0D' : '#f7f7f7',
+                windowWidth: 1200 // Ensure a consistent width for rendering
+            });
+            const imgData = canvas.toDataURL('image/png');
+            const pdf = new jsPDF({
+                orientation: 'portrait',
+                unit: 'px',
+                format: [canvas.width, canvas.height]
+            });
+            pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+            pdf.save('Panduan_CarouMate.pdf');
+        } catch (error) {
+            console.error('Could not generate PDF', error);
+            alert('Gagal membuat PDF. Silakan coba lagi.');
+        } finally {
+            setIsDownloading(false);
+        }
+    };
+
+    return (
+        <div className="container mx-auto p-4 sm:p-6 lg:p-8">
+            <div className="max-w-4xl mx-auto">
+                <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-200">{t('tutorialTitle')}</h2>
+                    <div className="flex space-x-4">
+                        <button onClick={onBack} className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700">{t('tutorialBackToDashboard')}</button>
+                        <button onClick={handleDownloadPdf} disabled={isDownloading} className="px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 disabled:bg-primary-300">
+                             {isDownloading ? (
+                                <><LoaderIcon className="w-4 h-4 mr-2 animate-spin" />{t('tutorialGeneratingPDF')}</>
+                            ) : (
+                                <><DownloadIcon className="w-4 h-4 mr-2" />{t('tutorialDownloadPDF')}</>
+                            )}
+                        </button>
+                    </div>
+                </div>
+
+                <div id="tutorial-content" className="p-8 bg-white dark:bg-gray-800 rounded-lg shadow-md">
+                    <article className="prose prose-lg dark:prose-invert max-w-none">
+                        <h1>Selamat Datang di CarouMate!</h1>
+                        <p>Panduan ini akan memandu Anda melalui semua fitur hebat CarouMate untuk membantu Anda membuat konten viral dalam hitungan menit.</p>
+
+                        <h2>Langkah 1: Memulai</h2>
+                        <ol>
+                            <li><strong>Masuk:</strong> Di halaman utama, klik tombol "Hasilkan Carousel Anda Seketika".</li>
+                            <li><strong>Pengaturan Profil:</strong> Masukkan nama dan <em>niche</em> konten utama Anda (misalnya, "Pemasaran Digital", "Kebugaran", "Kuliner"). Ini membantu AI kami memberikan konten yang lebih relevan untuk Anda.</li>
+                        </ol>
+
+                        <h2>Langkah 2: Membuat Carousel Pertama Anda</h2>
+                        <ol>
+                            <li><strong>Masukkan Ide Anda:</strong> Di kolom "Tentang apa carousel Anda?", masukkan topik yang ingin Anda bahas. Semakin spesifik, semakin baik! Contoh: "5 cara meningkatkan produktivitas saat bekerja dari rumah".</li>
+                            <li><strong>Sesuaikan Desain:</strong> Pilih <strong>Gaya</strong> (misalnya, Minimalist, Bold), <strong>Rasio Aspek</strong> (1:1 untuk Instagram feed, 9:16 untuk Stories/Reels), <strong>Font</strong>, dan <strong>Warna</strong> yang sesuai dengan merek Anda. Anda juga bisa menambahkan teks <em>branding</em> seperti @username Anda.</li>
+                            <li><strong>Klik "Buat Carousel!":</strong> Duduk dan rileks sementara AI kami menyusun draf pertama carousel Anda, lengkap dengan teks dan ide visual untuk setiap slide.</li>
+                        </ol>
+
+                        <h2>Langkah 3: Mengedit dan Kustomisasi</h2>
+                        <p>Setelah carousel dibuat, Anda akan melihat pratinjau slide. Klik pada slide mana pun untuk memilihnya dan mulai mengedit di panel kiri.</p>
+                        <ul>
+                            <li><strong>Edit Teks:</strong> Ubah <strong>Judul</strong> dan <strong>Teks Isi</strong> sesuai keinginan Anda. Gunakan toolbar pemformatan untuk membuat teks tebal, miring, mengubah ukuran, perataan, dan lainnya.</li>
+                            <li><strong>Regenerasi AI:</strong> Tidak suka dengan judul atau teks? Klik ikon segarkan <RefreshIcon className="w-5 h-5 inline-block"/> di sebelah kolom teks untuk meminta AI membuat versi baru.</li>
+                            <li><strong>Visual:</strong>
+                                <ul>
+                                    <li>Edit <strong>Prompt Visual</strong> (dalam Bahasa Inggris) untuk mengubah arahan gambar yang akan dibuat AI.</li>
+                                    <li>Klik <strong>"Hasilkan Gambar"</strong> untuk membuat visual menggunakan AI.</li>
+                                    <li>Atau, klik <strong>"Unggah Visual"</strong> untuk menggunakan gambar Anda sendiri.</li>
+                                </ul>
+                            </li>
+                            <li><strong>Pindahkan Slide:</strong> Gunakan tombol panah <LeftArrowIcon className="w-5 h-5 inline-block"/> <RightArrowIcon className="w-5 h-5 inline-block"/> untuk mengatur ulang urutan slide Anda.</li>
+                        </ul>
+
+                        <h2>Langkah 4: Manfaatkan Fitur Canggih</h2>
+                        <p>Di bawah tombol "Buat Carousel", Anda akan menemukan alat bantu yang sangat berguna:</p>
+                        <ul>
+                            <li><strong>Asisten AI:</strong> Butuh ide untuk judul yang menarik (hook) atau ajakan bertindak (CTA) yang kuat? Gunakan fitur ini untuk mendapatkan saran instan dari AI.</li>
+                            <li><strong>Buat Hashtag:</strong> Dapatkan daftar hashtag yang relevan dan efektif untuk postingan Anda secara otomatis.</li>
+                            <li><strong>ThreadMate (Ubah jadi Thread):</strong> Ini adalah fitur andalan! Setelah carousel Anda selesai, klik tombol ini untuk mengubah semua teks Anda menjadi format <em>thread</em> yang siap diposting di X (Twitter) atau Threads.</li>
+                        </ul>
+
+                        <h2>Langkah 5: Unduh Karya Anda</h2>
+                        <p>Setelah semuanya sempurna, klik tombol <strong>"Unduh Semua"</strong>. CarouMate akan mengemas semua slide Anda ke dalam file .zip berisi gambar PNG berkualitas tinggi, siap untuk diunggah.</p>
+                        
+                        <h2>Tips Pro: Gunakan Brand Kit</h2>
+                        <p>Di <strong>Pengaturan</strong> (ikon gerigi <SettingsIcon className="w-5 h-5 inline-block"/>), konfigurasikan <strong>Brand Kit</strong> Anda. Atur warna, font, logo, dan teks branding Anda sekali saja. Kemudian, di halaman generator, klik tombol "Terapkan Brand Kit" untuk langsung menerapkan gaya merek Anda ke carousel. Ini menghemat banyak waktu!</p>
+                        
+                        <p className="mt-8 font-bold text-center">Selamat Mencipta!</p>
+
+                    </article>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 const Footer: React.FC = () => (
     <footer className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 mt-auto hidden md:block">

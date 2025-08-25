@@ -273,93 +273,22 @@ export const regenerateSlideContent = async (
     try {
         const ai = getAiClient(settings);
 
-        const otherPart = partToRegenerate === 'headline' ? `body text: "${slide.body}"` : `headline: "${slide.headline}"`;
+        const otherPart = partToRegenerate === 'headline' 
+            ? `the existing body text is: "${slide.body}"` 
+            : `the existing headline is: "${slide.headline}"`;
 
         const prompt = `
             You are an expert social media copywriter.
-            You are working on a carousel about "${topic}".
-            The current slide has the following content:
+            The Instagram carousel is about: "${topic}".
+            For a slide with the following content:
             - ${otherPart}
-            - ${partToRegenerate}: "${slide[partToRegenerate]}"
 
-            Your task is to regenerate ONLY the '${partToRegenerate}' to make it more engaging, creative, or clear.
-            Provide one new alternative for the '${partToRegenerate}'.
-            The new version should be different from the current one.
-            Keep it concise and impactful.
+            Your task is to regenerate ONLY the '${partToRegenerate}'.
+            The new '${partToRegenerate}' should be concise, engaging, and relevant to the other part of the slide.
+            - Regenerated headline should be a max of 10 words.
+            - Regenerated body text should be a max of 40 words.
 
-            Strictly follow the JSON schema provided.
-        `;
-
-        const response = await ai.models.generateContent({
-            model: settings.aiModel,
-            contents: prompt,
-            config: {
-                systemInstruction: settings.systemPrompt,
-                responseMimeType: "application/json",
-                responseSchema: {
-                    type: Type.OBJECT,
-                    properties: {
-                        new_text: { type: Type.STRING, description: `The new, regenerated ${partToRegenerate}.` }
-                    },
-                    required: ['new_text']
-                },
-                safetySettings: safetySettings
-            }
-        });
-
-        const text = response.text;
-        if (!text) {
-            const blockReason = response.candidates?.[0]?.finishReason;
-            if (blockReason === 'SAFETY') {
-                 throw new Error("Regenerasi diblokir karena kebijakan keselamatan. Silakan coba pendekatan yang berbeda.");
-            }
-            throw new Error(`Respons AI kosong. Alasan: ${blockReason || 'Tidak diketahui'}.`);
-        }
-        
-        const jsonResponse = text.trim();
-        const parsedResponse = JSON.parse(jsonResponse);
-
-        if (typeof parsedResponse.new_text !== 'string') {
-            throw new Error("Respons AI tidak dalam format yang diharapkan.");
-        }
-
-        return parsedResponse.new_text;
-    } catch (error) {
-        console.error(`Error regenerating slide ${partToRegenerate}:`, error);
-        if (error instanceof Error) {
-            throw error;
-        }
-        throw new Error(`Gagal mendapatkan ${partToRegenerate} yang dibuat ulang dari AI.`);
-    }
-};
-
-export const generateThreadFromCarousel = async (
-    carousel: Carousel,
-    settings: AppSettings,
-): Promise<string> => {
-    try {
-        const ai = getAiClient(settings);
-
-        const carouselText = carousel.slides.map(slide => 
-            `Slide Headline: ${slide.headline}\nSlide Body: ${slide.body}`
-        ).join('\n\n---\n\n');
-
-        const prompt = `
-            You are an expert social media manager skilled at repurposing content.
-            Convert the following text content from an Instagram carousel into an engaging, ready-to-post thread for a platform like X or Threads.
-
-            Instructions:
-            1. Start with a strong, scroll-stopping hook in the first post.
-            2. Break the content down into a series of short, numbered posts (e.g., 1/5, 2/5, etc.).
-            3. Use clear and concise language.
-            4. Incorporate relevant emojis to increase engagement.
-            5. Ensure the final post is a clear and compelling Call To Action (CTA).
-            6. Do not use JSON format, just return the plain text of the thread.
-
-            Here is the carousel content:
-            ---
-            ${carouselText}
-            ---
+            Provide only the new text for the '${partToRegenerate}' as a single string in the response. Do not include any other text, labels, or JSON formatting.
         `;
 
         const response = await ai.models.generateContent({
@@ -375,15 +304,78 @@ export const generateThreadFromCarousel = async (
         if (!text) {
             const blockReason = response.candidates?.[0]?.finishReason;
             if (blockReason === 'SAFETY') {
-                 throw new Error("Pembuatan thread diblokir karena kebijakan keselamatan. Silakan coba konten yang berbeda.");
+                throw new Error("Regenerasi konten diblokir karena kebijakan keselamatan.");
             }
-            throw new Error(`Respons AI kosong. Alasan: ${blockReason || 'Tidak diketahui'}.`);
+            throw new Error(`Respons AI kosong saat regenerasi. Alasan: ${blockReason || 'Tidak diketahui'}.`);
         }
 
         return text.trim();
 
     } catch (error) {
-        console.error("Error generating thread:", error);
+        console.error(`Error regenerating slide ${partToRegenerate}:`, error);
+        if (error instanceof Error) {
+            throw error;
+        }
+        throw new Error(`Gagal membuat ulang ${partToRegenerate} dari AI.`);
+    }
+};
+
+export const generateThreadFromCarousel = async (carousel: Carousel, settings: AppSettings): Promise<string> => {
+    try {
+        const ai = getAiClient(settings);
+        
+        const carouselContent = carousel.slides.map((slide, index) => 
+            `Slide ${index + 1}:\nHeadline: ${slide.headline}\nBody: ${slide.body}`
+        ).join('\n\n');
+
+        const prompt = `
+            You are an expert social media manager specializing in content repurposing.
+            Your task is to convert the following Instagram carousel content into an engaging, well-formatted thread for platforms like Threads or X (formerly Twitter).
+
+            Carousel Content:
+            ---
+            ${carouselContent}
+            ---
+
+            Conversion Rules:
+            1.  Start with a strong hook based on the first slide.
+            2.  Each subsequent slide's content (headline and body) should be a separate post in the thread.
+            3.  Combine the headline and body of each slide into a natural, conversational sentence or two for each post. Don't just list "Headline: ..." and "Body: ...".
+            4.  Use emojis to add visual appeal and break up text.
+            5.  Use formatting like line breaks to improve readability.
+            6.  End the thread with a clear call to action (CTA) based on the final slide.
+            7.  Ensure the entire output is a single block of text, with each post in the thread numbered (e.g., 1/5, 2/5) and separated by two newlines.
+
+            Example format:
+            This is the hook post! 🧵 (1/${carousel.slides.length})
+
+            This is the content for the second post. It flows naturally. ✨ (2/${carousel.slides.length})
+
+            And so on for the rest of the posts...
+        `;
+
+        const response = await ai.models.generateContent({
+            model: settings.aiModel,
+            contents: prompt,
+            config: {
+                systemInstruction: settings.systemPrompt,
+                safetySettings: safetySettings
+            }
+        });
+
+        const text = response.text;
+        if (!text) {
+            const blockReason = response.candidates?.[0]?.finishReason;
+            if (blockReason === 'SAFETY') {
+                throw new Error("Konversi thread diblokir karena kebijakan keselamatan.");
+            }
+            throw new Error(`Respons AI kosong saat konversi thread. Alasan: ${blockReason || 'Tidak diketahui'}.`);
+        }
+
+        return text.trim();
+
+    } catch (error) {
+        console.error("Error generating thread from carousel:", error);
         if (error instanceof Error) {
             throw error;
         }
