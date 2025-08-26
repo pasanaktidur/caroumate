@@ -1,5 +1,8 @@
 
 
+
+
+
 export interface BrandKit {
   colors: {
     primary: string;
@@ -74,8 +77,8 @@ export enum AIModel {
 
 export interface AppSettings {
   aiModel: AIModel;
-  apiKey: string;
   apiKeySource: 'caroumate' | 'custom';
+  apiKey: string;
   systemPrompt: string;
   brandKit?: BrandKit;
 }

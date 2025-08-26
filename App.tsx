@@ -7,6 +7,10 @@
 
 
 
+
+
+
+
 import * as React from 'react';
 import type { AppView, UserProfile, Carousel, SlideData, DesignPreferences, AppSettings, Language, TextStyle, BrandKit } from './types';
 import { DesignStyle, FontChoice, AspectRatio, AIModel } from './types';
@@ -99,7 +103,7 @@ const translations = {
     previewEmptySubtitleMobile: 'Fill in the details above and click "Create Carousel!" to begin.',
     errorTitle: 'An Error Occurred',
     errorUnknown: 'An unknown error occurred.',
-    errorImageGen: 'Failed to generate image. Please check your prompt or API key.',
+    errorImageGen: 'Failed to generate image. The AI may have refused the prompt for safety reasons.',
     errorHashtagGen: 'Failed to generate hashtags.',
     errorThreadGen: 'Failed to generate thread.',
     errorDownload: 'Sorry, there was an issue creating the download file.',
@@ -254,7 +258,7 @@ const translations = {
     previewEmptySubtitleMobile: 'Isi detail di atas dan klik "Buat Carousel!" untuk memulai.',
     errorTitle: 'Terjadi Kesalahan',
     errorUnknown: 'Terjadi kesalahan yang tidak diketahui.',
-    errorImageGen: 'Gagal membuat gambar. Silakan periksa prompt atau kunci API Anda.',
+    errorImageGen: 'Gagal membuat gambar. AI mungkin menolak prompt karena alasan keamanan.',
     errorHashtagGen: 'Gagal membuat hashtag.',
     errorThreadGen: 'Gagal membuat thread.',
     errorDownload: 'Maaf, terjadi masalah saat membuat file unduhan.',
@@ -392,6 +396,8 @@ const fontClassMap: { [key in FontChoice]: string } = {
   [FontChoice.SPECTRAL]: 'font-spectral',
   [FontChoice.ZILLA_SLAB]: 'font-zilla-slab',
   [FontChoice.CARDO]: 'font-cardo',
+  [FontChoice.BREE_SERIF]: 'font-bree-serif',
+  // New Display
   [FontChoice.PACIFICO]: 'font-pacifico',
   [FontChoice.CAVEAT]: 'font-caveat',
   [FontChoice.DANCING_SCRIPT]: 'font-dancing-script',
@@ -400,13 +406,14 @@ const fontClassMap: { [key in FontChoice]: string } = {
   [FontChoice.RIGHTEOUS]: 'font-righteous',
   [FontChoice.SATISFY]: 'font-satisfy',
   [FontChoice.ABRIL_FATFACE]: 'font-abril-fatface',
+  [FontChoice.CHEWY]: 'font-chewy',
+  // New Mono
   [FontChoice.SPACE_MONO]: 'font-space-mono',
   [FontChoice.IBM_PLEX_MONO]: 'font-ibm-plex-mono',
+  // New Handwriting
   [FontChoice.INDIE_FLOWER]: 'font-indie-flower',
   [FontChoice.PATRICK_HAND]: 'font-patrick-hand',
   [FontChoice.PLAYPEN_SANS]: 'font-playpen-sans',
-  [FontChoice.BREE_SERIF]: 'font-bree-serif',
-  [FontChoice.CHEWY]: 'font-chewy',
   [FontChoice.BALSAMIQ_SANS]: 'font-balsamiq-sans',
 };
 
@@ -924,7 +931,7 @@ export default function App() {
         setError(null);
     
         try {
-            const imageUrl = await generateImage(slide.visual_prompt, settings, currentCarousel.preferences.aspectRatio);
+            const imageUrl = await generateImage(slide.visual_prompt, currentCarousel.preferences.aspectRatio, settings);
             handleUpdateSlide(slideId, { backgroundImage: imageUrl });
         } catch (err: any) {
             setError(err.message || t('errorImageGen'));
@@ -2245,20 +2252,22 @@ const SettingsScreen: React.FC<{
                 <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('apiKeySourceLabel')}</label>
                     <fieldset className="mt-2">
+                        <legend className="sr-only">API Key Source</legend>
                         <div className="space-y-2">
-                             <div className="flex items-center">
-                                <input id="apiKeySourceCarouMate" name="apiKeySource" type="radio" value="caroumate" checked={settings.apiKeySource === 'caroumate'} onChange={e => setSettings({ ...settings, apiKeySource: e.target.value as 'caroumate' | 'custom' })} className="h-4 w-4 text-primary-600 border-gray-300 focus:ring-primary-500"/>
-                                <label htmlFor="apiKeySourceCarouMate" className="ml-3 block text-sm font-medium text-gray-700 dark:text-gray-300">{t('apiKeySourceCarouMate')}</label>
+                            <div className="flex items-center">
+                                <input id="key-source-caroumate" name="key-source" type="radio" value="caroumate" checked={settings.apiKeySource === 'caroumate'} onChange={e => setSettings({...settings, apiKeySource: e.target.value as 'caroumate' | 'custom'})} className="h-4 w-4 text-primary-600 border-gray-300 focus:ring-primary-500" />
+                                <label htmlFor="key-source-caroumate" className="ml-3 block text-sm text-gray-700 dark:text-gray-300">{t('apiKeySourceCarouMate')}</label>
                             </div>
-                             <div className="flex items-center">
-                                <input id="apiKeySourceCustom" name="apiKeySource" type="radio" value="custom" checked={settings.apiKeySource === 'custom'} onChange={e => setSettings({ ...settings, apiKeySource: e.target.value as 'caroumate' | 'custom' })} className="h-4 w-4 text-primary-600 border-gray-300 focus:ring-primary-500"/>
-                                <label htmlFor="apiKeySourceCustom" className="ml-3 block text-sm font-medium text-gray-700 dark:text-gray-300">{t('apiKeySourceCustom')}</label>
+                            <div className="flex items-center">
+                                <input id="key-source-custom" name="key-source" type="radio" value="custom" checked={settings.apiKeySource === 'custom'} onChange={e => setSettings({...settings, apiKeySource: e.target.value as 'caroumate' | 'custom'})} className="h-4 w-4 text-primary-600 border-gray-300 focus:ring-primary-500" />
+                                <label htmlFor="key-source-custom" className="ml-3 block text-sm text-gray-700 dark:text-gray-300">{t('apiKeySourceCustom')}</label>
                             </div>
                         </div>
                     </fieldset>
                 </div>
+
                 {settings.apiKeySource === 'custom' && (
-                    <div>
+                     <div>
                         <label htmlFor="apiKey" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('apiKeyLabel')}</label>
                         <input type="password" id="apiKey" value={settings.apiKey} onChange={e => setSettings({ ...settings, apiKey: e.target.value })} placeholder={t('apiKeyPlaceholder')} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"/>
                         <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">{t('apiKeyHint')}</p>
