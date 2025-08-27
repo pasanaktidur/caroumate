@@ -17,6 +17,8 @@
 
 
 
+
+
 import * as React from 'react';
 import type { AppView, UserProfile, Carousel, SlideData, DesignPreferences, AppSettings, Language, TextStyle, BrandKit } from './types';
 import { DesignStyle, FontChoice, AspectRatio, AIModel } from './types';
@@ -1862,11 +1864,8 @@ const Generator: React.FC<{
     };
     
     const handleTextStyleChange = (type: 'headlineStyle' | 'bodyStyle', style: TextStyle) => {
-        if (colorScope === 'selected' && selectedSlide) {
+        if (selectedSlide) {
             onUpdateSlide(selectedSlide.id, { [type]: style });
-        } else {
-            onUpdateCarouselPreferences({ [type]: style }, topic);
-            onClearSlideOverrides(type);
         }
     };
     
