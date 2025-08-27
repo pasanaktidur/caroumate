@@ -19,6 +19,8 @@
 
 
 
+
+
 import * as React from 'react';
 import type { AppView, UserProfile, Carousel, SlideData, DesignPreferences, AppSettings, Language, TextStyle, BrandKit } from './types';
 import { DesignStyle, FontChoice, AspectRatio, AIModel } from './types';
@@ -161,6 +163,7 @@ const translations = {
     apiKeyLabel: 'Google AI API Key',
     apiKeyPlaceholder: 'Enter your Google AI API key',
     apiKeyHint: 'Your API key is stored securely in your browser and is required for all AI features.',
+    apiKeyHintGuide: 'New? See the user guide to get your key.',
     systemPromptLabel: 'System Prompt',
     systemPromptPlaceholder: 'e.g., You are a witty content creator...',
     setDefaultButton: 'Set to default',
@@ -316,6 +319,7 @@ const translations = {
     apiKeyLabel: 'Kunci API Google AI',
     apiKeyPlaceholder: 'Masukkan kunci API Google AI Anda',
     apiKeyHint: 'Kunci API Anda disimpan dengan aman di browser Anda dan diperlukan untuk semua fitur AI.',
+    apiKeyHintGuide: 'Pengguna baru? Lihat panduan penggunaan untuk mendapatkan kunci Anda.',
     systemPromptLabel: 'Prompt Sistem',
     systemPromptPlaceholder: 'cth., Anda adalah seorang pembuat konten yang jenaka...',
     setDefaultButton: 'Kembalikan ke default',
@@ -1279,6 +1283,7 @@ export default function App() {
                     }}
                     onClose={() => setView(previousView)}
                     t={t}
+                    onShowTutorial={() => setView('TUTORIAL')}
                 />
             );
             case 'TUTORIAL': return (
@@ -1345,6 +1350,10 @@ export default function App() {
                     onClose={() => setIsSettingsOpen(false)}
                     onSave={handleSaveSettings}
                     t={t}
+                    onShowTutorial={() => {
+                        setIsSettingsOpen(false);
+                        setView('TUTORIAL');
+                    }}
                 />
             )}
             {user && user.profileComplete && (
@@ -2279,7 +2288,8 @@ const SettingsScreen: React.FC<{
     onClose: () => void;
     t: TFunction;
     isModal?: boolean;
-}> = ({ currentSettings, onSave, onClose, t, isModal = false }) => {
+    onShowTutorial: () => void;
+}> = ({ currentSettings, onSave, onClose, t, isModal = false, onShowTutorial }) => {
     const [settings, setSettings] = React.useState(currentSettings);
     const [saved, setSaved] = React.useState(false);
 
@@ -2346,7 +2356,16 @@ const SettingsScreen: React.FC<{
                 <div>
                     <label htmlFor="apiKey" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('apiKeyLabel')}</label>
                     <input type="password" id="apiKey" value={settings.apiKey} onChange={e => setSettings({ ...settings, apiKey: e.target.value })} placeholder={t('apiKeyPlaceholder')} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"/>
-                    <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">{t('apiKeyHint')}</p>
+                    <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                        {t('apiKeyHint')}{' '}
+                        <button
+                            type="button"
+                            onClick={onShowTutorial}
+                            className="font-medium text-primary-600 dark:text-primary-400 hover:underline focus:outline-none"
+                        >
+                            {t('apiKeyHintGuide')}
+                        </button>
+                    </p>
                 </div>
                  <div>
                     <label htmlFor="systemPrompt" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('systemPromptLabel')}</label>
@@ -2457,6 +2476,7 @@ const SettingsModal: React.FC<{
     onSave: (settings: AppSettings) => void;
     onClose: () => void;
     t: TFunction;
+    onShowTutorial: () => void;
 }> = (props) => <SettingsScreen {...props} isModal={true} />;
 
 const TutorialScreen: React.FC<{ onBack: () => void; t: TFunction }> = ({ onBack, t }) => {
