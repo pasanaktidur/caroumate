@@ -11,6 +11,8 @@
 
 
 
+
+
 import * as React from 'react';
 import type { AppView, UserProfile, Carousel, SlideData, DesignPreferences, AppSettings, Language, TextStyle, BrandKit } from './types';
 import { DesignStyle, FontChoice, AspectRatio, AIModel } from './types';
@@ -555,6 +557,20 @@ const SlideCard: React.FC<{
             // Use clamp() to smoothly scale the font size between a mobile-friendly minimum, a responsive preferred value, and the user's configured maximum size.
             cssStyle.fontSize = `clamp(${minRem}rem, ${preferredValue}, ${baseRem}rem)`;
         }
+        if (style.textStroke && style.textStroke.width > 0 && style.textStroke.color) {
+            const w = style.textStroke.width;
+            const c = style.textStroke.color;
+            cssStyle.textShadow = `
+                -${w}px -${w}px 0 ${c},
+                 ${w}px -${w}px 0 ${c},
+                -${w}px  ${w}px 0 ${c},
+                 ${w}px  ${w}px 0 ${c},
+                -${w}px 0 0 ${c},
+                 ${w}px 0 0 ${c},
+                 0 -${w}px 0 ${c},
+                 0  ${w}px 0 ${c}
+            `;
+        }
         return cssStyle;
     };
     
@@ -1090,8 +1106,8 @@ export default function App() {
                     aspectRatio: AspectRatio.SQUARE,
                     backgroundImage: undefined,
                     brandingText: '',
-                    headlineStyle: { fontSize: 2.2, fontWeight: 'bold', textAlign: 'center' },
-                    bodyStyle: { fontSize: 1.1, textAlign: 'center' },
+                    headlineStyle: { fontSize: 2.2, fontWeight: 'bold', textAlign: 'center', textStroke: { color: '#000000', width: 0 } },
+                    bodyStyle: { fontSize: 1.1, textAlign: 'center', textStroke: { color: '#000000', width: 0 } },
                     // Apply the specific update
                     ...updates,
                 },
@@ -1626,6 +1642,43 @@ const TextFormatToolbar: React.FC<{ style: TextStyle, onStyleChange: (newStyle: 
     );
 };
 
+const TextStrokeControl: React.FC<{
+    style: TextStyle;
+    onStyleChange: (newStyle: TextStyle) => void;
+}> = ({ style, onStyleChange }) => {
+    const stroke = style.textStroke ?? { color: '#000000', width: 0 };
+
+    const handleStrokeChange = (newStroke: { color: string; width: number; }) => {
+        onStyleChange({ ...style, textStroke: newStroke });
+    };
+
+    return (
+        <div className="flex items-center gap-2 p-1 bg-gray-100 dark:bg-gray-700 rounded-md border dark:border-gray-600">
+            <span className="text-xs font-medium px-2 text-gray-600 dark:text-gray-300">Border</span>
+            <input
+                type="color"
+                value={stroke.color}
+                onChange={(e) => handleStrokeChange({ ...stroke, color: e.target.value })}
+                className="w-7 h-6 p-0 border-none rounded cursor-pointer bg-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+                aria-label="Text border color"
+                disabled={stroke.width === 0}
+            />
+            <input
+                type="number"
+                value={stroke.width}
+                onChange={e => handleStrokeChange({ ...stroke, width: Math.max(0, parseInt(e.target.value, 10) || 0) })}
+                className="w-12 p-1 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                step="1"
+                min="0"
+                max="10"
+                aria-label="Text border width"
+            />
+            <span className="text-xs text-gray-500 dark:text-gray-400">px</span>
+        </div>
+    );
+};
+
+
 const ColorInput: React.FC<{
     id: string;
     label: string;
@@ -1717,8 +1770,8 @@ const Generator: React.FC<{
         aspectRatio: AspectRatio.SQUARE,
         backgroundImage: undefined,
         brandingText: '',
-        headlineStyle: { fontSize: 2.2, fontWeight: 'bold', textAlign: 'center' },
-        bodyStyle: { fontSize: 1.1, textAlign: 'center' },
+        headlineStyle: { fontSize: 2.2, fontWeight: 'bold', textAlign: 'center', textStroke: { color: '#000000', width: 0 } },
+        bodyStyle: { fontSize: 1.1, textAlign: 'center', textStroke: { color: '#000000', width: 0 } },
     };
 
     React.useEffect(() => {
@@ -1918,8 +1971,9 @@ const Generator: React.FC<{
                                     </button>
                                 </div>
                                 <textarea id="headline" value={selectedSlide.headline} onChange={e => onUpdateSlide(selectedSlide.id, { headline: e.target.value })} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm" rows={2} />
-                                <div className="mt-2">
+                                <div className="mt-2 flex flex-wrap gap-2">
                                      <TextFormatToolbar style={selectedSlide.headlineStyle ?? preferences.headlineStyle} onStyleChange={(newStyle) => handleTextStyleChange('headlineStyle', newStyle)} />
+                                     <TextStrokeControl style={selectedSlide.headlineStyle ?? preferences.headlineStyle} onStyleChange={(newStyle) => handleTextStyleChange('headlineStyle', newStyle)} />
                                 </div>
                             </div>
                             {/* Body */}
@@ -1940,8 +1994,9 @@ const Generator: React.FC<{
                                     </button>
                                 </div>
                                 <textarea id="body" value={selectedSlide.body} onChange={e => onUpdateSlide(selectedSlide.id, { body: e.target.value })} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm" rows={4} />
-                                <div className="mt-2">
+                                <div className="mt-2 flex flex-wrap gap-2">
                                     <TextFormatToolbar style={selectedSlide.bodyStyle ?? preferences.bodyStyle} onStyleChange={(newStyle) => handleTextStyleChange('bodyStyle', newStyle)} />
+                                    <TextStrokeControl style={selectedSlide.bodyStyle ?? preferences.bodyStyle} onStyleChange={(newStyle) => handleTextStyleChange('bodyStyle', newStyle)} />
                                 </div>
                             </div>
                             {/* Visual Prompt */}

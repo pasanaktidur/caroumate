@@ -3,6 +3,7 @@
 
 
 
+
 export interface BrandKit {
   colors: {
     primary: string;
@@ -24,6 +25,7 @@ export interface TextStyle {
   textAlign?: 'left' | 'center' | 'right' | 'justify';
   textTransform?: 'uppercase' | 'none';
   fontSize?: number; // in rem
+  textStroke?: { color: string; width: number; };
 }
 
 export interface DesignPreferences {
