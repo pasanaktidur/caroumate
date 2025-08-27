@@ -15,6 +15,8 @@
 
 
 
+
+
 import * as React from 'react';
 import type { AppView, UserProfile, Carousel, SlideData, DesignPreferences, AppSettings, Language, TextStyle, BrandKit } from './types';
 import { DesignStyle, FontChoice, AspectRatio, AIModel } from './types';
@@ -111,6 +113,9 @@ const translations = {
     errorHashtagGen: 'Failed to generate hashtags.',
     errorThreadGen: 'Failed to generate thread.',
     errorDownload: 'Sorry, there was an issue creating the download file.',
+    errorQuotaExceeded: 'You have exceeded your API quota. Please check your usage. For more info, visit <a href="{{link}}" target="_blank" rel="noopener noreferrer" class="font-semibold underline hover:text-red-800 dark:hover:text-red-300">Google AI Rate Limits</a>.',
+    errorInvalidApiKey: 'Your Google AI API Key seems to be invalid or is missing. Please verify your key in the settings.',
+    errorApiKeyNotConfigured: 'API Key is not configured. Please add your Google AI API Key in the settings.',
     generatingContentMessage: 'Crafting your carousel content...',
     generatingImageMessage: 'Generating your image...',
     applyTo: 'Apply to:',
@@ -263,6 +268,9 @@ const translations = {
     errorHashtagGen: 'Gagal membuat hashtag.',
     errorThreadGen: 'Gagal membuat thread.',
     errorDownload: 'Maaf, terjadi masalah saat membuat file unduhan.',
+    errorQuotaExceeded: 'Anda telah melampaui kuota API Anda. Silakan periksa penggunaan Anda. Untuk info lebih lanjut, kunjungi <a href="{{link}}" target="_blank" rel="noopener noreferrer" class="font-semibold underline hover:text-red-800 dark:hover:text-red-300">Batas Kuota Google AI</a>.',
+    errorInvalidApiKey: 'Kunci API Google AI Anda tampaknya tidak valid atau hilang. Harap verifikasi kunci Anda di pengaturan.',
+    errorApiKeyNotConfigured: 'Kunci API tidak dikonfigurasi. Harap tambahkan Kunci API Google AI Anda di pengaturan.',
     generatingContentMessage: 'Menyusun konten carousel Anda...',
     generatingImageMessage: 'Menghasilkan gambar Anda...',
     applyTo: 'Terapkan ke:',
@@ -823,6 +831,54 @@ export default function App() {
         return text;
     }, [language]);
 
+    const parseAndDisplayError = React.useCallback((error: any): string => {
+        let errorMessage = error.message || t('errorUnknown');
+
+        // Case 1: The error from Gemini API is a JSON string
+        if (errorMessage.startsWith('{') && errorMessage.endsWith('}')) {
+            try {
+                const errorObj = JSON.parse(errorMessage);
+                if (errorObj.error) {
+                    const { code, message, status, details } = errorObj.error;
+
+                    if (code === 429 || status === "RESOURCE_EXHAUSTED") {
+                        const helpLinkDetails = details?.find((d: any) => d['@type'] === 'type.googleapis.com/google.rpc.Help');
+                        const helpLink = helpLinkDetails?.links?.[0]?.url;
+                        return t('errorQuotaExceeded', {
+                            link: helpLink || 'https://ai.google.dev/gemini-api/docs/rate-limits'
+                        });
+                    }
+                    
+                    const lowerMessage = message?.toLowerCase() || '';
+                    if (code === 400 && (lowerMessage.includes('api key not valid') || lowerMessage.includes('permission denied'))) {
+                         return t('errorInvalidApiKey');
+                    }
+                    
+                    return message || errorMessage;
+                }
+            } catch (e) {
+                // Not a valid JSON, fall through to general checks.
+            }
+        }
+        
+        // Case 2: For other errors (not JSON), check for common substrings.
+        const lowerCaseMessage = errorMessage.toLowerCase();
+        
+        if (lowerCaseMessage.includes('api key not valid') || lowerCaseMessage.includes('permission denied')) {
+            return t('errorInvalidApiKey');
+        }
+
+        if (lowerCaseMessage.includes('api key is not configured')) {
+            return t('errorApiKeyNotConfigured');
+        }
+        
+        if (errorMessage.includes("AI did not return an image from your prompt.")) {
+            return t('errorImageGen');
+        }
+
+        return errorMessage;
+    }, [t]);
+
     const handleSaveSettings = (newSettings: AppSettings) => {
         setSettings(newSettings);
         try {
@@ -866,15 +922,11 @@ export default function App() {
             // Save the latest changes to history before switching views
             setCarouselHistory(prev => {
                 const index = prev.findIndex(c => c.id === currentCarousel.id);
-                // If it's an existing carousel, update it
                 if (index !== -1) {
                     const newHistory = [...prev];
                     newHistory[index] = currentCarousel;
                     return newHistory;
                 }
-                // If it's a new one not yet in history, check if it should be added.
-                // The main generation logic already adds it, so this might not be needed.
-                // However, to be safe, let's just update if it exists.
                 return prev;
             });
         }
@@ -924,14 +976,13 @@ export default function App() {
             setSelectedSlideId(initialSlides[0]?.id ?? null);
             setCarouselHistory(prev => [newCarousel, ...prev]);
 
-        } catch (err: any)
-        {
-            setError(err.message || t('errorUnknown'));
+        } catch (err: any) {
+            setError(parseAndDisplayError(err));
         } finally {
             setIsGenerating(false);
             setGenerationMessage('');
         }
-    }, [user, settings, t]);
+    }, [user, settings, t, parseAndDisplayError]);
 
     const handleGenerateImageForSlide = async (slideId: string) => {
         if (!currentCarousel) return;
@@ -945,7 +996,7 @@ export default function App() {
             const imageUrl = await generateImage(slide.visual_prompt, currentCarousel.preferences.aspectRatio, settings);
             handleUpdateSlide(slideId, { backgroundImage: imageUrl });
         } catch (err: any) {
-            setError(err.message || t('errorImageGen'));
+            setError(parseAndDisplayError(err));
         } finally {
             setIsGeneratingImageForSlide(null);
         }
@@ -964,7 +1015,7 @@ export default function App() {
             const newText = await regenerateSlideContent(currentCarousel.title, slide, part, settings);
             handleUpdateSlide(slideId, { [part]: newText });
         } catch (err: any) {
-            setError(err.message || t('errorUnknown'));
+            setError(parseAndDisplayError(err));
         } finally {
             setRegeneratingPart(null);
         }
@@ -980,7 +1031,7 @@ export default function App() {
             const hashtags = await generateHashtags(currentTopic, settings);
             setGeneratedHashtags(hashtags);
         } catch (err: any) {
-            setError(err.message || t('errorHashtagGen'));
+            setError(parseAndDisplayError(err));
         } finally {
             setIsGeneratingHashtags(false);
         }
@@ -996,7 +1047,7 @@ export default function App() {
             const thread = await generateThreadFromCarousel(currentCarousel, settings);
             setGeneratedThread(thread);
         } catch (err: any) {
-            setError(err.message || t('errorThreadGen'));
+            setError(parseAndDisplayError(err));
         } finally {
             setIsGeneratingThread(false);
         }
@@ -1080,20 +1131,17 @@ export default function App() {
 
     const handleUpdateCarouselPreferences = (updates: Partial<DesignPreferences>, topicValue: string) => {
         setCurrentCarousel(prev => {
-            // If there's already a carousel (real or temporary), update it
             if (prev) {
                 return { ...prev, preferences: { ...prev.preferences, ...updates } };
             }
             
-            // If no carousel exists, create a new temporary one to store preferences
             const newTempCarousel: Carousel = {
-                id: 'temp-' + crypto.randomUUID(), // unique temp id
-                title: topicValue, // Will be set by topic input
+                id: 'temp-' + crypto.randomUUID(),
+                title: topicValue,
                 createdAt: new Date().toISOString(),
                 slides: [],
-                category: user?.niche || 'General', // Use user's niche if available
+                category: user?.niche || 'General',
                 preferences: {
-                    // Start with defaults
                     backgroundColor: '#FFFFFF',
                     fontColor: '#111827',
                     style: DesignStyle.MINIMALIST,
@@ -1103,7 +1151,6 @@ export default function App() {
                     brandingText: '',
                     headlineStyle: { fontSize: 2.2, fontWeight: 'bold', textAlign: 'center', textStroke: { color: '#000000', width: 0 } },
                     bodyStyle: { fontSize: 1.1, textAlign: 'center', textStroke: { color: '#000000', width: 0 } },
-                    // Apply the specific update
                     ...updates,
                 },
             };
@@ -1116,25 +1163,21 @@ export default function App() {
     
         const { colors, fonts, brandingText } = settings.brandKit;
     
-        // A simple heuristic to choose the headline font based on what the user set.
-        // For the main font, we use the body font for readability.
         const mainFont = fonts.body || FontChoice.SANS;
     
-        // Update carousel preferences with brand kit values
         handleUpdateCarouselPreferences({
             backgroundColor: colors.primary,
             fontColor: colors.text,
-            font: mainFont, // Apply the main body font to the whole carousel
+            font: mainFont,
             brandingText: brandingText,
             headlineStyle: {
-                ...currentCarousel?.preferences.headlineStyle, // Keep existing styles like alignment, weight
+                ...currentCarousel?.preferences.headlineStyle,
             },
             bodyStyle: {
                 ...currentCarousel?.preferences.bodyStyle,
             }
         }, currentTopic);
         
-        // As applying brand kit should be a global change, we clear any slide-specific color overrides.
         handleClearSlideOverrides('backgroundColor');
         handleClearSlideOverrides('fontColor');
     };
@@ -1269,6 +1312,7 @@ export default function App() {
                     onClose={() => setIsAssistantOpen(false)}
                     settings={settings}
                     t={t}
+                    parseError={parseAndDisplayError}
                 />
             )}
             {isHashtagModalOpen && (
@@ -2048,7 +2092,7 @@ const Generator: React.FC<{
                 {error && (
                     <div className="absolute top-20 z-50 max-w-xl w-full bg-red-100 dark:bg-red-900/50 border border-red-400 dark:border-red-600 text-red-700 dark:text-red-200 px-4 py-3 rounded-md shadow-lg" role="alert">
                         <strong className="font-bold">{t('errorTitle')}: </strong>
-                        <span className="block sm:inline">{error}</span>
+                        <span className="block sm:inline" dangerouslySetInnerHTML={{ __html: error }} />
                     </div>
                 )}
                 {isGenerating && <Loader text={generationMessage} />}
@@ -2104,7 +2148,8 @@ const AiAssistantModal: React.FC<{
     onClose: () => void;
     settings: AppSettings;
     t: TFunction;
-}> = ({ topic, onClose, settings, t }) => {
+    parseError: (error: any) => string;
+}> = ({ topic, onClose, settings, t, parseError }) => {
     const [suggestions, setSuggestions] = React.useState<string[]>([]);
     const [isLoading, setIsLoading] = React.useState(false);
     const [error, setError] = React.useState<string | null>(null);
@@ -2117,7 +2162,7 @@ const AiAssistantModal: React.FC<{
             const result = await getAiAssistance(topic, type, settings);
             setSuggestions(result);
         } catch (err: any) {
-            setError(err.message || t('errorUnknown'));
+            setError(parseError(err));
         } finally {
             setIsLoading(false);
         }
@@ -2134,7 +2179,7 @@ const AiAssistantModal: React.FC<{
                 </div>
                 <div className="mt-4 p-4 h-64 overflow-y-auto bg-gray-50 dark:bg-gray-700/50 rounded-md">
                     {isLoading && <Loader text="..." />}
-                    {error && <p className="text-red-500">{error}</p>}
+                    {error && <p className="text-red-500" dangerouslySetInnerHTML={{ __html: error }} />}
                     {!isLoading && !error && suggestions.length > 0 && (
                         <ul className="space-y-3">
                             {suggestions.map((s, i) => <li key={i} className="p-3 bg-white dark:bg-gray-800 rounded shadow-sm text-gray-700 dark:text-gray-300">{s}</li>)}
@@ -2171,7 +2216,7 @@ const HashtagModal: React.FC<{
                 <p className="text-gray-600 dark:text-gray-400">{t('hashtagModalSubtitle1')}"<span className="font-semibold">{topic}</span>"{t('hashtagModalSubtitle2')}</p>
                 <div className="mt-4 p-4 h-64 overflow-y-auto bg-gray-50 dark:bg-gray-700/50 rounded-md flex flex-wrap gap-2">
                     {isLoading && <Loader text="..." />}
-                    {error && <p className="text-red-500">{error}</p>}
+                    {error && <p className="text-red-500" dangerouslySetInnerHTML={{ __html: error }} />}
                     {!isLoading && !error && hashtags.length > 0 && (
                        hashtags.map((h, i) => <span key={i} className="px-2 py-1 bg-primary-100 dark:bg-primary-900/50 text-primary-800 dark:text-primary-200 rounded-full text-sm">#{h}</span>)
                     )}
@@ -2214,7 +2259,7 @@ const ThreadModal: React.FC<{
                 </div>
                 <div className="mt-4 p-4 min-h-[16rem] h-64 overflow-y-auto bg-gray-50 dark:bg-gray-700/50 rounded-md whitespace-pre-wrap font-sans">
                     {isLoading && <Loader text={t('threadModalGenerating')} />}
-                    {error && <p className="text-red-500">{error}</p>}
+                    {error && <p className="text-red-500" dangerouslySetInnerHTML={{ __html: error }} />}
                     {!isLoading && !error && threadContent && (
                        <p className="text-gray-800 dark:text-gray-200">{threadContent}</p>
                     )}
