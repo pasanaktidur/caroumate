@@ -13,6 +13,8 @@
 
 
 
+
+
 import * as React from 'react';
 import type { AppView, UserProfile, Carousel, SlideData, DesignPreferences, AppSettings, Language, TextStyle, BrandKit } from './types';
 import { DesignStyle, FontChoice, AspectRatio, AIModel } from './types';
@@ -149,9 +151,6 @@ const translations = {
     settingsTitle: 'Settings',
     aiModelLabel: 'AI Model',
     aiModelHint: "Choose the AI model. 'gemini-2.5-flash' is fast, while 'gemini-2.5-pro' is more powerful for complex content.",
-    apiKeySourceLabel: 'API Key Source',
-    apiKeySourceCarouMate: 'Use CarouMate API Key (Default)',
-    apiKeySourceCustom: 'Use your own Google AI API Key',
     apiKeyLabel: 'Google AI API Key',
     apiKeyPlaceholder: 'Enter your Google AI API key',
     apiKeyHint: 'Your API key is stored securely in your browser and is required for all AI features.',
@@ -304,9 +303,6 @@ const translations = {
     settingsTitle: 'Pengaturan',
     aiModelLabel: 'Model AI',
     aiModelHint: "Pilih model AI. 'gemini-2.5-flash' cepat, sedangkan 'gemini-2.5-pro' lebih kuat untuk konten yang kompleks.",
-    apiKeySourceLabel: 'Sumber Kunci API',
-    apiKeySourceCarouMate: 'Gunakan Kunci API CarouMate (Default)',
-    apiKeySourceCustom: 'Gunakan Kunci API Google AI Anda sendiri',
     apiKeyLabel: 'Kunci API Google AI',
     apiKeyPlaceholder: 'Masukkan kunci API Google AI Anda',
     apiKeyHint: 'Kunci API Anda disimpan dengan aman di browser Anda dan diperlukan untuk semua fitur AI.',
@@ -348,7 +344,6 @@ const DOWNLOADS_STORAGE_KEY = 'caroumate-downloads';
 
 const defaultSettings: AppSettings = {
     aiModel: AIModel.GEMINI_2_5_FLASH,
-    apiKeySource: 'caroumate',
     apiKey: '',
     systemPrompt: 'You are an expert social media content strategist specializing in creating viral carousels.',
     brandKit: {
@@ -2305,29 +2300,10 @@ const SettingsScreen: React.FC<{
                     <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">{t('aiModelHint')}</p>
                 </div>
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('apiKeySourceLabel')}</label>
-                    <fieldset className="mt-2">
-                        <legend className="sr-only">API Key Source</legend>
-                        <div className="space-y-2">
-                            <div className="flex items-center">
-                                <input id="key-source-caroumate" name="key-source" type="radio" value="caroumate" checked={settings.apiKeySource === 'caroumate'} onChange={e => setSettings({...settings, apiKeySource: e.target.value as 'caroumate' | 'custom'})} className="h-4 w-4 text-primary-600 border-gray-300 focus:ring-primary-500" />
-                                <label htmlFor="key-source-caroumate" className="ml-3 block text-sm text-gray-700 dark:text-gray-300">{t('apiKeySourceCarouMate')}</label>
-                            </div>
-                            <div className="flex items-center">
-                                <input id="key-source-custom" name="key-source" type="radio" value="custom" checked={settings.apiKeySource === 'custom'} onChange={e => setSettings({...settings, apiKeySource: e.target.value as 'caroumate' | 'custom'})} className="h-4 w-4 text-primary-600 border-gray-300 focus:ring-primary-500" />
-                                <label htmlFor="key-source-custom" className="ml-3 block text-sm text-gray-700 dark:text-gray-300">{t('apiKeySourceCustom')}</label>
-                            </div>
-                        </div>
-                    </fieldset>
+                    <label htmlFor="apiKey" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('apiKeyLabel')}</label>
+                    <input type="password" id="apiKey" value={settings.apiKey} onChange={e => setSettings({ ...settings, apiKey: e.target.value })} placeholder={t('apiKeyPlaceholder')} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"/>
+                    <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">{t('apiKeyHint')}</p>
                 </div>
-
-                {settings.apiKeySource === 'custom' && (
-                     <div>
-                        <label htmlFor="apiKey" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('apiKeyLabel')}</label>
-                        <input type="password" id="apiKey" value={settings.apiKey} onChange={e => setSettings({ ...settings, apiKey: e.target.value })} placeholder={t('apiKeyPlaceholder')} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"/>
-                        <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">{t('apiKeyHint')}</p>
-                    </div>
-                )}
                  <div>
                     <label htmlFor="systemPrompt" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('systemPromptLabel')}</label>
                     <textarea id="systemPrompt" value={settings.systemPrompt} onChange={e => setSettings({ ...settings, systemPrompt: e.target.value })} rows={3} placeholder={t('systemPromptPlaceholder')} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"/>
@@ -2495,6 +2471,17 @@ const TutorialScreen: React.FC<{ onBack: () => void; t: TFunction }> = ({ onBack
                         <h2>1. Memulai: Dalam Satu Menit Pertama</h2>
                         <ol>
                             <li><strong>Masuk & Pengaturan Profil:</strong> Cukup klik tombol utama, lalu isi nama dan <em>niche</em> konten Anda (misalnya, "Pemasaran Digital," "Kebugaran," "Kuliner"). Ini membantu AI kami memberikan konten yang lebih relevan untuk Anda.</li>
+                        </ol>
+
+                        <h2>Mendapatkan Google AI API Key Anda</h2>
+                        <p>CarouMate menggunakan teknologi AI dari Google. Untuk mengaktifkan semua fitur AI, Anda memerlukan API Key (kunci API) pribadi dari Google AI Studio. Kunci ini gratis dan mudah didapat. Kunci API Anda disimpan dengan aman hanya di browser Anda dan tidak pernah dikirim ke mana pun.</p>
+                        <ol>
+                            <li><strong>Kunjungi Google AI Studio:</strong> Buka <a href="https://aistudio.google.com/" target="_blank" rel="noopener noreferrer" className="text-primary-600 dark:text-primary-400 hover:underline">Google AI Studio</a> di browser Anda.</li>
+                            <li><strong>Masuk dengan Akun Google:</strong> Login menggunakan akun Google Anda.</li>
+                            <li><strong>Dapatkan API Key:</strong> Di halaman utama, klik tombol <strong>"Get API key"</strong> (biasanya di menu sebelah kiri).</li>
+                            <li><strong>Buat Kunci Baru:</strong> Pilih opsi <strong>"Create API key in new project"</strong>. Sebuah kunci baru akan dibuatkan untuk Anda.</li>
+                            <li><strong>Salin Kunci Anda:</strong> Sebuah popup akan muncul menampilkan kunci API Anda. Klik ikon salin di sebelahnya.</li>
+                            <li><strong>Simpan di CarouMate:</strong> Kembali ke CarouMate, buka <strong>Pengaturan</strong> <SettingsIcon className="w-5 h-5 inline-block" />, dan tempel (paste) kunci Anda di kolom <strong>"Google AI API Key"</strong>. Klik <strong>"Simpan Perubahan"</strong>.</li>
                         </ol>
 
                         <h2>2. Generator: Pusat Kreatif Anda</h2>
