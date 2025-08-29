@@ -21,6 +21,8 @@
 
 
 
+
+
 import * as React from 'react';
 import type { AppView, UserProfile, Carousel, SlideData, DesignPreferences, AppSettings, Language, TextStyle, BrandKit } from './types';
 import { DesignStyle, FontChoice, AspectRatio, AIModel } from './types';
@@ -629,7 +631,7 @@ const SlideCard: React.FC<{
                 {/* Content Layer */}
                 <div className="z-10 flex flex-col items-center">
                     <h2 className="font-bold leading-tight mb-4" style={{...headlineStyles, lineHeight: '1.2' }}>{slide.headline}</h2>
-                    <p className="" style={{ ...bodyStyles, lineHeight: '1.5' }}>{slide.body}</p>
+                    <p className="" style={{ ...bodyStyles, lineHeight: '1.5', whiteSpace: 'pre-wrap' }}>{slide.body}</p>
                 </div>
             </div>
             
