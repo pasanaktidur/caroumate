@@ -1,28 +1,3 @@
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 import * as React from 'react';
 import type { AppView, UserProfile, Carousel, SlideData, DesignPreferences, AppSettings, Language, TextStyle, BrandKit } from './types';
 import { DesignStyle, FontChoice, AspectRatio, AIModel } from './types';
@@ -1311,7 +1286,7 @@ export default function App() {
                 onToggleTheme={toggleTheme}
                 t={t}
             />
-            <main className="flex-grow pb-16 md:pb-0">
+            <main className="flex-grow flex flex-col pb-16 md:pb-0">
                 {renderContent()}
             </main>
             <Footer />
@@ -1814,6 +1789,44 @@ const Generator: React.FC<{
     // Scopes for applying styles
     const [colorScope, setColorScope] = React.useState<'all' | 'selected'>('all');
     
+    // --- Resizable Panel Logic ---
+    const [sidebarWidth, setSidebarWidth] = React.useState(420);
+    const [isResizing, setIsResizing] = React.useState(false);
+
+    const handleMouseDown = (e: React.MouseEvent) => {
+        e.preventDefault();
+        setIsResizing(true);
+    };
+
+    React.useEffect(() => {
+        const handleMouseMove = (e: MouseEvent) => {
+            const newWidth = e.clientX;
+            const minWidth = 360;
+            const maxWidth = 800;
+            if (newWidth >= minWidth && newWidth <= maxWidth) {
+                setSidebarWidth(newWidth);
+            }
+        };
+
+        const handleMouseUp = () => {
+            setIsResizing(false);
+            document.body.style.cursor = 'auto';
+            document.body.style.userSelect = 'auto';
+        };
+
+        if (isResizing) {
+            document.body.style.cursor = 'col-resize';
+            document.body.style.userSelect = 'none';
+            window.addEventListener('mousemove', handleMouseMove);
+            window.addEventListener('mouseup', handleMouseUp);
+        }
+
+        return () => {
+            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('mouseup', handleMouseUp);
+        };
+    }, [isResizing]);
+    
     const preferences = currentCarousel?.preferences ?? {
         backgroundColor: '#FFFFFF',
         fontColor: '#111827',
@@ -1882,12 +1895,13 @@ const Generator: React.FC<{
     
     const slideFileInputRef = React.useRef<HTMLInputElement>(null);
 
-    const isDesktop = typeof window !== 'undefined' ? window.innerWidth >= 1024 : false;
-
     return (
-        <div className="flex-grow flex flex-col lg:flex-row h-full">
+        <div className="flex-grow lg:flex lg:flex-row lg:overflow-hidden">
             {/* Left Panel: Controls */}
-            <div className="lg:w-1/3 xl:w-1/4 bg-white dark:bg-gray-800 border-r dark:border-gray-700 p-4 sm:p-6 overflow-y-auto">
+            <div
+                className="w-full lg:w-[var(--sidebar-width)] lg:flex-shrink-0 bg-white dark:bg-gray-800 border-r dark:border-gray-700 p-4 sm:p-6 lg:overflow-y-auto"
+                style={{ '--sidebar-width': `${sidebarWidth}px` } as React.CSSProperties}
+            >
                 <form onSubmit={handleSubmit} className="space-y-6">
                     {/* Step 1: Idea */}
                     <div>
@@ -2097,10 +2111,17 @@ const Generator: React.FC<{
                 )}
             </div>
 
+            {/* Resizer */}
+             <div
+                onMouseDown={handleMouseDown}
+                className="hidden lg:flex items-center justify-center w-1.5 cursor-col-resize bg-gray-200 dark:bg-gray-700 hover:bg-primary-300 dark:hover:bg-primary-800 transition-colors duration-200"
+                title="Resize panel"
+             />
+
             {/* Right Panel: Preview */}
-            <div className="flex-grow bg-gray-100 dark:bg-gray-900 flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8">
+            <div className="flex-grow bg-gray-100 dark:bg-gray-900 flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8 overflow-hidden relative min-w-0">
                 {error && (
-                    <div className="absolute top-20 z-50 max-w-xl w-full bg-red-100 dark:bg-red-900/50 border border-red-400 dark:border-red-600 text-red-700 dark:text-red-200 px-4 py-3 rounded-md shadow-lg" role="alert">
+                    <div className="absolute top-4 lg:top-8 z-50 max-w-xl w-full mx-4 bg-red-100 dark:bg-red-900/50 border border-red-400 dark:border-red-600 text-red-700 dark:text-red-200 px-4 py-3 rounded-md shadow-lg" role="alert">
                         <strong className="font-bold">{t('errorTitle')}: </strong>
                         <span className="block sm:inline" dangerouslySetInnerHTML={{ __html: error }} />
                     </div>
@@ -2108,7 +2129,7 @@ const Generator: React.FC<{
                 {isGenerating && <Loader text={generationMessage} />}
 
                 {!isGenerating && currentCarousel && (
-                    <div className="w-full flex flex-col items-center">
+                    <div className="w-full flex flex-col items-center min-w-0">
                          <div className="flex items-center space-x-4 overflow-x-auto py-4 px-4 w-full snap-x snap-mandatory">
                             {currentCarousel.slides.map(slide => (
                                 <div key={slide.id} className="snap-center">
@@ -2144,7 +2165,7 @@ const Generator: React.FC<{
                 {!isGenerating && !currentCarousel && (
                     <div className="text-center">
                         <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200">{t('previewEmptyTitle')}</h2>
-                        <p className="mt-2 text-gray-600 dark:text-gray-400">{isDesktop ? t('previewEmptySubtitleDesktop') : t('previewEmptySubtitleMobile')}</p>
+                        <p className="mt-2 text-gray-600 dark:text-gray-400">{t('previewEmptySubtitleDesktop')}</p>
                     </div>
                 )}
             </div>
