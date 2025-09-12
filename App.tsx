@@ -106,6 +106,10 @@ const translations = {
     removeButton: 'Remove',
     generateImageButton: 'Generate Image',
     applyBrandKit: 'Apply Brand Kit',
+    imageFilters: 'Image Filters',
+    brightness: 'Brightness',
+    contrast: 'Contrast',
+    saturation: 'Saturation',
 
     // SlideCard
     generatingVisual: 'Generating visual...',
@@ -262,6 +266,10 @@ const translations = {
     removeButton: 'Hapus',
     generateImageButton: 'Hasilkan Gambar',
     applyBrandKit: 'Terapkan Brand Kit',
+    imageFilters: 'Filter Gambar',
+    brightness: 'Kecerahan',
+    contrast: 'Kontras',
+    saturation: 'Saturasi',
 
     // SlideCard
     generatingVisual: 'Membuat visual...',
@@ -575,6 +583,10 @@ const SlideCard: React.FC<{
     }, [finalPrefs.style]);
 
     const finalBackgroundImage = finalPrefs.backgroundImage;
+    const imageFilters = slide.imageFilters ?? { brightness: 100, contrast: 100, saturate: 100 };
+    const imageStyle: React.CSSProperties = {
+        filter: `brightness(${imageFilters.brightness / 100}) contrast(${imageFilters.contrast / 100}) saturate(${imageFilters.saturate / 100})`
+    };
     
     return (
         <div
@@ -595,10 +607,7 @@ const SlideCard: React.FC<{
             
             {/* Background Image Layer */}
             {finalBackgroundImage && (
-                <>
-                    <img src={finalBackgroundImage} alt="Slide background" className="absolute inset-0 w-full h-full object-cover rounded-md -z-10" />
-                    <div className="absolute inset-0 bg-black/30 rounded-md -z-10"></div> {/* Dark overlay for readability */}
-                </>
+                <img src={finalBackgroundImage} alt="Slide background" style={imageStyle} className="absolute inset-0 w-full h-full object-cover rounded-md -z-10" />
             )}
 
             {/* Content Wrapper */}
@@ -1054,10 +1063,14 @@ export default function App() {
 
             for (let i = 0; i < orderedElements.length; i++) {
                 const element = orderedElements[i] as HTMLElement;
+                const slideId = element.getAttribute('data-carousel-slide');
+                const slide = currentCarousel.slides.find(s => s.id === slideId);
+                const bgColor = slide?.backgroundColor ?? currentCarousel.preferences.backgroundColor;
+
                 const canvas = await html2canvas(element, {
                     allowTaint: true,
                     useCORS: true,
-                    backgroundColor: null,
+                    backgroundColor: bgColor,
                     scale: 8,
                 });
                 const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/png'));
@@ -1705,6 +1718,43 @@ const TextStrokeControl: React.FC<{
     );
 };
 
+const ImageFilterControl: React.FC<{
+    filters: { brightness: number; contrast: number; saturate: number; };
+    onChange: (filters: { brightness: number; contrast: number; saturate: number; }) => void;
+    t: TFunction;
+}> = ({ filters, onChange, t }) => {
+    const handleFilterChange = (filterName: keyof typeof filters, value: string) => {
+        onChange({ ...filters, [filterName]: parseInt(value, 10) });
+    };
+
+    return (
+        <div className="space-y-2 p-3 bg-gray-100 dark:bg-gray-700 rounded-md border dark:border-gray-600">
+            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('imageFilters')}</h4>
+            {[
+                { name: 'brightness', label: t('brightness') },
+                { name: 'contrast', label: t('contrast') },
+                { name: 'saturate', label: t('saturation') }
+            ].map(filter => (
+                 <div key={filter.name}>
+                    <label htmlFor={filter.name} className="flex justify-between text-xs text-gray-600 dark:text-gray-400">
+                        <span>{filter.label}</span>
+                        <span>{filters[filter.name as keyof typeof filters]}%</span>
+                    </label>
+                    <input
+                        id={filter.name}
+                        type="range"
+                        min="0"
+                        max="200"
+                        value={filters[filter.name as keyof typeof filters]}
+                        onChange={e => handleFilterChange(filter.name as keyof typeof filters, e.target.value)}
+                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-600"
+                    />
+                </div>
+            ))}
+        </div>
+    );
+};
+
 
 const ColorInput: React.FC<{
     id: string;
@@ -1894,6 +1944,7 @@ const Generator: React.FC<{
     };
     
     const slideFileInputRef = React.useRef<HTMLInputElement>(null);
+    const slideImageFilters = selectedSlide?.imageFilters ?? { brightness: 100, contrast: 100, saturate: 100 };
 
     return (
         <div className="flex-grow lg:flex lg:flex-row lg:overflow-hidden">
@@ -2087,14 +2138,21 @@ const Generator: React.FC<{
                                     <input type="file" ref={slideFileInputRef} onChange={(e) => onUploadImageForSlide(e, selectedSlide.id)} accept="image/*" className="hidden"/>
                                 </div>
                                 {selectedSlide.backgroundImage && (
-                                    <button
-                                        type="button"
-                                        onClick={() => onRemoveImageForSlide(selectedSlide.id)}
-                                        className="w-full text-sm mt-2 text-red-600 hover:underline"
-                                    >
-                                        <TrashIcon className="w-4 h-4 inline-block mr-1"/>
-                                        {t('removeButton')}
-                                    </button>
+                                    <div className="mt-2 space-y-2">
+                                        <ImageFilterControl
+                                            filters={slideImageFilters}
+                                            onChange={(newFilters) => onUpdateSlide(selectedSlide.id, { imageFilters: newFilters })}
+                                            t={t}
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => onRemoveImageForSlide(selectedSlide.id)}
+                                            className="w-full text-sm mt-2 text-red-600 hover:underline"
+                                        >
+                                            <TrashIcon className="w-4 h-4 inline-block mr-1"/>
+                                            {t('removeButton')}
+                                        </button>
+                                    </div>
                                 )}
                             </div>
                             
