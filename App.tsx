@@ -60,13 +60,14 @@ const translations = {
     generator: 'Generator',
     generatorStep1Title: '1. Enter Your Idea',
     generatorTopicLabel: "What's your carousel about?",
-    generatorTopicPlaceholder: "e.g., '5 tips for growing on Instagram in 2024'",
+    generatorTopicPlaceholder: "e.g., '5 tips for growing on Instagram in 2025'",
+    generatorTopicHint: 'Hint: For a different niche, add the target audience to your idea (e.g., "...for college students").',
     generatorStep2Title: '2. Customize Your Design',
     generatorStyleLabel: 'Style',
     generatorAspectRatioLabel: 'Aspect Ratio',
     generatorFontLabel: 'Font',
     generatorBrandingLabel: 'Branding (@username)',
-    generatorBrandingPlaceholder: '@yourhandle',
+    generatorBrandingPlaceholder: '@username',
     generatorBgColorLabel: 'BG Color',
     generatorFontColorLabel: 'Font Color',
     generatorCustomBgLabel: 'Background Image',
@@ -220,13 +221,14 @@ const translations = {
     generator: 'Generator',
     generatorStep1Title: '1. Masukkan Ide Anda',
     generatorTopicLabel: 'Tentang apa carousel Anda?',
-    generatorTopicPlaceholder: "cth., '5 tips untuk berkembang di Instagram pada 2024'",
+    generatorTopicPlaceholder: "cth., '5 tips untuk berkembang di Instagram pada 2025'",
+    generatorTopicHint: 'Tips: Untuk niche yang berbeda, tambahkan target audiens di ide Anda (cth., "...untuk mahasiswa").',
     generatorStep2Title: '2. Sesuaikan Desain Anda',
     generatorStyleLabel: 'Gaya',
     generatorAspectRatioLabel: 'Rasio Aspek',
     generatorFontLabel: 'Font',
     generatorBrandingLabel: 'Branding (@username)',
-    generatorBrandingPlaceholder: '@handleanda',
+    generatorBrandingPlaceholder: '@username',
     generatorBgColorLabel: 'Warna Latar',
     generatorFontColorLabel: 'Warna Font',
     generatorCustomBgLabel: 'Gambar Latar',
@@ -1967,6 +1969,7 @@ const Generator: React.FC<{
                             className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
                             rows={3}
                         />
+                        <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">{t('generatorTopicHint')}</p>
                     </div>
                     
                     {/* Step 2: Design */}
