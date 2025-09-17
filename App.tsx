@@ -1,3 +1,4 @@
+
 import * as React from 'react';
 import type { AppView, UserProfile, Carousel, SlideData, DesignPreferences, AppSettings, Language, TextStyle, BrandKit } from './types';
 import { DesignStyle, FontChoice, AspectRatio, AIModel } from './types';
@@ -1315,7 +1316,7 @@ export default function App() {
                 onToggleTheme={toggleTheme}
                 t={t}
             />
-            <main className="flex-grow flex flex-col pb-16 md:pb-0 lg:overflow-hidden">
+            <main className="flex-grow flex flex-col pb-16 md:pb-0 lg:overflow-y-auto">
                 {renderContent()}
             </main>
             <Footer />
