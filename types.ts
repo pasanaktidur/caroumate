@@ -91,6 +91,9 @@ export enum DesignStyle {
   COLORFUL = 'Vibrant & Colorful',
   ELEGANT = 'Elegant & Refined',
   VINTAGE = 'Retro & Vintage',
+  MODERN = 'Modern & Clean',
+  CORPORATE = 'Corporate & Professional',
+  ARTISTIC = 'Artistic & Creative',
 }
 
 export enum AspectRatio {

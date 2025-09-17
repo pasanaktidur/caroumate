@@ -578,10 +578,14 @@ const SlideCard: React.FC<{
 
     const styleClasses = React.useMemo(() => {
         switch (finalPrefs.style) {
+            case DesignStyle.MINIMALIST: return '';
             case DesignStyle.BOLD: return 'border-4 border-gray-900 dark:border-gray-200';
             case DesignStyle.ELEGANT: return 'border border-gray-300 dark:border-gray-600 shadow-md dark:shadow-xl dark:shadow-black/20';
             case DesignStyle.COLORFUL: return `border-4 border-transparent bg-gradient-to-br from-pink-300 to-indigo-400`;
             case DesignStyle.VINTAGE: return 'border-2 border-yellow-800 dark:border-yellow-600 bg-yellow-50 dark:bg-yellow-900/20';
+            case DesignStyle.MODERN: return 'bg-white dark:bg-gray-800 border-b-4 border-gray-300 dark:border-gray-600';
+            case DesignStyle.CORPORATE: return 'bg-white dark:bg-gray-800 border-l-4 border-blue-600 dark:border-blue-400';
+            case DesignStyle.ARTISTIC: return 'bg-gradient-to-br from-indigo-800 via-purple-900 to-slate-900 text-white';
             default: return 'border border-gray-200 dark:border-gray-700';
         }
     }, [finalPrefs.style]);
@@ -592,13 +596,21 @@ const SlideCard: React.FC<{
         filter: `brightness(${imageFilters.brightness / 100}) contrast(${imageFilters.contrast / 100}) saturate(${imageFilters.saturate / 100})`
     };
     
+    const stylesThatDefineTheirOwnBackground = [
+        DesignStyle.COLORFUL, 
+        DesignStyle.VINTAGE, 
+        DesignStyle.MODERN, 
+        DesignStyle.CORPORATE, 
+        DesignStyle.ARTISTIC
+    ];
+
     return (
         <div
             data-carousel-slide={slide.id}
             onClick={onClick}
             className={`w-64 sm:w-72 flex-shrink-0 relative rounded-lg cursor-pointer transition-all duration-300 transform ${styleClasses} ${font} ${aspectRatioClass} ${isSelected ? 'ring-4 ring-primary-500 ring-offset-2 scale-105 shadow-2xl shadow-primary-600/50' : 'hover:scale-102'}`}
             style={{
-                backgroundColor: finalPrefs.style !== DesignStyle.COLORFUL && !finalBackgroundImage ? finalPrefs.backgroundColor : undefined,
+                backgroundColor: !stylesThatDefineTheirOwnBackground.includes(finalPrefs.style) && !finalBackgroundImage ? finalPrefs.backgroundColor : undefined,
                 color: finalPrefs.fontColor
             }}
         >
