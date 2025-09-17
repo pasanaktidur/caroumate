@@ -272,7 +272,7 @@ const translations = {
     imageFilters: 'Filter Gambar',
     brightness: 'Kecerahan',
     contrast: 'Kontras',
-    saturation: 'Saturasi',
+    saturasi: 'Saturasi',
 
     // SlideCard
     generatingVisual: 'Membuat visual...',
@@ -1291,7 +1291,7 @@ export default function App() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col">
+        <div className="h-screen bg-gray-50 dark:bg-gray-950 flex flex-col">
             <Header
                 user={user}
                 onLogout={handleLogout}
@@ -1303,7 +1303,7 @@ export default function App() {
                 onToggleTheme={toggleTheme}
                 t={t}
             />
-            <main className="flex-grow flex flex-col pb-16 md:pb-0">
+            <main className="flex-grow flex flex-col pb-16 md:pb-0 lg:overflow-hidden">
                 {renderContent()}
             </main>
             <Footer />
@@ -2182,7 +2182,7 @@ const Generator: React.FC<{
              />
 
             {/* Right Panel: Preview */}
-            <div className="flex-grow bg-gray-100 dark:bg-gray-900 flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8 overflow-hidden relative min-w-0">
+            <div className="flex-grow bg-gray-100 dark:bg-gray-900 flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8 lg:overflow-y-auto relative min-w-0">
                 {error && (
                     <div className="absolute top-4 lg:top-8 z-50 max-w-xl w-full mx-4 bg-red-100 dark:bg-red-900/50 border border-red-400 dark:border-red-600 text-red-700 dark:text-red-200 px-4 py-3 rounded-md shadow-lg" role="alert">
                         <strong className="font-bold">{t('errorTitle')}: </strong>
