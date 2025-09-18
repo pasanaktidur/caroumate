@@ -1,4 +1,5 @@
 
+
 import * as React from 'react';
 import type { AppView, UserProfile, Carousel, SlideData, DesignPreferences, AppSettings, Language, TextStyle, BrandKit } from './types';
 import { DesignStyle, FontChoice, AspectRatio, AIModel } from './types';
@@ -1082,12 +1083,18 @@ export default function App() {
                 const element = orderedElements[i] as HTMLElement;
                 const slideId = element.getAttribute('data-carousel-slide');
                 const slide = currentCarousel.slides.find(s => s.id === slideId);
-                const bgColor = slide?.backgroundColor ?? currentCarousel.preferences.backgroundColor;
+                
+                // Determine the final background color and image for the slide
+                const finalBgImage = slide?.backgroundImage ?? currentCarousel.preferences.backgroundImage;
+                const finalBgColor = slide?.backgroundColor ?? currentCarousel.preferences.backgroundColor;
 
                 const canvas = await html2canvas(element, {
                     allowTaint: true,
                     useCORS: true,
-                    backgroundColor: bgColor,
+                    // If a background image exists, set a null/transparent background for the canvas.
+                    // This forces html2canvas to render the `<img>` element with its styles (including filters).
+                    // Otherwise, set the explicit background color for the slide.
+                    backgroundColor: finalBgImage ? null : finalBgColor,
                     scale: 8,
                 });
                 const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/png'));
