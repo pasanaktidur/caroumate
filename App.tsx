@@ -6,6 +6,8 @@
 
 
 
+
+
 import * as React from 'react';
 import type { AppView, UserProfile, Carousel, SlideData, DesignPreferences, AppSettings, Language, TextStyle, BrandKit } from './types';
 import { DesignStyle, FontChoice, AspectRatio, AIModel } from './types';
@@ -178,6 +180,42 @@ const translations = {
     tutorialDownloadPDF: 'Download as PDF',
     tutorialBackToDashboard: 'Back to Dashboard',
     tutorialGeneratingPDF: 'Generating PDF...',
+    tutorialWelcome: 'Welcome to CarouMate!',
+    tutorialIntro: 'This guide will walk you through setting up and using CarouMate to create amazing carousels.',
+    tutorialSection1Title: '1. Getting Your Google AI API Key',
+    tutorialSection1P1: 'CarouMate uses the Google Gemini API to power its AI features. To use these features, you\'ll need a free API key from Google AI Studio.',
+    tutorialSection1L1: 'Go to <a href="https://aistudio.google.com/" target="_blank" rel="noopener noreferrer">Google AI Studio</a>.',
+    tutorialSection1L2: 'Sign in with your Google account.',
+    tutorialSection1L3: 'Click on the <strong>"Get API Key"</strong> button (usually on the top left).',
+    tutorialSection1L4: 'Click <strong>"Create API key in new project"</strong>. A new key will be generated for you.',
+    tutorialSection1L5: 'Copy the generated API key. It\'s a long string of letters and numbers.',
+    tutorialSection2Title: '2. Setting Up CarouMate',
+    tutorialSection2P1: 'Once you have your API key, you need to add it to CarouMate.',
+    tutorialSection2L1: 'In CarouMate, click the <strong>Settings</strong> icon (the gear symbol) in the header.',
+    tutorialSection2L2: 'Find the <strong>"Google AI API Key"</strong> field.',
+    tutorialSection2L3: 'Paste your copied API key into this field.',
+    tutorialSection2L4: 'Click <strong>"Save Changes"</strong>. Your key is stored securely in your browser\'s local storage and is never sent to our servers.',
+    tutorialSection3Title: '3. Creating Your First Carousel',
+    tutorialSection3P1: 'Now you\'re ready to create!',
+    tutorialSection3DT1: '<strong>Step 1: Enter Your Idea</strong>',
+    tutorialSection3DD1: 'In the Generator, type the topic for your carousel. Be descriptive! For example, instead of "Fitness", try "5 beginner-friendly exercises for busy professionals".',
+    tutorialSection3DT2: '<strong>Step 2: Customize Your Design</strong>',
+    tutorialSection3DD2: 'Choose a style, aspect ratio, font, colors, and add your branding (like your Instagram @username). These are your global settings.',
+    tutorialSection3DT3: '<strong>Step 3: Generate!</strong>',
+    tutorialSection3DD3: 'Click the "Create Carousel!" button. The AI will generate 5-7 slides with headlines, body text, and ideas for visuals.',
+    tutorialSection3DT4: '<strong>Step 4: Edit & Refine</strong>',
+    tutorialSection3DD4L1: 'Click on any slide in the preview to select it.',
+    tutorialSection3DD4L2: 'The left panel will now show the content for the selected slide.',
+    tutorialSection3DD4L3: 'You can edit the text directly, regenerate parts of it using the Refresh icon (the circular arrows), and format it using the toolbar.',
+    tutorialSection3DD4L4: 'Use the visual tools to upload your own image or generate one with AI based on the visual prompt.',
+    tutorialSection3DD4L5: 'Adjust colors and background images for individual slides by selecting a slide and using the design controls.',
+    tutorialSection3DT5: '<strong>Step 5: Download</strong>',
+    tutorialSection3DD5: 'Once you\'re happy with your carousel, click "Download All". A .zip file containing all your slides as high-resolution PNG images will be downloaded, ready to post!',
+    tutorialProTipsTitle: 'Pro Tips',
+    tutorialProTipsL1: '<strong>Brand Kit:</strong> Set up your Brand Kit in the Settings modal for one-click application of your brand\'s colors, fonts, and logo.',
+    tutorialProTipsL2: '<strong>AI Assistant:</strong> Stuck on your first or last slide? Use the AI Assistant to generate ideas for hooks (intro slides) and calls-to-action (outro slides).',
+    tutorialProTipsL3: '<strong>Hashtag Generator:</strong> Click "Generate Hashtags" to get a list of relevant hashtags for your topic, ready to copy and paste.',
+    tutorialProTipsL4: '<strong>Thread Converter:</strong> Repurpose your content for Threads or X (Twitter) with one click using the "Convert to Thread" button.',
 
   },
   id: {
@@ -340,6 +378,42 @@ const translations = {
     tutorialDownloadPDF: 'Unduh sebagai PDF',
     tutorialBackToDashboard: 'Kembali ke Dasbor',
     tutorialGeneratingPDF: 'Membuat PDF...',
+    tutorialWelcome: 'Selamat Datang di CarouMate!',
+    tutorialIntro: 'Panduan ini akan memandu Anda dalam menyiapkan dan menggunakan CarouMate untuk membuat carousel yang luar biasa.',
+    tutorialSection1Title: '1. Mendapatkan Kunci API Google AI Anda',
+    tutorialSection1P1: 'CarouMate menggunakan Google Gemini API untuk mendukung fitur AI-nya. Untuk menggunakan fitur ini, Anda memerlukan kunci API gratis dari Google AI Studio.',
+    tutorialSection1L1: 'Buka <a href="https://aistudio.google.com/" target="_blank" rel="noopener noreferrer">Google AI Studio</a>.',
+    tutorialSection1L2: 'Masuk dengan akun Google Anda.',
+    tutorialSection1L3: 'Klik tombol <strong>"Get API Key"</strong> (biasanya di kiri atas).',
+    tutorialSection1L4: 'Klik <strong>"Create API key in new project"</strong>. Kunci baru akan dibuat untuk Anda.',
+    tutorialSection1L5: 'Salin kunci API yang dihasilkan. Kunci ini adalah serangkaian huruf dan angka yang panjang.',
+    tutorialSection2Title: '2. Menyiapkan CarouMate',
+    tutorialSection2P1: 'Setelah Anda memiliki kunci API, Anda perlu menambahkannya ke CarouMate.',
+    tutorialSection2L1: 'Di CarouMate, klik ikon <strong>Pengaturan</strong> (simbol roda gigi) di header.',
+    tutorialSection2L2: 'Temukan kolom <strong>"Google AI API Key"</strong>.',
+    tutorialSection2L3: 'Tempel (paste) kunci API yang telah Anda salin ke kolom ini.',
+    tutorialSection2L4: 'Klik <strong>"Save Changes"</strong>. Kunci Anda disimpan dengan aman di penyimpanan lokal browser Anda dan tidak pernah dikirim ke server kami.',
+    tutorialSection3Title: '3. Membuat Carousel Pertama Anda',
+    tutorialSection3P1: 'Sekarang Anda siap untuk berkreasi!',
+    tutorialSection3DT1: '<strong>Langkah 1: Masukkan Ide Anda</strong>',
+    tutorialSection3DD1: 'Di Generator, ketik topik untuk carousel Anda. Berikan deskripsi yang jelas! Contohnya, daripada "Kebugaran", coba "5 latihan ramah pemula untuk para profesional yang sibuk".',
+    tutorialSection3DT2: '<strong>Langkah 2: Sesuaikan Desain Anda</strong>',
+    tutorialSection3DD2: 'Pilih gaya, rasio aspek, font, warna, dan tambahkan branding Anda (seperti @username Instagram Anda). Ini adalah pengaturan global Anda.',
+    tutorialSection3DT3: '<strong>Langkah 3: Hasilkan!</strong>',
+    tutorialSection3DD3: 'Klik tombol "Buat Carousel!". AI akan menghasilkan 5-7 slide dengan judul, isi teks, dan ide untuk visual.',
+    tutorialSection3DT4: '<strong>Langkah 4: Edit & Sempurnakan</strong>',
+    tutorialSection3DD4L1: 'Klik pada slide mana pun di pratinjau untuk memilihnya.',
+    tutorialSection3DD4L2: 'Panel kiri sekarang akan menampilkan konten untuk slide yang dipilih.',
+    tutorialSection3DD4L3: 'Anda dapat mengedit teks secara langsung, membuatnya ulang menggunakan ikon Segarkan (panah melingkar), dan memformatnya menggunakan bilah alat.',
+    tutorialSection3DD4L4: 'Gunakan alat visual untuk mengunggah gambar Anda sendiri atau menghasilkan gambar dengan AI berdasarkan prompt visual.',
+    tutorialSection3DD4L5: 'Sesuaikan warna dan gambar latar untuk slide individual dengan memilih slide dan menggunakan kontrol desain.',
+    tutorialSection3DT5: '<strong>Langkah 5: Unduh</strong>',
+    tutorialSection3DD5: 'Setelah Anda puas dengan carousel Anda, klik "Unduh Semua". Sebuah file .zip yang berisi semua slide Anda sebagai gambar PNG beresolusi tinggi akan diunduh, siap untuk diposting!',
+    tutorialProTipsTitle: 'Tips Pro',
+    tutorialProTipsL1: '<strong>Brand Kit:</strong> Siapkan Brand Kit Anda di modal Pengaturan untuk aplikasi sekali klik dari warna, font, dan logo merek Anda.',
+    tutorialProTipsL2: '<strong>Asisten AI:</strong> Buntu pada slide pertama atau terakhir Anda? Gunakan Asisten AI untuk menghasilkan ide untuk hook (slide pembuka) dan ajakan bertindak (slide penutup).',
+    tutorialProTipsL3: '<strong>Generator Hashtag:</strong> Klik "Buat Hashtag" untuk mendapatkan daftar hashtag yang relevan untuk topik Anda, siap untuk disalin dan ditempel.',
+    tutorialProTipsL4: '<strong>Konverter Thread:</strong> Gunakan kembali konten Anda untuk Threads atau X (Twitter) dengan sekali klik menggunakan tombol "Ubah jadi Thread".',
   },
 };
 
@@ -2610,69 +2684,69 @@ const TutorialScreen: React.FC<{ onBack: () => void, t: TFunction }> = ({ onBack
             </div>
            
             <div ref={tutorialContentRef} className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-md prose dark:prose-invert max-w-none">
-                <h2>Welcome to CarouMate!</h2>
-                <p>This guide will walk you through setting up and using CarouMate to create amazing carousels.</p>
+                <h2>{t('tutorialWelcome')}</h2>
+                <p>{t('tutorialIntro')}</p>
 
                 <hr/>
 
-                <h3>1. Getting Your Google AI API Key</h3>
-                <p>CarouMate uses the Google Gemini API to power its AI features. To use these features, you'll need a free API key from Google AI Studio.</p>
+                <h3>{t('tutorialSection1Title')}</h3>
+                <p>{t('tutorialSection1P1')}</p>
                 <ol>
-                    <li>Go to <a href="https://aistudio.google.com/" target="_blank" rel="noopener noreferrer">Google AI Studio</a>.</li>
-                    <li>Sign in with your Google account.</li>
-                    <li>Click on the <strong>"Get API Key"</strong> button (usually on the top left).</li>
-                    <li>Click <strong>"Create API key in new project"</strong>. A new key will be generated for you.</li>
-                    <li>Copy the generated API key. It's a long string of letters and numbers.</li>
+                    <li dangerouslySetInnerHTML={{ __html: t('tutorialSection1L1') }} />
+                    <li>{t('tutorialSection1L2')}</li>
+                    <li dangerouslySetInnerHTML={{ __html: t('tutorialSection1L3') }} />
+                    <li dangerouslySetInnerHTML={{ __html: t('tutorialSection1L4') }} />
+                    <li>{t('tutorialSection1L5')}</li>
                 </ol>
                 <img src="https://storage.googleapis.com/gemini-web-us-east1-prod-scratch-1b8e1957/i/2024/5/1/52e259e2-2a7e-4171-be56-3b9576e87f3b.png" alt="Google AI Studio Get API Key" className="rounded-lg shadow-lg"/>
 
-                <h3>2. Setting Up CarouMate</h3>
-                <p>Once you have your API key, you need to add it to CarouMate.</p>
+                <h3>{t('tutorialSection2Title')}</h3>
+                <p>{t('tutorialSection2P1')}</p>
                 <ol>
-                    <li>In CarouMate, click the <strong>Settings</strong> icon (<SettingsIcon className="w-4 h-4 inline-block"/>) in the header.</li>
-                    <li>Find the <strong>"Google AI API Key"</strong> field.</li>
-                    <li>Paste your copied API key into this field.</li>
-                    <li>Click <strong>"Save Changes"</strong>. Your key is stored securely in your browser's local storage and is never sent to our servers.</li>
+                    <li dangerouslySetInnerHTML={{ __html: t('tutorialSection2L1') }} />
+                    <li dangerouslySetInnerHTML={{ __html: t('tutorialSection2L2') }} />
+                    <li>{t('tutorialSection2L3')}</li>
+                    <li dangerouslySetInnerHTML={{ __html: t('tutorialSection2L4') }} />
                 </ol>
                  <img src="https://storage.googleapis.com/gemini-web-us-east1-prod-scratch-1b8e1957/i/2024/5/1/eb19231f-49cc-43ac-9519-913a6e87000e.png" alt="CarouMate Settings API Key" className="rounded-lg shadow-lg"/>
 
                 <hr/>
 
-                <h3>3. Creating Your First Carousel</h3>
-                <p>Now you're ready to create!</p>
+                <h3>{t('tutorialSection3Title')}</h3>
+                <p>{t('tutorialSection3P1')}</p>
                 <dl>
-                    <dt><strong>Step 1: Enter Your Idea</strong></dt>
-                    <dd>In the Generator, type the topic for your carousel. Be descriptive! For example, instead of "Fitness", try "5 beginner-friendly exercises for busy professionals".</dd>
+                    <dt dangerouslySetInnerHTML={{ __html: t('tutorialSection3DT1') }} />
+                    <dd>{t('tutorialSection3DD1')}</dd>
                     
-                    <dt><strong>Step 2: Customize Your Design</strong></dt>
-                    <dd>Choose a style, aspect ratio, font, colors, and add your branding (like your Instagram @username). These are your global settings.</dd>
+                    <dt dangerouslySetInnerHTML={{ __html: t('tutorialSection3DT2') }} />
+                    <dd>{t('tutorialSection3DD2')}</dd>
 
-                    <dt><strong>Step 3: Generate!</strong></dt>
-                    <dd>Click the "Create Carousel!" button. The AI will generate 5-7 slides with headlines, body text, and ideas for visuals.</dd>
+                    <dt dangerouslySetInnerHTML={{ __html: t('tutorialSection3DT3') }} />
+                    <dd>{t('tutorialSection3DD3')}</dd>
 
-                    <dt><strong>Step 4: Edit & Refine</strong></dt>
+                    <dt dangerouslySetInnerHTML={{ __html: t('tutorialSection3DT4') }} />
                     <dd>
                         <ul>
-                            <li>Click on any slide in the preview to select it.</li>
-                            <li>The left panel will now show the content for the selected slide.</li>
-                            <li>You can edit the text directly, regenerate parts of it using the <RefreshIcon className="w-4 h-4 inline-block"/> icon, and format it using the toolbar.</li>
-                            <li>Use the visual tools to upload your own image or generate one with AI based on the visual prompt.</li>
-                            <li>Adjust colors and background images for individual slides by selecting a slide and using the design controls.</li>
+                            <li>{t('tutorialSection3DD4L1')}</li>
+                            <li>{t('tutorialSection3DD4L2')}</li>
+                            <li dangerouslySetInnerHTML={{ __html: t('tutorialSection3DD4L3') }} />
+                            <li>{t('tutorialSection3DD4L4')}</li>
+                            <li>{t('tutorialSection3DD4L5')}</li>
                         </ul>
                     </dd>
 
-                    <dt><strong>Step 5: Download</strong></dt>
-                    <dd>Once you're happy with your carousel, click "Download All". A .zip file containing all your slides as high-resolution PNG images will be downloaded, ready to post!</dd>
+                    <dt dangerouslySetInnerHTML={{ __html: t('tutorialSection3DT5') }} />
+                    <dd>{t('tutorialSection3DD5')}</dd>
                 </dl>
 
                 <hr/>
                 
-                <h3>Pro Tips</h3>
+                <h3>{t('tutorialProTipsTitle')}</h3>
                 <ul>
-                    <li><strong>Brand Kit:</strong> Set up your Brand Kit in the Settings modal for one-click application of your brand's colors, fonts, and logo.</li>
-                    <li><strong>AI Assistant:</strong> Stuck on your first or last slide? Use the AI Assistant to generate ideas for hooks (intro slides) and calls-to-action (outro slides).</li>
-                    <li><strong>Hashtag Generator:</strong> Click "Generate Hashtags" to get a list of relevant hashtags for your topic, ready to copy and paste.</li>
-                    <li><strong>Thread Converter:</strong> Repurpose your content for Threads or X (Twitter) with one click using the "Convert to Thread" button.</li>
+                    <li dangerouslySetInnerHTML={{ __html: t('tutorialProTipsL1') }} />
+                    <li dangerouslySetInnerHTML={{ __html: t('tutorialProTipsL2') }} />
+                    <li dangerouslySetInnerHTML={{ __html: t('tutorialProTipsL3') }} />
+                    <li dangerouslySetInnerHTML={{ __html: t('tutorialProTipsL4') }} />
                 </ul>
             </div>
         </div>
