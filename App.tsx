@@ -107,10 +107,6 @@ const translations = {
     removeButton: 'Remove',
     generateImageButton: 'Generate Image',
     applyBrandKit: 'Apply Brand Kit',
-    imageFilters: 'Image Filters',
-    brightness: 'Brightness',
-    contrast: 'Contrast',
-    saturation: 'Saturation',
 
     // SlideCard
     generatingVisual: 'Generating visual...',
@@ -331,10 +327,6 @@ const translations = {
     removeButton: 'Hapus',
     generateImageButton: 'Hasilkan Gambar',
     applyBrandKit: 'Terapkan Brand Kit',
-    imageFilters: 'Filter Gambar',
-    brightness: 'Kecerahan',
-    contrast: 'Kontras',
-    saturasi: 'Saturasi',
 
     // SlideCard
     generatingVisual: 'Membuat visual...',
@@ -718,10 +710,6 @@ const SlideCard: React.FC<{
     }, [finalPrefs.style]);
 
     const finalBackgroundImage = finalPrefs.backgroundImage;
-    const imageFilters = slide.imageFilters ?? { brightness: 100, contrast: 100, saturate: 100 };
-    const imageStyle: React.CSSProperties = {
-        filter: `brightness(${imageFilters.brightness / 100}) contrast(${imageFilters.contrast / 100}) saturate(${imageFilters.saturate / 100})`
-    };
     
     const stylesThatDefineTheirOwnBackground = [
         DesignStyle.COLORFUL, 
@@ -737,7 +725,7 @@ const SlideCard: React.FC<{
 
     if (finalBackgroundImage) {
         // If there's a background image, we MUST make the container's background transparent
-        // and remove any gradients so the <img> tag (with its filters) is visible. This inline style will override
+        // and remove any gradients so the <img> tag is visible. This inline style will override
         // any background color or gradient utility classes from the 'style' presets.
         containerStyle.backgroundColor = 'transparent';
         containerStyle.backgroundImage = 'none';
@@ -762,7 +750,7 @@ const SlideCard: React.FC<{
             
             {/* Background Image Layer */}
             {finalBackgroundImage && (
-                <img src={finalBackgroundImage} alt="Slide background" style={imageStyle} className="absolute inset-0 w-full h-full object-cover rounded-md -z-10" />
+                <img src={finalBackgroundImage} alt="Slide background" className="absolute inset-0 w-full h-full object-cover rounded-md -z-10" />
             )}
 
             {/* Content Wrapper */}
@@ -1229,7 +1217,7 @@ export default function App() {
                     allowTaint: true,
                     useCORS: true,
                     // If a background image exists, set a null/transparent background for the canvas.
-                    // This forces html2canvas to render the `<img>` element with its styles (including filters).
+                    // This forces html2canvas to render the `<img>` element with its styles.
                     // Otherwise, set the explicit background color for the slide.
                     backgroundColor: finalBgImage ? null : finalBgColor,
                     scale: 8,
@@ -1880,44 +1868,6 @@ const TextStrokeControl: React.FC<{
     );
 };
 
-const ImageFilterControl: React.FC<{
-    filters: { brightness: number; contrast: number; saturate: number; };
-    onChange: (filters: { brightness: number; contrast: number; saturate: number; }) => void;
-    t: TFunction;
-}> = ({ filters, onChange, t }) => {
-    const handleFilterChange = (filterName: keyof typeof filters, value: string) => {
-        onChange({ ...filters, [filterName]: parseInt(value, 10) });
-    };
-
-    return (
-        <div className="space-y-2 p-3 bg-gray-100 dark:bg-gray-700 rounded-md border dark:border-gray-600">
-            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('imageFilters')}</h4>
-            {[
-                { name: 'brightness', label: t('brightness') },
-                { name: 'contrast', label: t('contrast') },
-                { name: 'saturate', label: t('saturation') }
-            ].map(filter => (
-                 <div key={filter.name}>
-                    <label htmlFor={filter.name} className="flex justify-between text-xs text-gray-600 dark:text-gray-400">
-                        <span>{filter.label}</span>
-                        <span>{filters[filter.name as keyof typeof filters]}%</span>
-                    </label>
-                    <input
-                        id={filter.name}
-                        type="range"
-                        min="0"
-                        max="200"
-                        value={filters[filter.name as keyof typeof filters]}
-                        onChange={e => handleFilterChange(filter.name as keyof typeof filters, e.target.value)}
-                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-600"
-                    />
-                </div>
-            ))}
-        </div>
-    );
-};
-
-
 const ColorInput: React.FC<{
     id: string;
     label: string;
@@ -2107,7 +2057,6 @@ const Generator: React.FC<{
     };
     
     const slideFileInputRef = React.useRef<HTMLInputElement>(null);
-    const slideImageFilters = selectedSlide?.imageFilters ?? { brightness: 100, contrast: 100, saturate: 100 };
 
     return (
         <div className="flex-grow lg:flex lg:flex-row lg:overflow-hidden">
@@ -2266,10 +2215,7 @@ const Generator: React.FC<{
                                 <button type="button" onClick={() => onGenerateImageForSlide(selectedSlide.id)} className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-accent-500 hover:bg-accent-600" disabled={isGeneratingImageForSlide === selectedSlide.id}><SparklesIcon className="w-4 h-4 mr-2"/>{t('generateImageButton')}</button>
                             </div>
                              {selectedSlide.backgroundImage && (
-                                <div className="space-y-2">
-                                    <ImageFilterControl filters={slideImageFilters} onChange={filters => onUpdateSlide(selectedSlide.id, { imageFilters: filters })} t={t}/>
-                                    <button type="button" onClick={() => onRemoveImageForSlide(selectedSlide.id)} className="w-full mt-2 inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200"><TrashIcon className="w-4 h-4 mr-2"/>{t('removeButton')}</button>
-                                </div>
+                                <button type="button" onClick={() => onRemoveImageForSlide(selectedSlide.id)} className="w-full mt-2 inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200"><TrashIcon className="w-4 h-4 mr-2"/>{t('removeButton')}</button>
                              )}
                         </div>
 

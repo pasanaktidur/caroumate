@@ -47,11 +47,6 @@ export interface SlideData {
   headline: string;
   body: string;
   visual_prompt: string;
-  imageFilters?: {
-    brightness: number; // 0-200, default 100
-    contrast: number;   // 0-200, default 100
-    saturate: number;   // 0-200, default 100
-  };
   // Per-slide style overrides
   backgroundColor?: string;
   fontColor?: string;
