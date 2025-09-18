@@ -1,5 +1,11 @@
 
 
+
+
+
+
+
+
 import * as React from 'react';
 import type { AppView, UserProfile, Carousel, SlideData, DesignPreferences, AppSettings, Language, TextStyle, BrandKit } from './types';
 import { DesignStyle, FontChoice, AspectRatio, AIModel } from './types';
@@ -419,15 +425,17 @@ const fontClassMap: { [key in FontChoice]: string } = {
   [FontChoice.BALSAMIQ_SANS]: 'font-balsamiq-sans',
 };
 
+// FIX: Corrected aspect ratio for Portrait to 3:4 to match the API and prevent distortion.
 const aspectRatioClassMap: { [key in AspectRatio]: string } = {
     [AspectRatio.SQUARE]: 'aspect-square',
-    [AspectRatio.PORTRAIT]: 'aspect-[4/5]',
+    [AspectRatio.PORTRAIT]: 'aspect-[3/4]',
     [AspectRatio.STORY]: 'aspect-[9/16]',
 };
 
+// FIX: Corrected aspect ratio display name for Portrait to 3:4 for consistency.
 const aspectRatioDisplayMap: { [key in AspectRatio]: string } = {
     [AspectRatio.SQUARE]: '1:1 (Square)',
-    [AspectRatio.PORTRAIT]: '4:5 (Portrait)',
+    [AspectRatio.PORTRAIT]: '3:4 (Portrait)',
     [AspectRatio.STORY]: '9:16 (Story)',
 };
 
@@ -606,15 +614,27 @@ const SlideCard: React.FC<{
         DesignStyle.ARTISTIC
     ];
 
+    const containerStyle: React.CSSProperties = {
+        color: finalPrefs.fontColor
+    };
+
+    if (finalBackgroundImage) {
+        // If there's a background image, we MUST make the container's background transparent
+        // and remove any gradients so the <img> tag (with its filters) is visible. This inline style will override
+        // any background color or gradient utility classes from the 'style' presets.
+        containerStyle.backgroundColor = 'transparent';
+        containerStyle.backgroundImage = 'none';
+    } else if (!stylesThatDefineTheirOwnBackground.includes(finalPrefs.style)) {
+        // Only apply the color picker's background color if the style isn't one that defines its own.
+        containerStyle.backgroundColor = finalPrefs.backgroundColor;
+    }
+
     return (
         <div
             data-carousel-slide={slide.id}
             onClick={onClick}
             className={`w-64 sm:w-72 flex-shrink-0 relative rounded-lg cursor-pointer transition-all duration-300 transform ${styleClasses} ${font} ${aspectRatioClass} ${isSelected ? 'ring-4 ring-primary-500 ring-offset-2 scale-105 shadow-2xl shadow-primary-600/50' : 'hover:scale-102'}`}
-            style={{
-                backgroundColor: !stylesThatDefineTheirOwnBackground.includes(finalPrefs.style) && !finalBackgroundImage ? finalPrefs.backgroundColor : undefined,
-                color: finalPrefs.fontColor
-            }}
+            style={containerStyle}
         >
             {isGeneratingImage && (
                 <div className="absolute inset-0 bg-black/60 rounded-md z-30 flex flex-col items-center justify-center space-y-2">
@@ -1288,8 +1308,9 @@ export default function App() {
                     regeneratingPart={regeneratingPart}
                 />
             );
+// FIX: Changed SettingsScreen to SettingsModal as SettingsScreen component does not exist.
             case 'SETTINGS': return (
-                <SettingsScreen
+                <SettingsModal
                     currentSettings={settings}
                     onSave={(newSettings) => {
                         handleSaveSettings(newSettings);
@@ -1831,7 +1852,8 @@ const Generator: React.FC<{
     error: string | null;
     onGenerate: (topic: string, preferences: DesignPreferences) => void;
     currentCarousel: Carousel | null;
-    setCurrentCarousel: (carousel: Carousel | null) => void;
+    // FIX: Correctly type the state setter prop to allow updater functions.
+    setCurrentCarousel: React.Dispatch<React.SetStateAction<Carousel | null>>;
     selectedSlide: SlideData | undefined;
     onSelectSlide: (id: string) => void;
     onUpdateSlide: (id: string, updates: Partial<SlideData>) => void;
@@ -2009,246 +2031,193 @@ const Generator: React.FC<{
                             <div>
                                 <label htmlFor="aspectRatio" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorAspectRatioLabel')}</label>
                                 <select id="aspectRatio" value={preferences.aspectRatio} onChange={e => onUpdateCarouselPreferences({ aspectRatio: e.target.value as AspectRatio }, topic)} className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-gray-200 dark:bg-gray-700 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md">
-                                    {Object.values(AspectRatio).map(ar => <option key={ar} value={ar}>{aspectRatioDisplayMap[ar]}</option>)}
+                                    {Object.entries(aspectRatioDisplayMap).map(([key, value]) => <option key={key} value={key}>{value}</option>)}
                                 </select>
                             </div>
                             {/* Font Select */}
                             <div>
                                 <label htmlFor="font" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorFontLabel')}</label>
                                 <select id="font" value={preferences.font} onChange={e => onUpdateCarouselPreferences({ font: e.target.value as FontChoice }, topic)} className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-gray-200 dark:bg-gray-700 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md">
-                                    {Object.entries(FontChoice).map(([key, value]) => <option key={key} value={value} className={fontClassMap[value]}>{value}</option>)}
+                                    {Object.values(FontChoice).map(f => <option key={f} value={f}>{f}</option>)}
                                 </select>
                             </div>
                              {/* Branding */}
                             <div>
                                 <label htmlFor="branding" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorBrandingLabel')}</label>
-                                <input type="text" id="branding" value={preferences.brandingText} onChange={e => onUpdateCarouselPreferences({ brandingText: e.target.value }, topic)} placeholder={t('generatorBrandingPlaceholder')} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm" />
+                                <input id="branding" type="text" value={preferences.brandingText ?? ''} onChange={e => onUpdateCarouselPreferences({ brandingText: e.target.value }, topic)} placeholder={t('generatorBrandingPlaceholder')} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm" />
                             </div>
-                             {/* Colors & BG */}
+                            
+                            {/* Colors */}
+                            <div className="grid grid-cols-2 gap-4">
+                                <ColorInput id="bgColor" label={t('generatorBgColorLabel')} value={selectedSlide?.backgroundColor ?? preferences.backgroundColor} onChange={v => handleStyleChange('backgroundColor', v)} />
+                                <ColorInput id="fontColor" label={t('generatorFontColorLabel')} value={selectedSlide?.fontColor ?? preferences.fontColor} onChange={v => handleStyleChange('fontColor', v)} />
+                            </div>
+                            <ApplyScopeControl scope={colorScope} setScope={setColorScope} isDisabled={!selectedSlide} t={t} fieldId="colors" />
+                            
+                            {/* Background Image */}
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Colors & Background</label>
-                                <div className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-md mt-1 space-y-3">
-                                    <div className="flex items-center space-x-4">
-                                        <div className="flex-1">
-                                            <ColorInput
-                                                id="bgColor"
-                                                label={t('generatorBgColorLabel')}
-                                                value={selectedSlide?.backgroundColor ?? preferences.backgroundColor}
-                                                onChange={value => handleStyleChange('backgroundColor', value)}
-                                            />
-                                        </div>
-                                        <div className="flex-1">
-                                            <ColorInput
-                                                id="fontColor"
-                                                label={t('generatorFontColorLabel')}
-                                                value={selectedSlide?.fontColor ?? preferences.fontColor}
-                                                onChange={value => handleStyleChange('fontColor', value)}
-                                            />
-                                        </div>
-                                    </div>
-                                    <div>
-                                         <button type="button" onClick={() => fileInputRef.current?.click()} className="w-full text-sm font-medium text-primary-700 dark:text-primary-300 bg-primary-100 dark:bg-primary-900/50 rounded-md py-2 hover:bg-primary-200 dark:hover:bg-primary-800/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary-500 transition-colors">{t('generatorCustomBgLabel')}</button>
-                                        <input ref={fileInputRef} type="file" accept="image/*" onChange={handleBgImageUpload} className="hidden" />
-                                        {(preferences.backgroundImage || selectedSlide?.backgroundImage) && (
-                                            <button type="button" onClick={handleRemoveBgImage} className="w-full text-sm mt-2 text-red-600">{t('generatorRemoveBgButton')}</button>
-                                        )}
-                                    </div>
-                                    <ApplyScopeControl scope={colorScope} setScope={setColorScope} isDisabled={!selectedSlide} t={t} fieldId="color" />
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorCustomBgLabel')}</label>
+                                <div className="mt-1 flex items-center space-x-2">
+                                    <input type="file" accept="image/*" onChange={handleBgImageUpload} ref={fileInputRef} className="hidden" />
+                                    <button type="button" onClick={() => fileInputRef.current?.click()} className="flex-1 inline-flex items-center justify-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700">
+                                       <UploadIcon className="w-4 h-4 mr-2" />
+                                        {t('uploadVisual')}
+                                    </button>
+                                    {( (colorScope === 'all' && preferences.backgroundImage) || (colorScope === 'selected' && selectedSlide?.backgroundImage) ) && (
+                                        <button type="button" onClick={handleRemoveBgImage} className="px-4 py-2 border border-transparent text-sm font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200">{t('generatorRemoveBgButton')}</button>
+                                    )}
                                 </div>
                             </div>
                             
+                            {/* Brand Kit Button */}
                             {brandKitConfigured && (
-                                <button
-                                    type="button"
-                                    onClick={onApplyBrandKit}
-                                    className="w-full inline-flex items-center justify-center px-4 py-2 border border-primary-600 text-sm font-medium rounded-md text-primary-600 dark:text-primary-300 bg-white dark:bg-gray-800 hover:bg-primary-50 dark:hover:bg-primary-900/30 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
-                                >
-                                    <PaletteIcon className="w-4 h-4 mr-2"/>
+                                <button type="button" onClick={onApplyBrandKit} className="w-full inline-flex items-center justify-center px-4 py-2 border border-gold-300 dark:border-gold-600 text-sm font-medium rounded-md text-gold-700 dark:text-gold-300 bg-gold-100 dark:bg-gold-800/50 hover:bg-gold-200 dark:hover:bg-gold-700/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-gold-500 transition-colors">
+                                    <SparklesIcon className="w-4 h-4 mr-2" />
                                     {t('applyBrandKit')}
                                 </button>
                             )}
-
                         </div>
                     </div>
-                    
+
                     {/* Action Buttons */}
-                    <div className="space-y-3">
-                        <button type="submit" disabled={isGenerating} className="w-full inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:bg-primary-300 disabled:cursor-not-allowed">
-                            {isGenerating ? <><LoaderIcon className="w-5 h-5 mr-2 animate-spin" /> {t('generatorGeneratingButton')}</> : <><SparklesIcon className="w-5 h-5 mr-2" /> {t('generatorCreateButton')}</>}
+                    <div className="space-y-3 pt-4 border-t dark:border-gray-700">
+                       <button
+                            type="submit"
+                            disabled={isGenerating}
+                            className="w-full inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:bg-primary-300 dark:disabled:bg-primary-800"
+                        >
+                            {isGenerating ? <LoaderIcon className="w-5 h-5 mr-2 animate-spin" /> : <SparklesIcon className="w-5 h-5 mr-2 -ml-1" />}
+                            {isGenerating ? t('generatorGeneratingButton') : t('generatorCreateButton')}
                         </button>
-                         <div className="grid grid-cols-2 gap-3">
-                            <button type="button" disabled={!topic} onClick={onOpenAssistant} className="w-full inline-flex items-center justify-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50">
-                                {t('generatorAssistantButton')}
-                            </button>
-                            <button type="button" disabled={!topic} onClick={onOpenHashtag} className="w-full inline-flex items-center justify-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50">
-                                {t('generatorHashtagButton')}
-                            </button>
-                        </div>
+                         {currentCarousel && currentCarousel.slides.length > 0 && (
+                             <div className="grid grid-cols-3 gap-2">
+                                <button type="button" onClick={onOpenAssistant} className="w-full text-xs sm:text-sm inline-flex items-center justify-center px-2 py-2 border border-gray-300 dark:border-gray-600 font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"><SparklesIcon className="w-4 h-4 mr-1"/>{t('generatorAssistantButton')}</button>
+                                <button type="button" onClick={onOpenHashtag} className="w-full text-xs sm:text-sm inline-flex items-center justify-center px-2 py-2 border border-gray-300 dark:border-gray-600 font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"><HashtagIcon className="w-4 h-4 mr-1"/>{t('generatorHashtagButton')}</button>
+                                <button type="button" onClick={onOpenThread} className="w-full text-xs sm:text-sm inline-flex items-center justify-center px-2 py-2 border border-gray-300 dark:border-gray-600 font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"><ThreadsIcon className="w-4 h-4 mr-1"/>{t('generatorThreadButton')}</button>
+                            </div>
+                         )}
                     </div>
                 </form>
+                
+                 {/* Step 3: Edit Content */}
+                {selectedSlide && (
+                    <div className="mt-8 pt-6 border-t dark:border-gray-700 space-y-6">
+                        <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">{t('generatorStep3Title')} (Slide {currentCarousel?.slides.findIndex(s => s.id === selectedSlide.id) ?? 0 + 1})</h3>
+                        {/* Headline */}
+                        <div className="space-y-2">
+                            <label htmlFor="headline" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorHeadlineLabel')}</label>
+                            <div className="flex items-start gap-2">
+                                <textarea id="headline" value={selectedSlide.headline} onChange={e => onUpdateSlide(selectedSlide.id, { headline: e.target.value })} className="flex-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm" rows={2}/>
+                                <button
+                                    type="button"
+                                    onClick={() => onRegenerateContent(selectedSlide.id, 'headline')}
+                                    disabled={!!regeneratingPart}
+                                    className="p-2 text-gray-500 bg-gray-100 dark:bg-gray-600 rounded-md hover:bg-gray-200 dark:hover:bg-gray-500 disabled:opacity-50"
+                                    aria-label={t('regenerateHeadlineAria')}
+                                >
+                                    {regeneratingPart?.part === 'headline' ? <LoaderIcon className="w-5 h-5 animate-spin"/> : <RefreshIcon className="w-5 h-5"/>}
+                                </button>
+                            </div>
+                            <TextFormatToolbar style={selectedSlide.headlineStyle ?? preferences.headlineStyle} onStyleChange={s => handleTextStyleChange('headlineStyle', s)} />
+                             <TextStrokeControl style={selectedSlide.headlineStyle ?? preferences.headlineStyle} onStyleChange={s => handleTextStyleChange('headlineStyle', s)} />
+                        </div>
+                        {/* Body */}
+                        <div className="space-y-2">
+                            <label htmlFor="body" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorBodyLabel')}</label>
+                            <div className="flex items-start gap-2">
+                                <textarea id="body" value={selectedSlide.body} onChange={e => onUpdateSlide(selectedSlide.id, { body: e.target.value })} className="flex-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm" rows={4}/>
+                                 <button
+                                    type="button"
+                                    onClick={() => onRegenerateContent(selectedSlide.id, 'body')}
+                                    disabled={!!regeneratingPart}
+                                    className="p-2 text-gray-500 bg-gray-100 dark:bg-gray-600 rounded-md hover:bg-gray-200 dark:hover:bg-gray-500 disabled:opacity-50"
+                                    aria-label={t('regenerateBodyAria')}
+                                >
+                                    {regeneratingPart?.part === 'body' ? <LoaderIcon className="w-5 h-5 animate-spin"/> : <RefreshIcon className="w-5 h-5"/>}
+                                </button>
+                            </div>
+                             <TextFormatToolbar style={selectedSlide.bodyStyle ?? preferences.bodyStyle} onStyleChange={s => handleTextStyleChange('bodyStyle', s)} />
+                              <TextStrokeControl style={selectedSlide.bodyStyle ?? preferences.bodyStyle} onStyleChange={s => handleTextStyleChange('bodyStyle', s)} />
+                        </div>
+                        {/* Visual Prompt */}
+                        <div className="space-y-2">
+                            <label htmlFor="visual_prompt" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorVisualPromptLabel')}</label>
+                            <textarea id="visual_prompt" value={selectedSlide.visual_prompt} onChange={e => onUpdateSlide(selectedSlide.id, { visual_prompt: e.target.value })} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm" rows={2}/>
+                            <div className="grid grid-cols-2 gap-2">
+                                <input type="file" accept="image/*" onChange={(e) => onUploadImageForSlide(e, selectedSlide.id)} ref={slideFileInputRef} className="hidden" />
+                                <button type="button" onClick={() => slideFileInputRef.current?.click()} className="inline-flex items-center justify-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"><UploadIcon className="w-4 h-4 mr-2"/>{t('uploadVisual')}</button>
+                                <button type="button" onClick={() => onGenerateImageForSlide(selectedSlide.id)} className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-accent-500 hover:bg-accent-600" disabled={isGeneratingImageForSlide === selectedSlide.id}><SparklesIcon className="w-4 h-4 mr-2"/>{t('generateImageButton')}</button>
+                            </div>
+                             {selectedSlide.backgroundImage && (
+                                <div className="space-y-2">
+                                    <ImageFilterControl filters={slideImageFilters} onChange={filters => onUpdateSlide(selectedSlide.id, { imageFilters: filters })} t={t}/>
+                                    <button type="button" onClick={() => onRemoveImageForSlide(selectedSlide.id)} className="w-full mt-2 inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200"><TrashIcon className="w-4 h-4 mr-2"/>{t('removeButton')}</button>
+                                </div>
+                             )}
+                        </div>
 
-                {/* Step 3: Edit */}
-                {currentCarousel && selectedSlide && (
-                    <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
-                        <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">{t('generatorStep3Title')}</h3>
-                        <div className="space-y-4">
-                            {/* Headline */}
-                            <div>
-                                <div className="flex justify-between items-center">
-                                    <label htmlFor="headline" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorHeadlineLabel')}</label>
-                                    <button
-                                        type="button"
-                                        onClick={() => onRegenerateContent(selectedSlide.id, 'headline')}
-                                        disabled={!!regeneratingPart}
-                                        className="p-2 rounded-full text-primary-600 dark:text-primary-400 hover:bg-primary-100 dark:hover:bg-primary-900/50 disabled:opacity-50 disabled:cursor-not-allowed"
-                                        aria-label={t('regenerateHeadlineAria')}
-                                    >
-                                        {regeneratingPart?.slideId === selectedSlide.id && regeneratingPart?.part === 'headline'
-                                            ? <LoaderIcon className="w-5 h-5 animate-spin" />
-                                            : <RefreshIcon className="w-5 h-5" />
-                                        }
-                                    </button>
-                                </div>
-                                <textarea id="headline" value={selectedSlide.headline} onChange={e => onUpdateSlide(selectedSlide.id, { headline: e.target.value })} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm" rows={2} />
-                                <div className="mt-2 flex flex-wrap gap-2">
-                                     <TextFormatToolbar style={selectedSlide.headlineStyle ?? preferences.headlineStyle} onStyleChange={(newStyle) => handleTextStyleChange('headlineStyle', newStyle)} />
-                                     <TextStrokeControl style={selectedSlide.headlineStyle ?? preferences.headlineStyle} onStyleChange={(newStyle) => handleTextStyleChange('headlineStyle', newStyle)} />
-                                </div>
-                            </div>
-                            {/* Body */}
-                            <div>
-                                <div className="flex justify-between items-center">
-                                    <label htmlFor="body" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorBodyLabel')}</label>
-                                    <button
-                                        type="button"
-                                        onClick={() => onRegenerateContent(selectedSlide.id, 'body')}
-                                        disabled={!!regeneratingPart}
-                                        className="p-2 rounded-full text-primary-600 dark:text-primary-400 hover:bg-primary-100 dark:hover:bg-primary-900/50 disabled:opacity-50 disabled:cursor-not-allowed"
-                                        aria-label={t('regenerateBodyAria')}
-                                    >
-                                        {regeneratingPart?.slideId === selectedSlide.id && regeneratingPart?.part === 'body'
-                                            ? <LoaderIcon className="w-5 h-5 animate-spin" />
-                                            : <RefreshIcon className="w-5 h-5" />
-                                        }
-                                    </button>
-                                </div>
-                                <textarea id="body" value={selectedSlide.body} onChange={e => onUpdateSlide(selectedSlide.id, { body: e.target.value })} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm" rows={4} />
-                                <div className="mt-2 flex flex-wrap gap-2">
-                                    <TextFormatToolbar style={selectedSlide.bodyStyle ?? preferences.bodyStyle} onStyleChange={(newStyle) => handleTextStyleChange('bodyStyle', newStyle)} />
-                                    <TextStrokeControl style={selectedSlide.bodyStyle ?? preferences.bodyStyle} onStyleChange={(newStyle) => handleTextStyleChange('bodyStyle', newStyle)} />
-                                </div>
-                            </div>
-                            {/* Visual Prompt */}
-                            <div>
-                                <label htmlFor="visual_prompt" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorVisualPromptLabel')}</label>
-                                <textarea id="visual_prompt" value={selectedSlide.visual_prompt} onChange={e => onUpdateSlide(selectedSlide.id, { visual_prompt: e.target.value })} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm" rows={3} />
-                                <div className="grid grid-cols-2 gap-2 mt-2">
-                                    <button
-                                        type="button"
-                                        onClick={() => onGenerateImageForSlide(selectedSlide.id)}
-                                        disabled={!!isGeneratingImageForSlide}
-                                        className="w-full inline-flex items-center justify-center text-sm py-2 px-3 border border-transparent rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus-ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50"
-                                    >
-                                        {isGeneratingImageForSlide === selectedSlide.id ? <LoaderIcon className="w-4 h-4 animate-spin"/> : <SparklesIcon className="w-4 h-4 mr-1" />}
-                                        {t('generateImageButton')}
-                                    </button>
-                                     <button
-                                        type="button"
-                                        onClick={() => slideFileInputRef.current?.click()}
-                                        className="w-full inline-flex items-center justify-center text-sm py-2 px-3 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
-                                    >
-                                        <ImageIcon className="w-4 h-4 mr-1"/>
-                                        {t('uploadVisual')}
-                                    </button>
-                                    <input type="file" ref={slideFileInputRef} onChange={(e) => onUploadImageForSlide(e, selectedSlide.id)} accept="image/*" className="hidden"/>
-                                </div>
-                                {selectedSlide.backgroundImage && (
-                                    <div className="mt-2 space-y-2">
-                                        <ImageFilterControl
-                                            filters={slideImageFilters}
-                                            onChange={(newFilters) => onUpdateSlide(selectedSlide.id, { imageFilters: newFilters })}
-                                            t={t}
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => onRemoveImageForSlide(selectedSlide.id)}
-                                            className="w-full text-sm mt-2 text-red-600 hover:underline"
-                                        >
-                                            <TrashIcon className="w-4 h-4 inline-block mr-1"/>
-                                            {t('removeButton')}
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
-                            
-                            {/* Move Slide */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorMoveSlideLabel')}</label>
-                                <div className="flex items-center space-x-2 mt-1">
-                                    <button type="button" onClick={() => onMoveSlide(selectedSlide.id, 'left')} className="p-2 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600"><LeftArrowIcon className="w-5 h-5" /></button>
-                                    <button type="button" onClick={() => onMoveSlide(selectedSlide.id, 'right')} className="p-2 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600"><RightArrowIcon className="w-5 h-5" /></button>
-                                </div>
+                         {/* Move Slide */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorMoveSlideLabel')}</label>
+                            <div className="flex items-center space-x-2 mt-1">
+                                <button type="button" onClick={() => onMoveSlide(selectedSlide.id, 'left')} className="p-2 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600" disabled={currentCarousel?.slides.findIndex(s => s.id === selectedSlide.id) === 0}><LeftArrowIcon className="w-5 h-5"/></button>
+                                <button type="button" onClick={() => onMoveSlide(selectedSlide.id, 'right')} className="p-2 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600" disabled={currentCarousel?.slides.findIndex(s => s.id === selectedSlide.id) === (currentCarousel?.slides.length ?? 0) - 1}><RightArrowIcon className="w-5 h-5"/></button>
                             </div>
                         </div>
+
                     </div>
                 )}
             </div>
-
-            {/* Resizer */}
-             <div
+            {/* Resizer Handle */}
+            <div
+                className="hidden lg:block w-1.5 cursor-col-resize bg-gray-200 dark:bg-gray-700 hover:bg-primary-300 dark:hover:bg-primary-700 transition-colors"
                 onMouseDown={handleMouseDown}
-                className="hidden lg:flex items-center justify-center w-1.5 cursor-col-resize bg-gray-200 dark:bg-gray-700 hover:bg-primary-300 dark:hover:bg-primary-800 transition-colors duration-200"
-                title="Resize panel"
-             />
+            />
 
             {/* Right Panel: Preview */}
-            <div className="flex-grow bg-gray-100 dark:bg-gray-900 flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8 lg:overflow-y-auto relative min-w-0">
+            <div className="flex-grow bg-gray-100 dark:bg-gray-900 flex flex-col items-center justify-center p-4 lg:overflow-hidden relative">
                 {error && (
-                    <div className="absolute top-4 lg:top-8 z-50 max-w-xl w-full mx-4 bg-red-100 dark:bg-red-900/50 border border-red-400 dark:border-red-600 text-red-700 dark:text-red-200 px-4 py-3 rounded-md shadow-lg" role="alert">
+                    <div className="absolute top-4 left-4 right-4 z-20 max-w-xl mx-auto bg-red-100 dark:bg-red-900/50 border border-red-400 dark:border-red-600 text-red-700 dark:text-red-200 px-4 py-3 rounded-md shadow-lg" role="alert">
                         <strong className="font-bold">{t('errorTitle')}: </strong>
-                        <span className="block sm:inline" dangerouslySetInnerHTML={{ __html: error }} />
+                        <span className="block sm:inline" dangerouslySetInnerHTML={{ __html: error }}></span>
+                         <button onClick={() => props.setCurrentCarousel(c => ({...c!, slides: []}))} className="absolute top-0 bottom-0 right-0 px-4 py-3">
+                            <span className="text-2xl">×</span>
+                        </button>
                     </div>
                 )}
-                {isGenerating && <Loader text={generationMessage} />}
-
-                {!isGenerating && currentCarousel && (
-                    <div className="w-full flex flex-col items-center min-w-0">
-                         <div className="flex items-center space-x-4 overflow-x-auto py-4 px-4 w-full snap-x snap-mandatory">
+                
+                {isGenerating ? (
+                    <Loader text={generationMessage} />
+                ) : currentCarousel && currentCarousel.slides.length > 0 ? (
+                    <div className="w-full flex flex-col items-center justify-center">
+                        <div className="flex items-center space-x-4 overflow-x-auto py-8 px-4 w-full">
                             {currentCarousel.slides.map(slide => (
-                                <div key={slide.id} className="snap-center">
-                                    <SlideCard
-                                        slide={slide}
-                                        preferences={currentCarousel.preferences}
-                                        isSelected={slide.id === selectedSlide?.id}
-                                        onClick={() => onSelectSlide(slide.id)}
-                                        isGeneratingImage={isGeneratingImageForSlide === slide.id}
-                                        t={t}
-                                    />
-                                </div>
+                                <SlideCard
+                                    key={slide.id}
+                                    slide={slide}
+                                    preferences={preferences}
+                                    isSelected={slide.id === selectedSlide?.id}
+                                    onClick={() => onSelectSlide(slide.id)}
+                                    isGeneratingImage={isGeneratingImageForSlide === slide.id}
+                                    t={t}
+                                />
                             ))}
                         </div>
-                        <div className="mt-8 flex flex-wrap justify-center gap-4">
-                            <button
-                                onClick={onDownload}
-                                disabled={isDownloading}
-                                className="inline-flex items-center justify-center px-8 py-4 border border-transparent text-lg font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:bg-green-300"
-                            >
-                               {isDownloading ? <><LoaderIcon className="w-6 h-6 mr-3 animate-spin" /> {t('downloadingButton')}</> : <><DownloadIcon className="w-6 h-6 mr-3" /> {t('downloadAllButton')}</>}
-                            </button>
-                             <button
-                                onClick={onOpenThread}
-                                className="inline-flex items-center justify-center px-8 py-4 border border-transparent text-lg font-medium rounded-md text-gray-800 dark:text-white bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
-                            >
-                               <ThreadsIcon className="w-6 h-6 mr-3" /> {t('generatorThreadButton')}
-                            </button>
-                        </div>
+                        <button
+                            onClick={onDownload}
+                            disabled={isDownloading}
+                            className="mt-6 inline-flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-full text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:bg-green-300"
+                        >
+                            {isDownloading ? <LoaderIcon className="w-5 h-5 mr-2 animate-spin" /> : <DownloadIcon className="w-5 h-5 mr-2 -ml-1" />}
+                            {isDownloading ? t('downloadingButton') : t('downloadAllButton')}
+                        </button>
                     </div>
-                )}
-
-                {!isGenerating && !currentCarousel && (
+                ) : (
                     <div className="text-center">
-                        <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200">{t('previewEmptyTitle')}</h2>
-                        <p className="mt-2 text-gray-600 dark:text-gray-400">{t('previewEmptySubtitleDesktop')}</p>
+                        <SparklesIcon className="mx-auto h-12 w-12 text-gray-400" />
+                        <h3 className="mt-2 text-lg font-medium text-gray-900 dark:text-gray-200">{t('previewEmptyTitle')}</h3>
+                        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400 lg:hidden">{t('previewEmptySubtitleMobile')}</p>
+                        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400 hidden lg:block">{t('previewEmptySubtitleDesktop')}</p>
                     </div>
                 )}
             </div>
@@ -2262,44 +2231,53 @@ const AiAssistantModal: React.FC<{
     onClose: () => void;
     settings: AppSettings;
     t: TFunction;
-    parseError: (error: any) => string;
+    parseError: (e: any) => string;
 }> = ({ topic, onClose, settings, t, parseError }) => {
-    const [suggestions, setSuggestions] = React.useState<string[]>([]);
     const [isLoading, setIsLoading] = React.useState(false);
+    const [suggestions, setSuggestions] = React.useState<string[]>([]);
+    const [category, setCategory] = React.useState<'hook' | 'cta' | null>(null);
     const [error, setError] = React.useState<string | null>(null);
 
-    const fetchSuggestions = async (type: 'hook' | 'cta') => {
+    const getSuggestions = async (type: 'hook' | 'cta') => {
         setIsLoading(true);
         setError(null);
-        setSuggestions([]);
+        setCategory(type);
         try {
             const result = await getAiAssistance(topic, type, settings);
             setSuggestions(result);
-        } catch (err: any) {
+        } catch (err) {
             setError(parseError(err));
         } finally {
             setIsLoading(false);
         }
     };
-
+    
     return (
-        <div className="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50" onClick={onClose}>
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl p-6 max-w-2xl w-full m-4 space-y-4" onClick={e => e.stopPropagation()}>
-                <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200">{t('assistantTitle')}</h2>
-                <p className="text-gray-600 dark:text-gray-400">{t('assistantSubtitle1')}"<span className="font-semibold">{topic}</span>"{t('assistantSubtitle2')}</p>
-                <div className="flex space-x-4">
-                    <button onClick={() => fetchSuggestions('hook')} className="flex-1 px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700">{t('getHookButton')}</button>
-                    <button onClick={() => fetchSuggestions('cta')} className="flex-1 px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-accent-500 hover:bg-accent-600">{t('getCTAButton')}</button>
+        <div className="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl p-6 max-w-2xl w-full max-h-[90vh] flex flex-col">
+                <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200">{t('assistantTitle')}</h2>
+                    <button onClick={onClose} className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">&times;</button>
                 </div>
-                <div className="mt-4 p-4 h-64 overflow-y-auto bg-gray-50 dark:bg-gray-700/50 rounded-md">
-                    {isLoading && <Loader text="..." />}
-                    {error && <p className="text-red-500" dangerouslySetInnerHTML={{ __html: error }} />}
-                    {!isLoading && !error && suggestions.length > 0 && (
+                <p className="text-gray-600 dark:text-gray-400 mb-4 text-sm">{t('assistantSubtitle1')}<span className="font-semibold">{topic}</span>{t('assistantSubtitle2')}</p>
+                <div className="flex space-x-4 mb-4">
+                    <button onClick={() => getSuggestions('hook')} className="flex-1 px-4 py-2 border rounded-md">{t('getHookButton')}</button>
+                    <button onClick={() => getSuggestions('cta')} className="flex-1 px-4 py-2 border rounded-md">{t('getCTAButton')}</button>
+                </div>
+                <div className="flex-grow overflow-y-auto pr-2">
+                    {isLoading ? (
+                        <Loader text={t('generatingContentMessage')} />
+                    ) : error ? (
+                         <div className="text-red-600 dark:text-red-400">{error}</div>
+                    ) : suggestions.length > 0 ? (
                         <ul className="space-y-3">
-                            {suggestions.map((s, i) => <li key={i} className="p-3 bg-white dark:bg-gray-800 rounded shadow-sm text-gray-700 dark:text-gray-300">{s}</li>)}
+                            {suggestions.map((s, i) => (
+                                <li key={i} className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-md text-gray-700 dark:text-gray-300">{s}</li>
+                            ))}
                         </ul>
+                    ) : (
+                        <div className="text-center py-8 text-gray-500 dark:text-gray-400">{t('assistantEmpty')}</div>
                     )}
-                    {!isLoading && !error && suggestions.length === 0 && <p className="text-gray-500 text-center pt-8">{t('assistantEmpty')}</p>}
                 </div>
             </div>
         </div>
@@ -2324,20 +2302,30 @@ const HashtagModal: React.FC<{
     };
 
     return (
-        <div className="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50" onClick={onClose}>
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl p-6 max-w-2xl w-full m-4 space-y-4" onClick={e => e.stopPropagation()}>
-                <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200">{t('hashtagModalTitle')}</h2>
-                <p className="text-gray-600 dark:text-gray-400">{t('hashtagModalSubtitle1')}"<span className="font-semibold">{topic}</span>"{t('hashtagModalSubtitle2')}</p>
-                <div className="mt-4 p-4 h-64 overflow-y-auto bg-gray-50 dark:bg-gray-700/50 rounded-md flex flex-wrap gap-2">
-                    {isLoading && <Loader text="..." />}
-                    {error && <p className="text-red-500" dangerouslySetInnerHTML={{ __html: error }} />}
-                    {!isLoading && !error && hashtags.length > 0 && (
-                       hashtags.map((h, i) => <span key={i} className="px-2 py-1 bg-primary-100 dark:bg-primary-900/50 text-primary-800 dark:text-primary-200 rounded-full text-sm">#{h}</span>)
+        <div className="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl p-6 max-w-2xl w-full max-h-[90vh] flex flex-col">
+                <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200">{t('hashtagModalTitle')}</h2>
+                    <button onClick={onClose} className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">&times;</button>
+                </div>
+                 <p className="text-gray-600 dark:text-gray-400 mb-4 text-sm">{t('hashtagModalSubtitle1')}<span className="font-semibold">{topic}</span>{t('hashtagModalSubtitle2')}</p>
+                <div className="flex-grow overflow-y-auto pr-2 mb-4">
+                     {isLoading ? (
+                        <Loader text={t('generatingContentMessage')} />
+                    ) : error ? (
+                         <div className="text-red-600 dark:text-red-400">{error}</div>
+                    ) : hashtags.length > 0 ? (
+                        <div className="flex flex-wrap gap-2">
+                            {hashtags.map((tag, i) => (
+                                <span key={i} className="px-3 py-1 bg-primary-100 dark:bg-primary-900/50 text-primary-800 dark:text-primary-200 rounded-full text-sm">#{tag}</span>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="text-center py-8 text-gray-500 dark:text-gray-400">{t('hashtagModalEmpty')}</div>
                     )}
-                    {!isLoading && !error && hashtags.length === 0 && <p className="text-gray-500 text-center w-full pt-8">{t('hashtagModalEmpty')}</p>}
                 </div>
                 {hashtags.length > 0 && (
-                    <button onClick={handleCopy} className="w-full px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700">
+                    <button onClick={handleCopy} className="w-full px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700">
                         {copied ? t('hashtagModalCopiedButton') : t('hashtagModalCopyButton')}
                     </button>
                 )}
@@ -2362,24 +2350,24 @@ const ThreadModal: React.FC<{
     };
 
     return (
-        <div className="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50" onClick={onClose}>
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl p-6 max-w-2xl w-full m-4 space-y-4 flex flex-col" onClick={e => e.stopPropagation()}>
-                <div className="flex items-center space-x-3">
-                    <ThreadsIcon className="w-8 h-8 text-primary-500"/>
-                    <div>
-                        <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200">{t('threadModalTitle')}</h2>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">{t('threadModalSubtitle')}</p>
-                    </div>
+        <div className="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl p-6 max-w-2xl w-full max-h-[90vh] flex flex-col">
+                <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200">{t('threadModalTitle')}</h2>
+                    <button onClick={onClose} className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">&times;</button>
                 </div>
-                <div className="mt-4 p-4 min-h-[16rem] h-64 overflow-y-auto bg-gray-50 dark:bg-gray-700/50 rounded-md whitespace-pre-wrap font-sans">
-                    {isLoading && <Loader text={t('threadModalGenerating')} />}
-                    {error && <p className="text-red-500" dangerouslySetInnerHTML={{ __html: error }} />}
-                    {!isLoading && !error && threadContent && (
-                       <p className="text-gray-800 dark:text-gray-200">{threadContent}</p>
+                <p className="text-gray-600 dark:text-gray-400 mb-4 text-sm">{t('threadModalSubtitle')}</p>
+                <div className="flex-grow overflow-y-auto pr-2 mb-4 p-4 bg-gray-50 dark:bg-gray-900/50 rounded-md whitespace-pre-wrap">
+                    {isLoading ? (
+                        <Loader text={t('threadModalGenerating')} />
+                    ) : error ? (
+                        <div className="text-red-600 dark:text-red-400">{error}</div>
+                    ) : (
+                        <p>{threadContent}</p>
                     )}
                 </div>
                 {threadContent && !isLoading && (
-                    <button onClick={handleCopy} className="w-full px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700">
+                    <button onClick={handleCopy} className="w-full px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700">
                         {copied ? t('threadModalCopiedButton') : t('threadModalCopyButton')}
                     </button>
                 )}
@@ -2388,54 +2376,50 @@ const ThreadModal: React.FC<{
     );
 };
 
-const SettingsScreen: React.FC<{
+
+const SettingsModal: React.FC<{
     currentSettings: AppSettings;
-    onSave: (settings: AppSettings) => void;
     onClose: () => void;
+    onSave: (settings: AppSettings) => void;
     t: TFunction;
-    isModal?: boolean;
     onShowTutorial: () => void;
-}> = ({ currentSettings, onSave, onClose, t, isModal = false, onShowTutorial }) => {
+}> = ({ currentSettings, onClose, onSave, t, onShowTutorial }) => {
     const [settings, setSettings] = React.useState(currentSettings);
     const [saved, setSaved] = React.useState(false);
-
-    React.useEffect(() => {
-        setSettings(currentSettings); // Sync with external changes
-    }, [currentSettings]);
 
     const handleSave = () => {
         onSave(settings);
         setSaved(true);
         setTimeout(() => setSaved(false), 2000);
     };
-
-    const handleBrandKitChange = (key: keyof BrandKit, value: any) => {
+    
+    const handleBrandKitChange = (field: keyof BrandKit, value: any) => {
         setSettings(prev => ({
             ...prev,
-            brandKit: { ...(prev.brandKit!), [key]: value }
+            brandKit: { ...(prev.brandKit || defaultSettings.brandKit!), [field]: value }
         }));
     };
 
-    const handleBrandKitColorChange = (key: keyof BrandKit['colors'], value: string) => {
+    const handleBrandKitColorChange = (field: keyof BrandKit['colors'], value: string) => {
         setSettings(prev => ({
             ...prev,
             brandKit: {
-                ...prev.brandKit!,
-                colors: { ...prev.brandKit!.colors, [key]: value }
+                ...(prev.brandKit || defaultSettings.brandKit!),
+                colors: { ...(prev.brandKit?.colors || defaultSettings.brandKit!.colors), [field]: value }
             }
         }));
     };
 
-    const handleBrandKitFontChange = (key: keyof BrandKit['fonts'], value: FontChoice) => {
-         setSettings(prev => ({
+    const handleBrandKitFontChange = (field: keyof BrandKit['fonts'], value: FontChoice) => {
+        setSettings(prev => ({
             ...prev,
             brandKit: {
-                ...prev.brandKit!,
-                fonts: { ...prev.brandKit!.fonts, [key]: value }
+                ...(prev.brandKit || defaultSettings.brandKit!),
+                fonts: { ...(prev.brandKit?.fonts || defaultSettings.brandKit!.fonts), [field]: value }
             }
         }));
     };
-
+    
     const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
@@ -2446,260 +2430,251 @@ const SettingsScreen: React.FC<{
             reader.readAsDataURL(file);
         }
     };
-    
-    const settingsForm = (
-        <div className="space-y-6">
-            {/* AI Settings */}
-            <div className="space-y-4 p-4 border dark:border-gray-700 rounded-md">
-                 <h3 className="text-lg font-medium text-gray-900 dark:text-white">AI Settings</h3>
-                <div>
-                    <label htmlFor="aiModel" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('aiModelLabel')}</label>
-                    <select id="aiModel" value={settings.aiModel} onChange={e => setSettings({ ...settings, aiModel: e.target.value as AIModel })} className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-gray-200 dark:bg-gray-700 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md">
-                        {Object.values(AIModel).map(m => <option key={m} value={m}>{m}</option>)}
-                    </select>
-                    <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">{t('aiModelHint')}</p>
-                </div>
-                <div>
-                    <label htmlFor="apiKey" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('apiKeyLabel')}</label>
-                    <input type="password" id="apiKey" value={settings.apiKey} onChange={e => setSettings({ ...settings, apiKey: e.target.value })} placeholder={t('apiKeyPlaceholder')} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"/>
-                    <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                        {t('apiKeyHint')}{' '}
-                        <button
-                            type="button"
-                            onClick={onShowTutorial}
-                            className="font-medium text-primary-600 dark:text-primary-400 hover:underline focus:outline-none"
-                        >
-                            {t('apiKeyHintGuide')}
-                        </button>
-                    </p>
-                </div>
-                 <div>
-                    <label htmlFor="systemPrompt" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('systemPromptLabel')}</label>
-                    <textarea id="systemPrompt" value={settings.systemPrompt} onChange={e => setSettings({ ...settings, systemPrompt: e.target.value })} rows={3} placeholder={t('systemPromptPlaceholder')} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"/>
-                    <button type="button" onClick={() => setSettings({...settings, systemPrompt: defaultSettings.systemPrompt })} className="text-xs text-primary-600 hover:underline mt-1">{t('setDefaultButton')}</button>
-                </div>
-            </div>
 
-            {/* Brand Kit */}
-            <div className="space-y-4 p-4 border dark:border-gray-700 rounded-md">
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white">{t('brandKitTitle')}</h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400">{t('brandKitSubtitle')}</p>
-                <div className="grid grid-cols-3 gap-4">
-                    <div>
-                        <ColorInput
-                            id="brandKitPrimaryColor"
-                            label={t('brandKitPrimaryColor')}
-                            value={settings.brandKit?.colors.primary || '#FFFFFF'}
-                            onChange={value => handleBrandKitColorChange('primary', value)}
-                        />
-                    </div>
-                    <div>
-                        <ColorInput
-                            id="brandKitSecondaryColor"
-                            label={t('brandKitSecondaryColor')}
-                            value={settings.brandKit?.colors.secondary || '#00C2CB'}
-                            onChange={value => handleBrandKitColorChange('secondary', value)}
-                        />
-                    </div>
-                    <div>
-                        <ColorInput
-                            id="brandKitTextColor"
-                            label={t('brandKitTextColor')}
-                            value={settings.brandKit?.colors.text || '#111827'}
-                            onChange={value => handleBrandKitColorChange('text', value)}
-                        />
-                    </div>
+    return (
+        <div className="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl p-6 max-w-2xl w-full max-h-[90vh] flex flex-col">
+                <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200">{t('settingsTitle')}</h2>
+                    <button onClick={onClose} className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">&times;</button>
                 </div>
-                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                     <div>
-                        <label htmlFor="headlineFont" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('brandKitHeadlineFont')}</label>
-                        <select id="headlineFont" value={settings.brandKit?.fonts.headline} onChange={e => handleBrandKitFontChange('headline', e.target.value as FontChoice)} className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-gray-200 dark:bg-gray-700 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md">
-                            {Object.entries(FontChoice).map(([key, value]) => <option key={key} value={value} className={fontClassMap[value]}>{value}</option>)}
-                        </select>
-                    </div>
+                <div className="flex-grow overflow-y-auto pr-2 space-y-6">
+                    {/* AI Settings */}
                     <div>
-                        <label htmlFor="bodyFont" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('brandKitBodyFont')}</label>
-                        <select id="bodyFont" value={settings.brandKit?.fonts.body} onChange={e => handleBrandKitFontChange('body', e.target.value as FontChoice)} className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-gray-200 dark:bg-gray-700 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md">
-                            {Object.entries(FontChoice).map(([key, value]) => <option key={key} value={value} className={fontClassMap[value]}>{value}</option>)}
-                        </select>
-                    </div>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('brandKitLogo')}</label>
-                        <div className="mt-1 flex items-center space-x-4">
-                            <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded flex items-center justify-center">
-                                {settings.brandKit?.logo ? <img src={settings.brandKit.logo} alt="logo preview" className="max-w-full max-h-full object-contain" /> : <ImageIcon className="w-8 h-8 text-gray-400" />}
-                            </div>
-                            <input type="file" accept="image/*" onChange={handleLogoUpload} id="logo-upload" className="hidden"/>
-                            <label htmlFor="logo-upload" className="cursor-pointer text-sm font-medium text-primary-600 hover:text-primary-500">
-                                {t('brandKitUploadLogo')}
-                            </label>
+                        <h3 className="text-lg font-semibold border-b pb-2 mb-3">AI</h3>
+                        {/* AI Model */}
+                        <div>
+                            <label htmlFor="aiModel" className="block text-sm font-medium">{t('aiModelLabel')}</label>
+                            <select
+                                id="aiModel"
+                                value={settings.aiModel}
+                                onChange={e => setSettings({ ...settings, aiModel: e.target.value as AIModel })}
+                                className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md"
+                            >
+                                {Object.values(AIModel).map(m => <option key={m} value={m}>{m}</option>)}
+                            </select>
+                            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{t('aiModelHint')}</p>
+                        </div>
+                         {/* API Key */}
+                        <div className="mt-4">
+                            <label htmlFor="apiKey" className="block text-sm font-medium">{t('apiKeyLabel')}</label>
+                            <input
+                                type="password"
+                                id="apiKey"
+                                value={settings.apiKey}
+                                onChange={e => setSettings({ ...settings, apiKey: e.target.value })}
+                                placeholder={t('apiKeyPlaceholder')}
+                                className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                            />
+                             <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                {t('apiKeyHint')} <span onClick={onShowTutorial} className="cursor-pointer underline text-primary-600 dark:text-primary-400">{t('apiKeyHintGuide')}</span>
+                            </p>
+                        </div>
+                         {/* System Prompt */}
+                        <div className="mt-4">
+                            <label htmlFor="systemPrompt" className="block text-sm font-medium">{t('systemPromptLabel')}</label>
+                             <textarea
+                                id="systemPrompt"
+                                value={settings.systemPrompt}
+                                onChange={e => setSettings({ ...settings, systemPrompt: e.target.value })}
+                                placeholder={t('systemPromptPlaceholder')}
+                                className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                                rows={3}
+                            />
+                            <button onClick={() => setSettings({...settings, systemPrompt: defaultSettings.systemPrompt})} className="mt-1 text-xs text-primary-600 hover:underline">{t('setDefaultButton')}</button>
                         </div>
                     </div>
+
+                    {/* Brand Kit */}
                     <div>
-                        <label htmlFor="brandingText" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('brandKitBrandingText')}</label>
-                        <input type="text" id="brandingText" value={settings.brandKit?.brandingText} onChange={e => handleBrandKitChange('brandingText', e.target.value)} placeholder={t('settingsBrandingPlaceholder')} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm" />
+                         <h3 className="text-lg font-semibold border-b pb-2 mb-3">{t('brandKitTitle')}</h3>
+                         <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">{t('brandKitSubtitle')}</p>
+                         <div className="space-y-4">
+                            <div className="grid grid-cols-3 gap-4">
+                               <ColorInput id="primaryColor" label={t('brandKitPrimaryColor')} value={settings.brandKit?.colors.primary ?? '#FFFFFF'} onChange={v => handleBrandKitColorChange('primary', v)} />
+                               <ColorInput id="secondaryColor" label={t('brandKitSecondaryColor')} value={settings.brandKit?.colors.secondary ?? '#00C2CB'} onChange={v => handleBrandKitColorChange('secondary', v)} />
+                               <ColorInput id="textColor" label={t('brandKitTextColor')} value={settings.brandKit?.colors.text ?? '#111827'} onChange={v => handleBrandKitColorChange('text', v)} />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                               <div>
+                                    <label htmlFor="headlineFont" className="block text-sm font-medium">{t('brandKitHeadlineFont')}</label>
+                                    <select id="headlineFont" value={settings.brandKit?.fonts.headline ?? FontChoice.POPPINS} onChange={e => handleBrandKitFontChange('headline', e.target.value as FontChoice)} className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 sm:text-sm rounded-md">
+                                        {Object.values(FontChoice).map(f => <option key={f} value={f}>{f}</option>)}
+                                    </select>
+                               </div>
+                               <div>
+                                    <label htmlFor="bodyFont" className="block text-sm font-medium">{t('brandKitBodyFont')}</label>
+                                    <select id="bodyFont" value={settings.brandKit?.fonts.body ?? FontChoice.SANS} onChange={e => handleBrandKitFontChange('body', e.target.value as FontChoice)} className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 sm:text-sm rounded-md">
+                                        {Object.values(FontChoice).map(f => <option key={f} value={f}>{f}</option>)}
+                                    </select>
+                               </div>
+                            </div>
+                             <div>
+                                <label className="block text-sm font-medium">{t('brandKitLogo')}</label>
+                                <div className="mt-1 flex items-center space-x-4">
+                                    <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-md flex items-center justify-center">
+                                        {settings.brandKit?.logo ? <img src={settings.brandKit.logo} alt="Logo preview" className="max-w-full max-h-full" /> : <ImageIcon className="w-8 h-8 text-gray-400"/>}
+                                    </div>
+                                    <input type="file" accept="image/*" onChange={handleLogoUpload} id="logo-upload" className="hidden"/>
+                                    <button type="button" onClick={() => document.getElementById('logo-upload')?.click()} className="px-4 py-2 border rounded-md">{t('brandKitUploadLogo')}</button>
+                                     {settings.brandKit?.logo && <button type="button" onClick={() => handleBrandKitChange('logo', '')} className="text-red-600 text-sm">{t('removeButton')}</button>}
+                                </div>
+                            </div>
+                            <div>
+                                <label htmlFor="brandKitBrandingText" className="block text-sm font-medium">{t('brandKitBrandingText')}</label>
+                                <input
+                                    type="text"
+                                    id="brandKitBrandingText"
+                                    value={settings.brandKit?.brandingText ?? ''}
+                                    onChange={e => handleBrandKitChange('brandingText', e.target.value)}
+                                    placeholder={t('settingsBrandingPlaceholder')}
+                                    className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm"
+                                />
+                            </div>
+                         </div>
                     </div>
+
                 </div>
-            </div>
-
-            {/* Actions */}
-            <div className="flex justify-end space-x-4">
-                <button type="button" onClick={onClose} className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700">{t('cancelButton')}</button>
-                <button type="button" onClick={handleSave} className="px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 w-28 text-center">
-                    {saved ? t('savedButton') : t('saveButton')}
-                </button>
-            </div>
-        </div>
-    );
-    
-    if (isModal) {
-         return (
-            <div className="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50" onClick={onClose}>
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl p-6 max-w-2xl w-full m-4" onClick={e => e.stopPropagation()}>
-                    <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-4">{t('settingsTitle')}</h2>
-                    <div className="max-h-[70vh] overflow-y-auto pr-2">
-                        {settingsForm}
-                    </div>
-                </div>
-            </div>
-        );
-    }
-
-    return (
-        <div className="container mx-auto p-4 sm:p-6 lg:p-8">
-            <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-200 mb-4">{t('settingsTitle')}</h2>
-            <div className="max-w-2xl mx-auto">
-                {settingsForm}
-            </div>
-        </div>
-    );
-};
-
-const SettingsModal: React.FC<{
-    currentSettings: AppSettings;
-    onSave: (settings: AppSettings) => void;
-    onClose: () => void;
-    t: TFunction;
-    onShowTutorial: () => void;
-}> = (props) => <SettingsScreen {...props} isModal={true} />;
-
-const TutorialScreen: React.FC<{ onBack: () => void; t: TFunction }> = ({ onBack, t }) => {
-    const [isDownloading, setIsDownloading] = React.useState(false);
-
-    const handleDownloadPdf = async () => {
-        const tutorialContent = document.getElementById('tutorial-content');
-        if (!tutorialContent) return;
-
-        setIsDownloading(true);
-        try {
-            const canvas = await html2canvas(tutorialContent, {
-                scale: 2,
-                useCORS: true,
-                backgroundColor: document.documentElement.classList.contains('dark') ? '#0D0D0D' : '#f7f7f7',
-                windowWidth: 1200 // Ensure a consistent width for rendering
-            });
-            const imgData = canvas.toDataURL('image/png');
-            const pdf = new jsPDF({
-                orientation: 'portrait',
-                unit: 'px',
-                format: [canvas.width, canvas.height]
-            });
-            pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
-            pdf.save('Panduan_CarouMate.pdf');
-        } catch (error) {
-            console.error('Could not generate PDF', error);
-            alert('Gagal membuat PDF. Silakan coba lagi.');
-        } finally {
-            setIsDownloading(false);
-        }
-    };
-
-    return (
-        <div className="container mx-auto p-4 sm:p-6 lg:p-8">
-            <div className="max-w-4xl mx-auto">
-                <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-200">{t('tutorialTitle')}</h2>
-                    <div className="flex space-x-4">
-                        <button onClick={onBack} className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700">{t('tutorialBackToDashboard')}</button>
-                        <button onClick={handleDownloadPdf} disabled={isDownloading} className="px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 disabled:bg-primary-300">
-                             {isDownloading ? (
-                                <><LoaderIcon className="w-4 h-4 mr-2 animate-spin" />{t('tutorialGeneratingPDF')}</>
-                            ) : (
-                                <><DownloadIcon className="w-4 h-4 mr-2" />{t('tutorialDownloadPDF')}</>
-                            )}
-                        </button>
-                    </div>
-                </div>
-
-                <div id="tutorial-content" className="p-8 bg-white dark:bg-gray-800 rounded-lg shadow-md">
-                    <article className="prose prose-lg dark:prose-invert max-w-none">
-                        <h1>Selamat Datang di CarouMate!</h1>
-                        <p>Panduan ini akan memandu Anda melalui semua fitur hebat CarouMate untuk membantu Anda membuat konten viral dalam hitungan menit.</p>
-
-                        <h2>1. Memulai: Dalam Satu Menit Pertama</h2>
-                        <ol>
-                            <li><strong>Masuk & Pengaturan Profil:</strong> Cukup klik tombol utama, lalu isi nama dan <em>niche</em> konten Anda (misalnya, "Pemasaran Digital," "Kebugaran," "Kuliner"). Ini membantu AI kami memberikan konten yang lebih relevan untuk Anda.</li>
-                        </ol>
-
-                        <h2>Mendapatkan Google AI API Key Anda</h2>
-                        <p>CarouMate menggunakan teknologi AI dari Google. Untuk mengaktifkan semua fitur AI, Anda memerlukan API Key (kunci API) pribadi dari Google AI Studio. Kunci ini gratis dan mudah didapat. Kunci API Anda disimpan dengan aman hanya di browser Anda dan tidak pernah dikirim ke mana pun.</p>
-                        <ol>
-                            <li><strong>Kunjungi Google AI Studio:</strong> Buka <a href="https://aistudio.google.com/" target="_blank" rel="noopener noreferrer" className="text-primary-600 dark:text-primary-400 hover:underline">Google AI Studio</a> di browser Anda.</li>
-                            <li><strong>Masuk dengan Akun Google:</strong> Login menggunakan akun Google Anda.</li>
-                            <li><strong>Dapatkan API Key:</strong> Di halaman utama, klik tombol <strong>"Get API key"</strong> (biasanya di menu sebelah kiri).</li>
-                            <li><strong>Buat Kunci Baru:</strong> Pilih opsi <strong>"Create API key in new project"</strong>. Sebuah kunci baru akan dibuatkan untuk Anda.</li>
-                            <li><strong>Salin Kunci Anda:</strong> Sebuah popup akan muncul menampilkan kunci API Anda. Klik ikon salin di sebelahnya.</li>
-                            <li><strong>Simpan di CarouMate:</strong> Kembali ke CarouMate, buka <strong>Pengaturan</strong> <SettingsIcon className="w-5 h-5 inline-block" />, dan tempel (paste) kunci Anda di kolom <strong>"Google AI API Key"</strong>. Klik <strong>"Simpan Perubahan"</strong>.</li>
-                        </ol>
-
-                        <h2>2. Generator: Pusat Kreatif Anda</h2>
-                        <p>Ini adalah tempat keajaiban terjadi. Prosesnya sederhana:</p>
-                        <ol>
-                            <li><strong>Masukkan Ide Anda:</strong> Di kolom pertama, masukkan topik carousel Anda. Semakin spesifik, semakin baik! <em>Contoh: "5 cara meningkatkan produktivitas saat WFH".</em></li>
-                            <li><strong>Tentukan Gaya Anda:</strong> Pilih <strong>Gaya, Rasio Aspek, Font,</strong> dan <strong>Warna</strong> yang sesuai dengan merek Anda. Anda juga bisa menambahkan teks branding seperti @username Anda.</li>
-                            <li><strong>Klik "Buat Carousel!":</strong> Duduk dan rileks sementara AI kami menyusun draf pertama carousel Anda, lengkap dengan teks dan ide visual untuk setiap slide.</li>
-                        </ol>
-
-                        <h2>3. Menyempurnakan Karya Anda</h2>
-                        <p>Setelah carousel dibuat, klik pada slide mana pun untuk memilihnya dan mulai mengedit di panel kiri.</p>
-                        <ul>
-                            <li><strong>Edit Teks & AI Refresh:</strong> Ubah <strong>Judul</strong> dan <strong>Teks Isi</strong>. Tidak puas? Klik ikon segarkan <RefreshIcon className="w-5 h-5 inline-block"/> di sebelah kolom teks untuk meminta AI membuat versi baru. Gunakan toolbar pemformatan untuk membuat teks tebal, miring, mengubah ukuran, dan lainnya.</li>
-                            <li><strong>Kustomisasi Visual:</strong> Edit <strong>Prompt Visual</strong> (dalam Bahasa Inggris), lalu klik <strong>"Hasilkan Gambar"</strong> untuk membuat visual dengan AI. Atau, klik <strong>"Unggah Visual"</strong> untuk menggunakan gambar Anda sendiri.</li>
-                            <li><strong>Atur Ulang Slide:</strong> Gunakan tombol panah <LeftArrowIcon className="w-5 h-5 inline-block"/> <RightArrowIcon className="w-5 h-5 inline-block"/> untuk mengubah urutan slide Anda dengan mudah.</li>
-                        </ul>
-
-                        <h2>4. Tingkatkan Konten dengan AI Tools</h2>
-                        <p>Di bawah tombol "Buat Carousel", Anda akan menemukan alat bantu canggih:</p>
-                        <ul>
-                            <li><strong>Asisten AI:</strong> Butuh ide untuk judul yang menarik (hook) atau ajakan bertindak (CTA) yang kuat? Fitur ini memberikan saran instan dari AI.</li>
-                            <li><strong>Buat Hashtag:</strong> Dapatkan daftar hashtag yang relevan dan efektif untuk postingan Anda secara otomatis.</li>
-                            <li><strong>Ubah jadi Thread:</strong> Fitur andalan! Setelah carousel Anda selesai, klik tombol ini untuk mengubah semua konten Anda menjadi format <em>thread</em> yang siap diposting di X (Twitter) atau Threads.</li>
-                        </ul>
-
-                        <h2>5. Unduh & Jadilah Viral</h2>
-                        <p>Setelah semuanya sempurna, klik tombol <strong>"Unduh Semua"</strong>. CarouMate akan mengemas semua slide Anda ke dalam file .zip berisi gambar PNG berkualitas tinggi, siap untuk diunggah.</p>
-                        
-                        <h2>Tips Pro: Manfaatkan Brand Kit</h2>
-                        <p>Buka <strong>Pengaturan</strong> <SettingsIcon className="w-5 h-5 inline-block"/>. Konfigurasikan <strong>Brand Kit</strong> Anda dengan mengatur warna, font, logo, dan teks branding. Setelah itu, di halaman generator, cukup klik tombol <strong>"Terapkan Brand Kit"</strong> untuk menerapkan gaya merek Anda secara instan. Ini adalah penghemat waktu yang luar biasa!</p>
-                        
-                        <p className="mt-8 font-bold text-center">Selamat Mencipta!</p>
-                    </article>
+                <div className="flex justify-end space-x-4 mt-6 pt-4 border-t dark:border-gray-600">
+                    <button onClick={onClose} className="px-4 py-2 border rounded-md">{t('cancelButton')}</button>
+                    <button onClick={handleSave} className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700">{saved ? t('savedButton') : t('saveButton')}</button>
                 </div>
             </div>
         </div>
     );
 };
+
 
 const Footer: React.FC = () => (
-    <footer className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 mt-auto hidden md:block">
-        <div className="container mx-auto py-6 px-4 sm:px-6 lg:px-8 text-center text-gray-500 dark:text-gray-400">
-            <p>&copy; {new Date().getFullYear()} CarouMate. All rights reserved.</p>
-            <div className="flex justify-center space-x-6 mt-4">
-                <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="hover:text-primary-500"><InstagramIcon className="w-6 h-6" /></a>
-                <a href="https://threads.net" target="_blank" rel="noopener noreferrer" className="hover:text-primary-500"><ThreadsIcon className="w-6 h-6" /></a>
+    <footer className="bg-white dark:bg-gray-800 border-t dark:border-gray-700 mt-auto hidden md:block">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                <p>&copy; {new Date().getFullYear()} CarouMate. All rights reserved.</p>
             </div>
         </div>
     </footer>
 );
+
+const TutorialScreen: React.FC<{ onBack: () => void, t: TFunction }> = ({ onBack, t }) => {
+    const [isGeneratingPdf, setIsGeneratingPdf] = React.useState(false);
+    const tutorialContentRef = React.useRef<HTMLDivElement>(null);
+
+    const handleDownloadPdf = async () => {
+        if (!tutorialContentRef.current) return;
+        setIsGeneratingPdf(true);
+        try {
+            const canvas = await html2canvas(tutorialContentRef.current, {
+                scale: 2,
+                useCORS: true,
+                windowWidth: 1024 // Set a consistent width for rendering
+            });
+            const imgData = canvas.toDataURL('image/png');
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = pdf.internal.pageSize.getHeight();
+            const imgProps = pdf.getImageProperties(imgData);
+            const imgHeight = (imgProps.height * pdfWidth) / imgProps.width;
+            let heightLeft = imgHeight;
+            let position = 0;
+
+            pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
+            heightLeft -= pdfHeight;
+
+            while (heightLeft >= 0) {
+                position = heightLeft - imgHeight;
+                pdf.addPage();
+                pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
+                heightLeft -= pdfHeight;
+            }
+            pdf.save("CarouMate_User_Guide.pdf");
+
+        } catch (error) {
+            console.error("Error generating PDF:", error);
+            alert("Could not generate PDF. Please try again.");
+        } finally {
+            setIsGeneratingPdf(false);
+        }
+    };
+    
+    return (
+        <div className="container mx-auto p-4 sm:p-6 lg:p-8">
+            <div className="flex justify-between items-center mb-6">
+                 <h1 className="text-3xl font-bold">{t('tutorialTitle')}</h1>
+                 <div className="flex space-x-2">
+                     <button onClick={handleDownloadPdf} disabled={isGeneratingPdf} className="px-4 py-2 border rounded-md disabled:opacity-50 flex items-center">
+                         {isGeneratingPdf ? <LoaderIcon className="w-5 h-5 mr-2 animate-spin"/> : <DownloadIcon className="w-5 h-5 mr-2"/>}
+                         {isGeneratingPdf ? t('tutorialGeneratingPDF') : t('tutorialDownloadPDF')}
+                     </button>
+                    <button onClick={onBack} className="px-4 py-2 bg-primary-600 text-white rounded-md">{t('tutorialBackToDashboard')}</button>
+                 </div>
+            </div>
+           
+            <div ref={tutorialContentRef} className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-md prose dark:prose-invert max-w-none">
+                <h2>Welcome to CarouMate!</h2>
+                <p>This guide will walk you through setting up and using CarouMate to create amazing carousels.</p>
+
+                <hr/>
+
+                <h3>1. Getting Your Google AI API Key</h3>
+                <p>CarouMate uses the Google Gemini API to power its AI features. To use these features, you'll need a free API key from Google AI Studio.</p>
+                <ol>
+                    <li>Go to <a href="https://aistudio.google.com/" target="_blank" rel="noopener noreferrer">Google AI Studio</a>.</li>
+                    <li>Sign in with your Google account.</li>
+                    <li>Click on the <strong>"Get API Key"</strong> button (usually on the top left).</li>
+                    <li>Click <strong>"Create API key in new project"</strong>. A new key will be generated for you.</li>
+                    <li>Copy the generated API key. It's a long string of letters and numbers.</li>
+                </ol>
+                <img src="https://storage.googleapis.com/gemini-web-us-east1-prod-scratch-1b8e1957/i/2024/5/1/52e259e2-2a7e-4171-be56-3b9576e87f3b.png" alt="Google AI Studio Get API Key" className="rounded-lg shadow-lg"/>
+
+                <h3>2. Setting Up CarouMate</h3>
+                <p>Once you have your API key, you need to add it to CarouMate.</p>
+                <ol>
+                    <li>In CarouMate, click the <strong>Settings</strong> icon (<SettingsIcon className="w-4 h-4 inline-block"/>) in the header.</li>
+                    <li>Find the <strong>"Google AI API Key"</strong> field.</li>
+                    <li>Paste your copied API key into this field.</li>
+                    <li>Click <strong>"Save Changes"</strong>. Your key is stored securely in your browser's local storage and is never sent to our servers.</li>
+                </ol>
+                 <img src="https://storage.googleapis.com/gemini-web-us-east1-prod-scratch-1b8e1957/i/2024/5/1/eb19231f-49cc-43ac-9519-913a6e87000e.png" alt="CarouMate Settings API Key" className="rounded-lg shadow-lg"/>
+
+                <hr/>
+
+                <h3>3. Creating Your First Carousel</h3>
+                <p>Now you're ready to create!</p>
+                <dl>
+                    <dt><strong>Step 1: Enter Your Idea</strong></dt>
+                    <dd>In the Generator, type the topic for your carousel. Be descriptive! For example, instead of "Fitness", try "5 beginner-friendly exercises for busy professionals".</dd>
+                    
+                    <dt><strong>Step 2: Customize Your Design</strong></dt>
+                    <dd>Choose a style, aspect ratio, font, colors, and add your branding (like your Instagram @username). These are your global settings.</dd>
+
+                    <dt><strong>Step 3: Generate!</strong></dt>
+                    <dd>Click the "Create Carousel!" button. The AI will generate 5-7 slides with headlines, body text, and ideas for visuals.</dd>
+
+                    <dt><strong>Step 4: Edit & Refine</strong></dt>
+                    <dd>
+                        <ul>
+                            <li>Click on any slide in the preview to select it.</li>
+                            <li>The left panel will now show the content for the selected slide.</li>
+                            <li>You can edit the text directly, regenerate parts of it using the <RefreshIcon className="w-4 h-4 inline-block"/> icon, and format it using the toolbar.</li>
+                            <li>Use the visual tools to upload your own image or generate one with AI based on the visual prompt.</li>
+                            <li>Adjust colors and background images for individual slides by selecting a slide and using the design controls.</li>
+                        </ul>
+                    </dd>
+
+                    <dt><strong>Step 5: Download</strong></dt>
+                    <dd>Once you're happy with your carousel, click "Download All". A .zip file containing all your slides as high-resolution PNG images will be downloaded, ready to post!</dd>
+                </dl>
+
+                <hr/>
+                
+                <h3>Pro Tips</h3>
+                <ul>
+                    <li><strong>Brand Kit:</strong> Set up your Brand Kit in the Settings modal for one-click application of your brand's colors, fonts, and logo.</li>
+                    <li><strong>AI Assistant:</strong> Stuck on your first or last slide? Use the AI Assistant to generate ideas for hooks (intro slides) and calls-to-action (outro slides).</li>
+                    <li><strong>Hashtag Generator:</strong> Click "Generate Hashtags" to get a list of relevant hashtags for your topic, ready to copy and paste.</li>
+                    <li><strong>Thread Converter:</strong> Repurpose your content for Threads or X (Twitter) with one click using the "Convert to Thread" button.</li>
+                </ul>
+            </div>
+        </div>
+    );
+};
