@@ -2598,7 +2598,7 @@ const SettingsModal: React.FC<{
                     </div>
 
                 </div>
-                <div className="flex justify-end space-x-4 mt-6 pt-4 border-t dark:border-gray-600">
+                <div className="flex-shrink-0 flex justify-end space-x-4 mt-auto pt-4 border-t dark:border-gray-600">
                     <button onClick={onClose} className="px-4 py-2 border rounded-md">{t('cancelButton')}</button>
                     <button onClick={handleSave} className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700">{saved ? t('savedButton') : t('saveButton')}</button>
                 </div>
