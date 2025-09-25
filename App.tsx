@@ -2771,17 +2771,7 @@ const SettingsModal: React.FC<{
                     </div>
 
                 </div>
-                <div className="flex justify-between items-center mt-6 pt-4 border-t dark:border-gray-600">
-                     <a
-                        href="http://lynk.id/pasanaktidur/s/re2yoep3v6r0"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center text-sm font-medium text-accent-700 dark:text-accent-300 bg-accent-100 dark:bg-accent-900/50 border border-transparent rounded-md hover:bg-accent-200 dark:hover:bg-accent-800/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-accent-500 transition-colors px-4 py-2"
-                        aria-label={t('donate')}
-                    >
-                        <GiftIcon className="w-5 h-5 mr-2" />
-                        {t('donate')}
-                    </a>
+                <div className="flex justify-end items-center mt-6 pt-4 border-t dark:border-gray-600">
                     <div className="flex space-x-2">
                         <button onClick={onClose} className="px-4 py-2 border rounded-md">{t('cancelButton')}</button>
                         <button onClick={handleSave} className="px-4 py-2 border border-transparent rounded-md text-white bg-primary-600 hover:bg-primary-700">
