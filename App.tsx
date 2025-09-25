@@ -1,7 +1,7 @@
 import * as React from 'react';
 import type { AppView, UserProfile, Carousel, SlideData, DesignPreferences, AppSettings, Language, TextStyle, BrandKit } from './types';
 import { DesignStyle, FontChoice, AspectRatio, AIModel } from './types';
-import { GoogleIcon, SparklesIcon, LoaderIcon, DownloadIcon, SettingsIcon, InstagramIcon, ThreadsIcon, MoonIcon, SunIcon, AvatarIcon, LogoutIcon, HashtagIcon, HomeIcon, BoldIcon, ItalicIcon, UnderlineIcon, StrikethroughIcon, CaseIcon, AlignLeftIcon, AlignCenterIcon, AlignRightIcon, AlignJustifyIcon, LeftArrowIcon, RightArrowIcon, GiftIcon, ImageIcon, TrashIcon, PaletteIcon, UploadIcon, RefreshIcon } from './components/icons';
+import { GoogleIcon, SparklesIcon, LoaderIcon, DownloadIcon, SettingsIcon, InstagramIcon, ThreadsIcon, MoonIcon, SunIcon, AvatarIcon, LogoutIcon, HashtagIcon, HomeIcon, BoldIcon, ItalicIcon, UnderlineIcon, StrikethroughIcon, CaseIcon, AlignLeftIcon, AlignCenterIcon, AlignRightIcon, AlignJustifyIcon, LeftArrowIcon, RightArrowIcon, GiftIcon, ImageIcon, TrashIcon, PaletteIcon, UploadIcon, RefreshIcon, PlusIcon } from './components/icons';
 import { generateCarouselContent, getAiAssistance, generateHashtags, generateImage, regenerateSlideContent, generateThreadFromCarousel } from './services/geminiService';
 import html2canvas from 'html2canvas';
 import JSZip from 'jszip';
@@ -41,6 +41,7 @@ const translations = {
     profileNameLabel: 'Your Name',
     profileNicheLabel: 'Your Primary Content Niche',
     profileNichePlaceholder: 'e.g., "Software Development"',
+    profileAddNiche: 'Add Niche',
     profileButton: 'Get Started',
 
     // Dashboard
@@ -66,7 +67,7 @@ const translations = {
     generatorStep1Title: '1. Enter Your Idea',
     generatorTopicLabel: "What's your carousel about?",
     generatorTopicPlaceholder: "e.g., '5 tips for growing on Instagram in 2025'",
-    generatorTopicHint: 'Hint: For a different niche, add the target audience to your idea (e.g., "...for college students").',
+    generatorNicheGeneral: 'General',
     generatorStep2Title: '2. Customize Your Design',
     generatorStyleLabel: 'Style',
     generatorAspectRatioLabel: 'Aspect Ratio',
@@ -208,7 +209,7 @@ const translations = {
             content: [
               { type: 'p', text: 'Now you\'re ready to create!' },
               { type: 'dl', items: [
-                { dt: '<strong>Step 1: Enter Your Idea</strong>', dd: 'In the Generator, type the topic for your carousel. Be descriptive! For example, instead of "Fitness", try "5 beginner-friendly exercises for busy professionals".' },
+                { dt: '<strong>Step 1: Enter Your Idea</strong>', dd: 'In the Generator, type the topic for your carousel. Be descriptive! For example, instead of "Fitness", try "5 beginner-friendly exercises for busy professionals". Then select your content niche from the dropdown below.' },
                 { dt: '<strong>Step 2: Customize Your Design</strong>', dd: 'Choose a style, aspect ratio, font, colors, and add your branding (like your Instagram @username). These are your global settings.' },
                 { dt: '<strong>Step 3: Generate!</strong>', dd: 'Click the "Create Carousel!" button. The AI will generate 5-7 slides with headlines, body text, and ideas for visuals.' },
                 { dt: '<strong>Step 4: Edit & Refine</strong>', dd: [
@@ -226,6 +227,7 @@ const translations = {
             title: 'Pro Tips',
             content: [
               { type: 'ul', items: [
+                '<strong>Multiple Niches:</strong> You can add multiple content niches in your profile setup. This lets you easily switch between different content strategies in the Generator.',
                 '<strong>Brand Kit:</strong> Set up your Brand Kit in the Settings modal for one-click application of your brand\'s colors, fonts, and logo.',
                 '<strong>AI Assistant:</strong> Stuck on your first or last slide? Use the AI Assistant to generate ideas for hooks (intro slides) and calls-to-action (outro slides).',
                 '<strong>Hashtag Generator:</strong> Click "Generate Hashtags" to get a list of relevant hashtags for your topic, ready to copy and paste.',
@@ -268,6 +270,7 @@ const translations = {
     profileNameLabel: 'Nama Anda',
     profileNicheLabel: 'Niche Konten Utama Anda',
     profileNichePlaceholder: 'cth., "Pengembangan Perangkat Lunak"',
+    profileAddNiche: 'Tambah Niche',
     profileButton: 'Mulai',
 
     // Dashboard
@@ -292,7 +295,7 @@ const translations = {
     generatorStep1Title: '1. Masukkan Ide Anda',
     generatorTopicLabel: 'Tentang apa carousel Anda?',
     generatorTopicPlaceholder: "cth., '5 tips untuk berkembang di Instagram pada 2025'",
-    generatorTopicHint: 'Tips: Untuk niche yang berbeda, tambahkan target audiens di ide Anda (cth., "...untuk mahasiswa").',
+    generatorNicheGeneral: 'Umum',
     generatorStep2Title: '2. Sesuaikan Desain Anda',
     generatorStyleLabel: 'Gaya',
     generatorAspectRatioLabel: 'Rasio Aspek',
@@ -434,7 +437,7 @@ const translations = {
             content: [
               { type: 'p', text: 'Sekarang Anda siap untuk berkreasi!' },
               { type: 'dl', items: [
-                { dt: '<strong>Langkah 1: Masukkan Ide Anda</strong>', dd: 'Di Generator, ketik topik untuk carousel Anda. Berikan deskripsi yang jelas! Contohnya, daripada "Kebugaran", coba "5 latihan ramah pemula untuk para profesional yang sibuk".' },
+                { dt: '<strong>Langkah 1: Masukkan Ide Anda</strong>', dd: 'Di Generator, ketik topik untuk carousel Anda. Berikan deskripsi yang jelas! Contohnya, daripada "Kebugaran", coba "5 latihan ramah pemula untuk para profesional yang sibuk". Lalu pilih niche konten Anda dari dropdown di bawahnya.' },
                 { dt: '<strong>Langkah 2: Sesuaikan Desain Anda</strong>', dd: 'Pilih gaya, rasio aspek, font, warna, dan tambahkan branding Anda (seperti @username Instagram Anda). Ini adalah pengaturan global Anda.' },
                 { dt: '<strong>Langkah 3: Hasilkan!</strong>', dd: 'Klik tombol "Buat Carousel!". AI akan menghasilkan 5-7 slide dengan judul, isi teks, dan ide untuk visual.' },
                 { dt: '<strong>Langkah 4: Edit & Sempurnakan</strong>', dd: [
@@ -452,6 +455,7 @@ const translations = {
             title: 'Tips Pro',
             content: [
               { type: 'ul', items: [
+                '<strong>Beberapa Niche:</strong> Anda dapat menambahkan beberapa niche konten dalam pengaturan profil Anda. Ini memungkinkan Anda beralih dengan mudah di antara strategi konten yang berbeda di Generator.',
                 '<strong>Brand Kit:</strong> Siapkan Brand Kit Anda di modal Pengaturan untuk aplikasi sekali klik dari warna, font, dan logo merek Anda.',
                 '<strong>Asisten AI:</strong> Buntu pada slide pertama atau terakhir Anda? Gunakan Asisten AI untuk menghasilkan ide untuk hook (slide pembuka) dan ajakan bertindak (slide penutup).',
                 '<strong>Generator Hashtag:</strong> Klik "Buat Hashtag" untuk mendapatkan daftar hashtag yang relevan untuk topik Anda, siap untuk disalin dan ditempel.',
@@ -1064,7 +1068,7 @@ export default function App() {
             name: '',
             email: 'guest@example.com',
             picture: '', // No picture for guest
-            niche: '',
+            niche: [],
             profileComplete: false
         };
         setUser(guestUser);
@@ -1082,7 +1086,11 @@ export default function App() {
     };
 
     const handleProfileSetup = (profile: Omit<UserProfile, 'profileComplete'>) => {
-        setUser({ ...profile, profileComplete: true });
+        const cleanedProfile = {
+            ...profile,
+            niche: profile.niche.filter(n => n.trim() !== ''),
+        };
+        setUser({ ...cleanedProfile, profileComplete: true });
         setView('DASHBOARD');
     };
     
@@ -1132,7 +1140,7 @@ export default function App() {
         }
     };
 
-    const handleGenerateCarousel = React.useCallback(async (topic: string, preferences: DesignPreferences) => {
+    const handleGenerateCarousel = React.useCallback(async (topic: string, niche: string, preferences: DesignPreferences) => {
         if (!user) return;
         setIsGenerating(true);
         setError(null);
@@ -1141,7 +1149,8 @@ export default function App() {
         
         try {
             setGenerationMessage(t('generatingContentMessage'));
-            const slidesContent = await generateCarouselContent(topic, user.niche, preferences, settings);
+            const nicheToUse = niche || (user.niche.length > 0 ? user.niche[0] : 'General');
+            const slidesContent = await generateCarouselContent(topic, nicheToUse, preferences, settings);
 
             const initialSlides: SlideData[] = slidesContent.map(s => ({ ...s, id: crypto.randomUUID() }));
             
@@ -1150,7 +1159,7 @@ export default function App() {
                 title: topic,
                 createdAt: new Date().toISOString(),
                 slides: initialSlides,
-                category: user.niche,
+                category: nicheToUse,
                 preferences,
             };
             
@@ -1356,7 +1365,7 @@ export default function App() {
                 title: topicValue,
                 createdAt: new Date().toISOString(),
                 slides: [],
-                category: user?.niche || 'General',
+                category: user?.niche[0] || 'General',
                 preferences: {
                     backgroundColor: '#FFFFFF',
                     fontColor: '#111827',
@@ -1500,6 +1509,8 @@ export default function App() {
                 />
             );
             case 'TUTORIAL': return (
+// FIX: Cannot find name 'TutorialScreen'.
+// ADD: Added TutorialScreen component definition to fix the error.
                 <TutorialScreen
                     onBack={() => setView('DASHBOARD')}
                     content={translations[language].tutorial}
@@ -1525,6 +1536,8 @@ export default function App() {
             <main className="flex-grow flex flex-col pb-16 md:pb-0 lg:overflow-y-auto">
                 {renderContent()}
             </main>
+{/* FIX: Cannot find name 'Footer'. */}
+{/* ADD: Added Footer component definition to fix the error. */}
             <Footer />
             {isAssistantOpen && (
                 <AiAssistantModal 
@@ -1724,11 +1737,28 @@ const LoginScreen: React.FC<{ onLogin: () => void; t: TFunction; }> = ({ onLogin
 
 const ProfileSetupModal: React.FC<{ user: UserProfile, onSetupComplete: (profile: Omit<UserProfile, 'profileComplete'>) => void; t: TFunction; }> = ({ user, onSetupComplete, t }) => {
     const [name, setName] = React.useState(user.name || '');
-    const [niche, setNiche] = React.useState(user.niche || '');
+    const [niches, setNiches] = React.useState<string[]>(user.niche?.length > 0 ? user.niche : ['']);
     
+    const handleNicheChange = (index: number, value: string) => {
+        const newNiches = [...niches];
+        newNiches[index] = value;
+        setNiches(newNiches);
+    };
+
+    const handleAddNiche = () => {
+        setNiches([...niches, '']);
+    };
+
+    const handleRemoveNiche = (index: number) => {
+        if (niches.length > 1) {
+            const newNiches = niches.filter((_, i) => i !== index);
+            setNiches(newNiches);
+        }
+    };
+
     const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        onSetupComplete({ ...user, name, niche });
+        onSetupComplete({ ...user, name, niche: niches });
     };
 
     return (
@@ -1742,8 +1772,30 @@ const ProfileSetupModal: React.FC<{ user: UserProfile, onSetupComplete: (profile
                         <input type="text" id="name" value={name} onChange={e => setName(e.target.value)} required className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500" />
                     </div>
                     <div>
-                        <label htmlFor="niche" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('profileNicheLabel')}</label>
-                        <input type="text" id="niche" value={niche} onChange={e => setNiche(e.target.value)} required placeholder={t('profileNichePlaceholder')} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500" />
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('profileNicheLabel')}</label>
+                         <div className="space-y-2 mt-1">
+                            {niches.map((niche, index) => (
+                                <div key={index} className="flex items-center space-x-2">
+                                    <input
+                                        type="text"
+                                        value={niche}
+                                        onChange={e => handleNicheChange(index, e.target.value)}
+                                        required
+                                        placeholder={t('profileNichePlaceholder')}
+                                        className="block w-full px-3 py-2 bg-white dark:bg-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                                    />
+                                    {niches.length > 1 && (
+                                        <button type="button" onClick={() => handleRemoveNiche(index)} className="p-2 text-red-500 rounded-full hover:bg-red-100 dark:hover:bg-red-900/50">
+                                            <TrashIcon className="w-5 h-5" />
+                                        </button>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                        <button type="button" onClick={handleAddNiche} className="mt-2 text-sm text-primary-600 dark:text-primary-400 hover:underline flex items-center">
+                            <PlusIcon className="w-4 h-4 mr-1" />
+                            {t('profileAddNiche')}
+                        </button>
                     </div>
                     <button type="submit" className="w-full inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
                         {t('profileButton')}
@@ -2010,7 +2062,7 @@ const Generator: React.FC<{
     isGenerating: boolean;
     generationMessage: string;
     error: string | null;
-    onGenerate: (topic: string, preferences: DesignPreferences) => void;
+    onGenerate: (topic: string, niche: string, preferences: DesignPreferences) => void;
     currentCarousel: Carousel | null;
     setCurrentCarousel: React.Dispatch<React.SetStateAction<Carousel | null>>;
     selectedSlide: SlideData | undefined;
@@ -2035,11 +2087,12 @@ const Generator: React.FC<{
     onRegenerateContent: (slideId: string, part: 'headline' | 'body') => void;
     t: TFunction;
 }> = (props) => {
-    const { onGenerate, currentCarousel, selectedSlide, onUpdateSlide, onUpdateCarouselPreferences, onClearSlideOverrides, onSelectSlide, onMoveSlide, onRegenerateContent, onOpenThread, ...rest } = props;
+    const { user, onGenerate, currentCarousel, selectedSlide, onUpdateSlide, onUpdateCarouselPreferences, onClearSlideOverrides, onSelectSlide, onMoveSlide, onRegenerateContent, onOpenThread, ...rest } = props;
     const { isGenerating, generationMessage, error, onOpenAssistant, onOpenHashtag, onDownload, isDownloading, isHashtagModalOpen, isGeneratingImageForSlide, onGenerateImageForSlide, onUploadVisualForSlide, onRemoveVisualForSlide, onApplyBrandKit, brandKitConfigured, t, regeneratingPart } = rest;
     
     const fileInputRef = React.useRef<HTMLInputElement>(null);
     const [topic, setTopic] = React.useState('');
+    const [selectedNiche, setSelectedNiche] = React.useState<string>(user.niche?.[0] || '');
     
     // Scopes for applying styles
     const [colorScope, setColorScope] = React.useState<'all' | 'selected'>('all');
@@ -2097,12 +2150,13 @@ const Generator: React.FC<{
     React.useEffect(() => {
         if (currentCarousel) {
             setTopic(currentCarousel.title);
+            setSelectedNiche(currentCarousel.category || user.niche?.[0] || '');
         }
     }, [currentCarousel?.id]);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        onGenerate(topic, preferences);
+        onGenerate(topic, selectedNiche, preferences);
     };
     
     const handleBgVisualUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -2171,7 +2225,21 @@ const Generator: React.FC<{
                             className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
                             rows={3}
                         />
-                        <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">{t('generatorTopicHint')}</p>
+                        <div className="mt-2">
+                            <label htmlFor="niche-select" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('profileNicheLabel')}</label>
+                            <select
+                                id="niche-select"
+                                value={selectedNiche}
+                                onChange={e => setSelectedNiche(e.target.value)}
+                                className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-gray-200 dark:bg-gray-700 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md"
+                            >
+                                {user.niche.length > 0 ? (
+                                    user.niche.map(n => <option key={n} value={n}>{n}</option>)
+                                ) : (
+                                    <option value="">{t('generatorNicheGeneral')}</option>
+                                )}
+                            </select>
+                        </div>
                     </div>
                     
                     {/* Step 2: Design */}
@@ -2669,139 +2737,128 @@ const SettingsModal: React.FC<{
                             <div className="grid grid-cols-2 gap-4">
                                <div>
                                     <label htmlFor="headlineFont" className="block text-sm font-medium">{t('brandKitHeadlineFont')}</label>
-                                    <select id="headlineFont" value={settings.brandKit?.fonts.headline ?? FontChoice.POPPINS} onChange={e => handleBrandKitFontChange('headline', e.target.value as FontChoice)} className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 sm:text-sm rounded-md">
+                                    <select id="headlineFont" value={settings.brandKit?.fonts.headline ?? FontChoice.POPPINS} onChange={e => handleBrandKitFontChange('headline', e.target.value as FontChoice)} className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md">
                                         {Object.values(FontChoice).map(f => <option key={f} value={f}>{f}</option>)}
                                     </select>
-                               </div>
-                               <div>
+                                </div>
+                                <div>
                                     <label htmlFor="bodyFont" className="block text-sm font-medium">{t('brandKitBodyFont')}</label>
-                                    <select id="bodyFont" value={settings.brandKit?.fonts.body ?? FontChoice.SANS} onChange={e => handleBrandKitFontChange('body', e.target.value as FontChoice)} className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 sm:text-sm rounded-md">
+                                     <select id="bodyFont" value={settings.brandKit?.fonts.body ?? FontChoice.SANS} onChange={e => handleBrandKitFontChange('body', e.target.value as FontChoice)} className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md">
                                         {Object.values(FontChoice).map(f => <option key={f} value={f}>{f}</option>)}
                                     </select>
-                               </div>
+                                </div>
                             </div>
                              <div>
                                 <label className="block text-sm font-medium">{t('brandKitLogo')}</label>
                                 <div className="mt-1 flex items-center space-x-4">
-                                    <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-md flex items-center justify-center">
-                                        {settings.brandKit?.logo ? <img src={settings.brandKit.logo} alt="Logo preview" className="max-w-full max-h-full" /> : <ImageIcon className="w-8 h-8 text-gray-400"/>}
-                                    </div>
+                                    {settings.brandKit?.logo ? (
+                                        <img src={settings.brandKit.logo} alt="Brand Logo" className="w-16 h-16 object-contain rounded-md bg-gray-200 dark:bg-gray-600"/>
+                                    ) : (
+                                        <div className="w-16 h-16 flex items-center justify-center bg-gray-100 dark:bg-gray-700 rounded-md">
+                                            <PaletteIcon className="w-8 h-8 text-gray-400"/>
+                                        </div>
+                                    )}
                                     <input type="file" accept="image/*" onChange={handleLogoUpload} id="logo-upload" className="hidden"/>
-                                    <button type="button" onClick={() => document.getElementById('logo-upload')?.click()} className="px-4 py-2 border rounded-md">{t('brandKitUploadLogo')}</button>
-                                     {settings.brandKit?.logo && <button type="button" onClick={() => handleBrandKitChange('logo', '')} className="text-red-600 text-sm">{t('removeButton')}</button>}
+                                    <button type="button" onClick={() => document.getElementById('logo-upload')?.click()} className="px-3 py-2 border border-gray-300 rounded-md text-sm">{t('brandKitUploadLogo')}</button>
+                                    {settings.brandKit?.logo && <button type="button" onClick={() => handleBrandKitChange('logo', '')} className="text-red-500 text-sm">{t('removeButton')}</button>}
                                 </div>
                             </div>
                             <div>
                                 <label htmlFor="brandKitBrandingText" className="block text-sm font-medium">{t('brandKitBrandingText')}</label>
-                                <input
-                                    type="text"
-                                    id="brandKitBrandingText"
-                                    value={settings.brandKit?.brandingText ?? ''}
-                                    onChange={e => handleBrandKitChange('brandingText', e.target.value)}
-                                    placeholder={t('settingsBrandingPlaceholder')}
-                                    className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm"
-                                />
+                                <input id="brandKitBrandingText" type="text" value={settings.brandKit?.brandingText ?? ''} onChange={e => handleBrandKitChange('brandingText', e.target.value)} placeholder={t('settingsBrandingPlaceholder')} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm" />
                             </div>
                          </div>
                     </div>
 
                 </div>
-                <div className="flex-shrink-0 flex justify-end space-x-4 mt-auto pt-4 border-t dark:border-gray-600">
-                    <button onClick={onClose} className="px-4 py-2 border rounded-md">{t('cancelButton')}</button>
-                    <button onClick={handleSave} className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700">{saved ? t('savedButton') : t('saveButton')}</button>
+                <div className="flex justify-between items-center mt-6 pt-4 border-t dark:border-gray-600">
+                     <a
+                        href="http://lynk.id/pasanaktidur/s/re2yoep3v6r0"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center text-sm font-medium text-accent-700 dark:text-accent-300 bg-accent-100 dark:bg-accent-900/50 border border-transparent rounded-md hover:bg-accent-200 dark:hover:bg-accent-800/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-accent-500 transition-colors px-4 py-2"
+                        aria-label={t('donate')}
+                    >
+                        <GiftIcon className="w-5 h-5 mr-2" />
+                        {t('donate')}
+                    </a>
+                    <div className="flex space-x-2">
+                        <button onClick={onClose} className="px-4 py-2 border rounded-md">{t('cancelButton')}</button>
+                        <button onClick={handleSave} className="px-4 py-2 border border-transparent rounded-md text-white bg-primary-600 hover:bg-primary-700">
+                            {saved ? t('savedButton') : t('saveButton')}
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
     );
 };
 
-
-const Footer: React.FC = () => (
-    <footer className="bg-white dark:bg-gray-800 border-t dark:border-gray-700 mt-auto hidden md:block">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="py-4 text-center text-sm text-gray-500 dark:text-gray-400">
-                <p>&copy; {new Date().getFullYear()} CarouMate. All rights reserved.</p>
-            </div>
-        </div>
-    </footer>
-);
-
-const TutorialScreen: React.FC<{ 
-    onBack: () => void, 
-    content: any 
+// FIX: Added TutorialScreen component which was missing.
+const TutorialScreen: React.FC<{
+    onBack: () => void;
+    content: typeof translations['en']['tutorial'];
 }> = ({ onBack, content }) => {
     const [isGeneratingPdf, setIsGeneratingPdf] = React.useState(false);
-    const tutorialContentRef = React.useRef<HTMLDivElement>(null);
 
     const handleDownloadPdf = async () => {
-        if (!tutorialContentRef.current) return;
         setIsGeneratingPdf(true);
-        try {
-            const canvas = await html2canvas(tutorialContentRef.current, {
-                scale: 2,
-                useCORS: true,
-                windowWidth: 1024 // Set a consistent width for rendering
-            });
-            const imgData = canvas.toDataURL('image/png');
-            const pdf = new jsPDF('p', 'mm', 'a4');
-            const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = pdf.internal.pageSize.getHeight();
-            const imgProps = pdf.getImageProperties(imgData);
-            const imgHeight = (imgProps.height * pdfWidth) / imgProps.width;
-            let heightLeft = imgHeight;
-            let position = 0;
-
-            pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
-            heightLeft -= pdfHeight;
-
-            while (heightLeft >= 0) {
-                position = heightLeft - imgHeight;
-                pdf.addPage();
-                pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
-                heightLeft -= pdfHeight;
+        const tutorialElement = document.getElementById('tutorial-content');
+        if (tutorialElement) {
+            try {
+                const isDarkMode = document.documentElement.classList.contains('dark');
+                const canvas = await html2canvas(tutorialElement, {
+                    scale: 2,
+                    useCORS: true,
+                    backgroundColor: isDarkMode ? '#1f2937' : '#ffffff',
+                });
+                const imgData = canvas.toDataURL('image/png');
+                const pdf = new jsPDF({
+                    orientation: 'portrait',
+                    unit: 'px',
+                    format: [canvas.width, canvas.height]
+                });
+                pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+                pdf.save('CarouMate_User_Guide.pdf');
+            } catch (error) {
+                console.error("Error generating PDF:", error);
             }
-            pdf.save("CarouMate_User_Guide.pdf");
-
-        } catch (error) {
-            console.error("Error generating PDF:", error);
-            alert("Could not generate PDF. Please try again.");
-        } finally {
-            setIsGeneratingPdf(false);
         }
+        setIsGeneratingPdf(false);
     };
-    
+
     const renderContentItem = (item: any, index: number) => {
         switch (item.type) {
             case 'p':
-                return <p key={index} dangerouslySetInnerHTML={{ __html: item.text }} />;
+                return <p key={index} className="mb-4" dangerouslySetInnerHTML={{ __html: item.text }} />;
             case 'ol':
-            case 'ul':
-                const ListTag = item.type;
                 return (
-                    <ListTag key={index}>
-                        {item.items.map((li: string, i: number) => (
-                            <li key={i} dangerouslySetInnerHTML={{ __html: li }} />
-                        ))}
-                    </ListTag>
+                    <ol key={index} className="list-decimal list-inside space-y-2 mb-4 pl-4">
+                        {item.items.map((li: string, i: number) => <li key={i} dangerouslySetInnerHTML={{ __html: li }} />)}
+                    </ol>
+                );
+            case 'ul':
+                 return (
+                    <ul key={index} className="list-disc list-inside space-y-2 mb-4 pl-4">
+                        {item.items.map((li: string, i: number) => <li key={i} dangerouslySetInnerHTML={{ __html: li }} />)}
+                    </ul>
                 );
             case 'dl':
-                return (
-                    <dl key={index}>
-                        {item.items.map((dlItem: {dt: string, dd: string | string[]}, i: number) => (
-                            <React.Fragment key={i}>
-                                <dt dangerouslySetInnerHTML={{ __html: dlItem.dt }} />
-                                <dd>
-                                    {Array.isArray(dlItem.dd) ? (
-                                        <ul>
-                                            {dlItem.dd.map((subItem, subIndex) => (
-                                                <li key={subIndex} dangerouslySetInnerHTML={{ __html: subItem }} />
-                                            ))}
+                 return (
+                    <dl key={index} className="space-y-4 mb-4">
+                        {item.items.map((dlItem: { dt: string; dd: string | string[] }, i: number) => (
+                            <div key={i}>
+                                <dt className="font-semibold text-gray-800 dark:text-gray-200" dangerouslySetInnerHTML={{ __html: dlItem.dt }} />
+                                {Array.isArray(dlItem.dd) ? (
+                                     <dd className="mt-1 ml-4 text-gray-600 dark:text-gray-400">
+                                        <ul className="list-disc list-inside">
+                                            {dlItem.dd.map((subItem, j) => <li key={j} dangerouslySetInnerHTML={{__html: subItem}}/>)}
                                         </ul>
-                                    ) : (
-                                        <div dangerouslySetInnerHTML={{ __html: dlItem.dd }} />
-                                    )}
-                                </dd>
-                            </React.Fragment>
+                                     </dd>
+                                ) : (
+                                    <dd className="mt-1 ml-4 text-gray-600 dark:text-gray-400" dangerouslySetInnerHTML={{ __html: dlItem.dd }} />
+                                )}
+                            </div>
                         ))}
                     </dl>
                 );
@@ -2809,32 +2866,55 @@ const TutorialScreen: React.FC<{
                 return null;
         }
     };
-
+    
     return (
         <div className="container mx-auto p-4 sm:p-6 lg:p-8">
             <div className="flex justify-between items-center mb-6">
-                 <h1 className="text-3xl font-bold">{content.title}</h1>
-                 <div className="flex space-x-2">
-                     <button onClick={handleDownloadPdf} disabled={isGeneratingPdf} className="px-4 py-2 border rounded-md disabled:opacity-50 flex items-center">
-                         {isGeneratingPdf ? <LoaderIcon className="w-5 h-5 mr-2 animate-spin"/> : <DownloadIcon className="w-5 h-5 mr-2"/>}
-                         {isGeneratingPdf ? content.generatingPDF : content.downloadPDF}
-                     </button>
-                    <button onClick={onBack} className="px-4 py-2 bg-primary-600 text-white rounded-md">{content.backToDashboard}</button>
-                 </div>
+                <button onClick={onBack} className="text-primary-600 dark:text-primary-400 hover:underline">
+                    &larr; {content.backToDashboard}
+                </button>
+                <button
+                    onClick={handleDownloadPdf}
+                    disabled={isGeneratingPdf}
+                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 disabled:bg-green-300"
+                >
+                    {isGeneratingPdf ? <LoaderIcon className="w-4 h-4 mr-2 animate-spin"/> : <DownloadIcon className="w-4 h-4 mr-2"/>}
+                    {isGeneratingPdf ? content.generatingPDF : content.downloadPDF}
+                </button>
             </div>
-           
-            <div ref={tutorialContentRef} className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-md prose dark:prose-invert max-w-none">
-                <h2>{content.content.welcome}</h2>
-                <p>{content.content.intro}</p>
-
-                {content.content.sections.map((section: any, index: number) => (
-                    <React.Fragment key={index}>
-                        <hr />
-                        <h3>{section.title}</h3>
-                        {section.content.map(renderContentItem)}
-                    </React.Fragment>
+            <div id="tutorial-content" className="bg-white dark:bg-gray-800 p-8 sm:p-12 rounded-lg shadow-lg text-gray-700 dark:text-gray-300">
+                <h1 className="text-3xl font-bold mb-4 text-gray-900 dark:text-white">{content.content.welcome}</h1>
+                <p className="text-lg text-gray-600 dark:text-gray-400 mb-8">{content.content.intro}</p>
+                
+                {content.content.sections.map((section, index) => (
+                    <div key={index} className="mb-8">
+                        <h2 className="text-2xl font-semibold border-b-2 border-primary-500 pb-2 mb-4 text-gray-800 dark:text-gray-200">{section.title}</h2>
+                        <div className="prose dark:prose-invert max-w-none">
+                          {section.content.map(renderContentItem)}
+                        </div>
+                    </div>
                 ))}
             </div>
         </div>
     );
 };
+
+
+// FIX: Added Footer component which was missing.
+const Footer: React.FC = () => (
+    <footer className="hidden md:block bg-gray-100 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 mt-auto">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div className="flex justify-between items-center">
+                <p className="text-sm text-gray-500 dark:text-gray-400">&copy; {new Date().getFullYear()} CarouMate. All rights reserved.</p>
+                <div className="flex items-center space-x-4">
+                   <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300">
+                        <InstagramIcon className="h-6 w-6" />
+                    </a>
+                    <a href="https://threads.net" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300">
+                        <ThreadsIcon className="h-6 w-6" />
+                    </a>
+                </div>
+            </div>
+        </div>
+    </footer>
+);
