@@ -55,6 +55,11 @@ const translations = {
     historyEditButton: 'Edit',
     historyEmpty: "You haven't created any carousels yet.",
     historyEmptyHint: 'Click "Create New Carousel" to get started!',
+    deleteCarouselConfirm: 'Are you sure you want to delete this carousel? This action cannot be undone.',
+    clearHistoryConfirm: 'Are you sure you want to delete all your carousel history? This action cannot be undone.',
+    clearAllHistoryButton: 'Clear All History',
+    deleteAriaLabel: 'Delete Carousel',
+
 
     // Generator
     generator: 'Generator',
@@ -70,8 +75,10 @@ const translations = {
     generatorBrandingPlaceholder: '@username',
     generatorBgColorLabel: 'BG Color',
     generatorFontColorLabel: 'Font Color',
-    generatorCustomBgLabel: 'Background Image',
-    generatorRemoveBgButton: 'Remove image',
+    headlineColorLabel: 'Headline Color',
+    bodyColorLabel: 'Body Color',
+    generatorCustomBgLabel: 'Background Visual',
+    generatorRemoveBgButton: 'Remove visual',
     generatorCreateButton: 'Create Carousel!',
     generatorGeneratingButton: 'Generating...',
     generatorAssistantButton: 'AI Assistant',
@@ -275,6 +282,10 @@ const translations = {
     historyEditButton: 'Ubah',
     historyEmpty: 'Anda belum membuat carousel apa pun.',
     historyEmptyHint: 'Klik "Buat Carousel Baru" untuk memulai!',
+    deleteCarouselConfirm: 'Anda yakin ingin menghapus carousel ini? Tindakan ini tidak dapat dibatalkan.',
+    clearHistoryConfirm: 'Anda yakin ingin menghapus seluruh riwayat carousel Anda? Tindakan ini tidak dapat dibatalkan.',
+    clearAllHistoryButton: 'Hapus Semua Riwayat',
+    deleteAriaLabel: 'Hapus Carousel',
 
     // Generator
     generator: 'Generator',
@@ -290,8 +301,10 @@ const translations = {
     generatorBrandingPlaceholder: '@username',
     generatorBgColorLabel: 'Warna Latar',
     generatorFontColorLabel: 'Warna Font',
-    generatorCustomBgLabel: 'Gambar Latar',
-    generatorRemoveBgButton: 'Hapus Gambar',
+    headlineColorLabel: 'Warna Judul',
+    bodyColorLabel: 'Warna Teks Isi',
+    generatorCustomBgLabel: 'Visual Latar',
+    generatorRemoveBgButton: 'Hapus Visual',
     generatorCreateButton: 'Buat Carousel!',
     generatorGeneratingButton: 'Membuat...',
     generatorAssistantButton: 'Asisten AI',
@@ -637,16 +650,23 @@ const SlideCard: React.FC<{
             fontColor: slide.fontColor,
             backgroundImage: slide.backgroundImage,
             headlineStyle: slide.headlineStyle,
-            bodyStyle: slide.bodyStyle
+            bodyStyle: slide.bodyStyle,
+            headlineColor: slide.headlineColor,
+            bodyColor: slide.bodyColor,
         };
+
+        const globalFontColor = preferences.fontColor;
+        const slideFontColor = slideOverrides.fontColor ?? globalFontColor;
 
         return {
             ...preferences,
             backgroundColor: slideOverrides.backgroundColor ?? preferences.backgroundColor,
-            fontColor: slideOverrides.fontColor ?? preferences.fontColor,
+            fontColor: slideFontColor,
             backgroundImage: slideOverrides.backgroundImage ?? preferences.backgroundImage,
             headlineStyle: { ...preferences.headlineStyle, ...(slideOverrides.headlineStyle || {}) },
             bodyStyle: { ...preferences.bodyStyle, ...(slideOverrides.bodyStyle || {}) },
+            headlineColor: slideOverrides.headlineColor ?? slideFontColor,
+            bodyColor: slideOverrides.bodyColor ?? slideFontColor,
         };
     }, [slide, preferences]);
 
@@ -738,7 +758,7 @@ const SlideCard: React.FC<{
         <div
             data-carousel-slide={slide.id}
             onClick={onClick}
-            className={`w-64 sm:w-72 flex-shrink-0 relative rounded-lg cursor-pointer transition-all duration-300 transform ${styleClasses} ${font} ${aspectRatioClass} ${isSelected ? 'ring-4 ring-primary-500 ring-offset-2 scale-105 shadow-2xl shadow-primary-600/50' : 'hover:scale-102'}`}
+            className={`w-64 sm:w-72 flex-shrink-0 relative rounded-lg cursor-pointer transition-all duration-300 transform overflow-hidden ${styleClasses} ${font} ${aspectRatioClass} ${isSelected ? 'ring-4 ring-primary-500 ring-offset-2 scale-105 shadow-2xl shadow-primary-600/50' : 'hover:scale-102'}`}
             style={containerStyle}
         >
             {isGeneratingImage && (
@@ -748,17 +768,32 @@ const SlideCard: React.FC<{
                 </div>
             )}
             
-            {/* Background Image Layer */}
+            {/* Background Visual Layer */}
             {finalBackgroundImage && (
-                <img src={finalBackgroundImage} alt="Slide background" className="absolute inset-0 w-full h-full object-cover rounded-md -z-10" />
+                finalBackgroundImage.startsWith('data:video') ? (
+                    <video
+                        src={finalBackgroundImage}
+                        autoPlay
+                        muted
+                        loop
+                        playsInline
+                        className="absolute inset-0 w-full h-full object-cover rounded-md -z-10"
+                    />
+                ) : (
+                    <img 
+                        src={finalBackgroundImage} 
+                        alt="Slide background" 
+                        className="absolute inset-0 w-full h-full object-cover rounded-md -z-10" 
+                    />
+                )
             )}
 
             {/* Content Wrapper */}
             <div className="absolute inset-0 flex flex-col justify-center items-center p-6 pb-10 text-center overflow-hidden">
                 {/* Content Layer */}
                 <div className="z-10 flex flex-col items-center">
-                    <h2 className="font-bold leading-tight mb-4" style={{...headlineStyles, lineHeight: '1.2' }}>{slide.headline}</h2>
-                    <p className="" style={{ ...bodyStyles, lineHeight: '1.5', whiteSpace: 'pre-wrap' }}>{slide.body}</p>
+                    <h2 className="font-bold leading-tight mb-4" style={{...headlineStyles, color: finalPrefs.headlineColor, lineHeight: '1.2' }}>{slide.headline}</h2>
+                    <p className="" style={{ ...bodyStyles, color: finalPrefs.bodyColor, lineHeight: '1.5', whiteSpace: 'pre-wrap' }}>{slide.body}</p>
                 </div>
             </div>
             
@@ -1085,6 +1120,18 @@ export default function App() {
         }
     };
     
+    const handleDeleteCarousel = (carouselId: string) => {
+        if (window.confirm(t('deleteCarouselConfirm'))) {
+            setCarouselHistory(prev => prev.filter(c => c.id !== carouselId));
+        }
+    };
+
+    const handleClearHistory = () => {
+        if (window.confirm(t('clearHistoryConfirm'))) {
+            setCarouselHistory([]);
+        }
+    };
+
     const handleGenerateCarousel = React.useCallback(async (topic: string, preferences: DesignPreferences) => {
         if (!user) return;
         setIsGenerating(true);
@@ -1203,28 +1250,52 @@ export default function App() {
                 return Number(slideOrderMap.get(idA) ?? 99) - Number(slideOrderMap.get(idB) ?? 99);
             });
 
-
             for (let i = 0; i < orderedElements.length; i++) {
                 const element = orderedElements[i] as HTMLElement;
                 const slideId = element.getAttribute('data-carousel-slide');
                 const slide = currentCarousel.slides.find(s => s.id === slideId);
-                
-                // Determine the final background color and image for the slide
-                const finalBgImage = slide?.backgroundImage ?? currentCarousel.preferences.backgroundImage;
-                const finalBgColor = slide?.backgroundColor ?? currentCarousel.preferences.backgroundColor;
+                if (!slide) continue;
 
-                const canvas = await html2canvas(element, {
-                    allowTaint: true,
-                    useCORS: true,
-                    // If a background image exists, set a null/transparent background for the canvas.
-                    // This forces html2canvas to render the `<img>` element with its styles.
-                    // Otherwise, set the explicit background color for the slide.
-                    backgroundColor: finalBgImage ? null : finalBgColor,
-                    scale: 8,
-                });
-                const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/png'));
-                if (blob) {
-                    zip.file(`slide-${i + 1}.png`, blob);
+                const visualUrl = slide.backgroundImage ?? currentCarousel.preferences.backgroundImage;
+                const isVideo = visualUrl?.startsWith('data:video');
+                
+                if (isVideo) {
+                    // Handle video slide
+                    // 1. Add video file to zip
+                    const videoResponse = await fetch(visualUrl);
+                    const videoBlob = await videoResponse.blob();
+                    const extension = videoBlob.type.split('/')[1] || 'mp4';
+                    zip.file(`slide-${i + 1}.${extension}`, videoBlob);
+
+                    // 2. Add transparent overlay PNG to zip
+                    const videoElement = element.querySelector('video');
+                    if (videoElement) videoElement.style.visibility = 'hidden'; // Use visibility to keep layout
+
+                    const overlayCanvas = await html2canvas(element, {
+                        allowTaint: true,
+                        useCORS: true,
+                        backgroundColor: null, // Transparent background
+                        scale: 8,
+                    });
+                    const overlayBlob = await new Promise<Blob | null>(resolve => overlayCanvas.toBlob(resolve, 'image/png'));
+                    if (overlayBlob) {
+                        zip.file(`slide-${i + 1}_overlay.png`, overlayBlob);
+                    }
+
+                    if (videoElement) videoElement.style.visibility = 'visible'; // Restore video visibility
+                } else {
+                    // Handle image slide
+                    const finalBgColor = slide?.backgroundColor ?? currentCarousel.preferences.backgroundColor;
+                    const canvas = await html2canvas(element, {
+                        allowTaint: true,
+                        useCORS: true,
+                        backgroundColor: visualUrl ? null : finalBgColor,
+                        scale: 8,
+                    });
+                    const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/png'));
+                    if (blob) {
+                        zip.file(`slide-${i + 1}.png`, blob);
+                    }
                 }
             }
 
@@ -1258,19 +1329,19 @@ export default function App() {
         });
     };
     
-    const handleUploadImageForSlide = (e: React.ChangeEvent<HTMLInputElement>, slideId: string) => {
+    const handleUploadVisualForSlide = (e: React.ChangeEvent<HTMLInputElement>, slideId: string) => {
         const file = e.target.files?.[0];
         if (file) {
             const reader = new FileReader();
             reader.onloadend = () => {
-                const imageUrl = reader.result as string;
-                handleUpdateSlide(slideId, { backgroundImage: imageUrl });
+                const visualUrl = reader.result as string;
+                handleUpdateSlide(slideId, { backgroundImage: visualUrl });
             };
             reader.readAsDataURL(file);
         }
     };
 
-    const handleRemoveImageForSlide = (slideId: string) => {
+    const handleRemoveVisualForSlide = (slideId: string) => {
         handleUpdateSlide(slideId, { backgroundImage: undefined });
     };
 
@@ -1376,6 +1447,8 @@ export default function App() {
                     onShowTutorial={() => setView('TUTORIAL')}
                     history={carouselHistory}
                     onEdit={handleEditCarousel}
+                    onDelete={handleDeleteCarousel}
+                    onClearHistory={handleClearHistory}
                     t={t}
                     downloadCount={downloadCount}
                     mostUsedCategory={mostUsedCategory}
@@ -1405,8 +1478,8 @@ export default function App() {
                     isGeneratingImageForSlide={isGeneratingImageForSlide}
                     onGenerateImageForSlide={handleGenerateImageForSlide}
                     onRegenerateContent={handleRegenerateContent}
-                    onUploadImageForSlide={handleUploadImageForSlide}
-                    onRemoveImageForSlide={handleRemoveImageForSlide}
+                    onUploadVisualForSlide={handleUploadVisualForSlide}
+                    onRemoveVisualForSlide={handleRemoveVisualForSlide}
                     onApplyBrandKit={handleApplyBrandKit}
                     brandKitConfigured={!!settings.brandKit}
                     t={t}
@@ -1687,10 +1760,12 @@ const Dashboard: React.FC<{
     onShowTutorial: () => void;
     history: Carousel[];
     onEdit: (id: string) => void;
+    onDelete: (id: string) => void;
+    onClearHistory: () => void;
     t: TFunction;
     downloadCount: number;
     mostUsedCategory: string;
-}> = ({ onNewCarousel, onShowTutorial, history, onEdit, t, downloadCount, mostUsedCategory }) => (
+}> = ({ onNewCarousel, onShowTutorial, history, onEdit, onDelete, onClearHistory, t, downloadCount, mostUsedCategory }) => (
     <div className="container mx-auto p-4 sm:p-6 lg:p-8">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
             <div>
@@ -1717,7 +1792,18 @@ const Dashboard: React.FC<{
 
         {/* History Section */}
         <div>
-            <h3 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-4">{t('historyTitle')}</h3>
+            <div className="flex justify-between items-center mb-4">
+                <h3 className="text-2xl font-bold text-gray-800 dark:text-gray-200">{t('historyTitle')}</h3>
+                {history.length > 0 && (
+                     <button 
+                        onClick={onClearHistory} 
+                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 dark:text-red-300 dark:bg-red-800/50 dark:hover:bg-red-700/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-red-500"
+                    >
+                        <TrashIcon className="w-4 h-4 mr-2"/>
+                        {t('clearAllHistoryButton')}
+                    </button>
+                )}
+            </div>
             {history.length > 0 ? (
                 <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
                     <ul className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -1727,13 +1813,20 @@ const Dashboard: React.FC<{
                                     <p className="text-lg font-semibold text-primary-700 dark:text-primary-400">{c.title}</p>
                                     <p className="text-sm text-gray-500 dark:text-gray-400">{new Date(c.createdAt).toLocaleDateString()}</p>
                                 </div>
-                                <div className="flex items-center space-x-4 self-end sm:self-center">
+                                <div className="flex items-center space-x-2 sm:space-x-4 self-end sm:self-center">
                                     <span className="px-3 py-1 text-xs font-medium text-green-800 bg-green-100 dark:text-green-200 dark:bg-green-900/50 rounded-full">{c.category}</span>
                                     <button
                                         onClick={() => onEdit(c.id)}
                                         className="px-4 py-2 text-sm font-medium text-primary-700 dark:text-primary-300 bg-primary-100 dark:bg-primary-900/50 rounded-md hover:bg-primary-200 dark:hover:bg-primary-800/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary-500 transition-colors"
                                     >
                                         {t('historyEditButton')}
+                                    </button>
+                                    <button
+                                        onClick={() => onDelete(c.id)}
+                                        className="p-2 text-red-500 rounded-full hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors"
+                                        aria-label={t('deleteAriaLabel')}
+                                    >
+                                        <TrashIcon className="w-5 h-5" />
                                     </button>
                                 </div>
                             </li>
@@ -1919,7 +2012,6 @@ const Generator: React.FC<{
     error: string | null;
     onGenerate: (topic: string, preferences: DesignPreferences) => void;
     currentCarousel: Carousel | null;
-    // FIX: Correctly type the state setter prop to allow updater functions.
     setCurrentCarousel: React.Dispatch<React.SetStateAction<Carousel | null>>;
     selectedSlide: SlideData | undefined;
     onSelectSlide: (id: string) => void;
@@ -1935,8 +2027,8 @@ const Generator: React.FC<{
     isHashtagModalOpen: boolean;
     isGeneratingImageForSlide: string | null;
     onGenerateImageForSlide: (slideId: string) => void;
-    onUploadImageForSlide: (e: React.ChangeEvent<HTMLInputElement>, slideId: string) => void;
-    onRemoveImageForSlide: (slideId: string) => void;
+    onUploadVisualForSlide: (e: React.ChangeEvent<HTMLInputElement>, slideId: string) => void;
+    onRemoveVisualForSlide: (slideId: string) => void;
     onApplyBrandKit: () => void;
     brandKitConfigured: boolean;
     regeneratingPart: { slideId: string; part: 'headline' | 'body' } | null;
@@ -1944,7 +2036,7 @@ const Generator: React.FC<{
     t: TFunction;
 }> = (props) => {
     const { onGenerate, currentCarousel, selectedSlide, onUpdateSlide, onUpdateCarouselPreferences, onClearSlideOverrides, onSelectSlide, onMoveSlide, onRegenerateContent, onOpenThread, ...rest } = props;
-    const { isGenerating, generationMessage, error, onOpenAssistant, onOpenHashtag, onDownload, isDownloading, isHashtagModalOpen, isGeneratingImageForSlide, onGenerateImageForSlide, onUploadImageForSlide, onRemoveImageForSlide, onApplyBrandKit, brandKitConfigured, t, regeneratingPart } = rest;
+    const { isGenerating, generationMessage, error, onOpenAssistant, onOpenHashtag, onDownload, isDownloading, isHashtagModalOpen, isGeneratingImageForSlide, onGenerateImageForSlide, onUploadVisualForSlide, onRemoveVisualForSlide, onApplyBrandKit, brandKitConfigured, t, regeneratingPart } = rest;
     
     const fileInputRef = React.useRef<HTMLInputElement>(null);
     const [topic, setTopic] = React.useState('');
@@ -2013,23 +2105,23 @@ const Generator: React.FC<{
         onGenerate(topic, preferences);
     };
     
-    const handleBgImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleBgVisualUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
             const reader = new FileReader();
             reader.onloadend = () => {
-                const imageUrl = reader.result as string;
+                const visualUrl = reader.result as string;
                 if (colorScope === 'selected' && selectedSlide) {
-                    onUpdateSlide(selectedSlide.id, { backgroundImage: imageUrl });
+                    onUpdateSlide(selectedSlide.id, { backgroundImage: visualUrl });
                 } else {
-                    onUpdateCarouselPreferences({ backgroundImage: imageUrl }, topic);
+                    onUpdateCarouselPreferences({ backgroundImage: visualUrl }, topic);
                 }
             };
             reader.readAsDataURL(file);
         }
     };
 
-    const handleRemoveBgImage = () => {
+    const handleRemoveBgVisual = () => {
          if (colorScope === 'selected' && selectedSlide) {
             onUpdateSlide(selectedSlide.id, { backgroundImage: undefined });
         } else {
@@ -2120,17 +2212,17 @@ const Generator: React.FC<{
                             </div>
                             <ApplyScopeControl scope={colorScope} setScope={setColorScope} isDisabled={!selectedSlide} t={t} fieldId="colors" />
                             
-                            {/* Background Image */}
+                            {/* Background Visual */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorCustomBgLabel')}</label>
                                 <div className="mt-1 flex items-center space-x-2">
-                                    <input type="file" accept="image/*" onChange={handleBgImageUpload} ref={fileInputRef} className="hidden" />
+                                    <input type="file" accept="image/*,video/*" onChange={handleBgVisualUpload} ref={fileInputRef} className="hidden" />
                                     <button type="button" onClick={() => fileInputRef.current?.click()} className="flex-1 inline-flex items-center justify-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700">
                                        <UploadIcon className="w-4 h-4 mr-2" />
                                         {t('uploadVisual')}
                                     </button>
                                     {( (colorScope === 'all' && preferences.backgroundImage) || (colorScope === 'selected' && selectedSlide?.backgroundImage) ) && (
-                                        <button type="button" onClick={handleRemoveBgImage} className="px-4 py-2 border border-transparent text-sm font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200">{t('generatorRemoveBgButton')}</button>
+                                        <button type="button" onClick={handleRemoveBgVisual} className="px-4 py-2 border border-transparent text-sm font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200">{t('generatorRemoveBgButton')}</button>
                                     )}
                                 </div>
                             </div>
@@ -2185,7 +2277,15 @@ const Generator: React.FC<{
                                 </button>
                             </div>
                             <TextFormatToolbar style={selectedSlide.headlineStyle ?? preferences.headlineStyle} onStyleChange={s => handleTextStyleChange('headlineStyle', s)} />
-                             <TextStrokeControl style={selectedSlide.headlineStyle ?? preferences.headlineStyle} onStyleChange={s => handleTextStyleChange('headlineStyle', s)} />
+                            <div className="flex items-end flex-wrap gap-4">
+                                <TextStrokeControl style={selectedSlide.headlineStyle ?? preferences.headlineStyle} onStyleChange={s => handleTextStyleChange('headlineStyle', s)} />
+                                <ColorInput
+                                    id="headlineColor"
+                                    label={t('headlineColorLabel')}
+                                    value={selectedSlide.headlineColor ?? (selectedSlide.fontColor ?? preferences.fontColor)}
+                                    onChange={v => onUpdateSlide(selectedSlide.id, { headlineColor: v })}
+                                />
+                            </div>
                         </div>
                         {/* Body */}
                         <div className="space-y-2">
@@ -2203,19 +2303,27 @@ const Generator: React.FC<{
                                 </button>
                             </div>
                              <TextFormatToolbar style={selectedSlide.bodyStyle ?? preferences.bodyStyle} onStyleChange={s => handleTextStyleChange('bodyStyle', s)} />
-                              <TextStrokeControl style={selectedSlide.bodyStyle ?? preferences.bodyStyle} onStyleChange={s => handleTextStyleChange('bodyStyle', s)} />
+                             <div className="flex items-end flex-wrap gap-4">
+                                <TextStrokeControl style={selectedSlide.bodyStyle ?? preferences.bodyStyle} onStyleChange={s => handleTextStyleChange('bodyStyle', s)} />
+                                <ColorInput
+                                    id="bodyColor"
+                                    label={t('bodyColorLabel')}
+                                    value={selectedSlide.bodyColor ?? (selectedSlide.fontColor ?? preferences.fontColor)}
+                                    onChange={v => onUpdateSlide(selectedSlide.id, { bodyColor: v })}
+                                />
+                            </div>
                         </div>
                         {/* Visual Prompt */}
                         <div className="space-y-2">
                             <label htmlFor="visual_prompt" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorVisualPromptLabel')}</label>
                             <textarea id="visual_prompt" value={selectedSlide.visual_prompt} onChange={e => onUpdateSlide(selectedSlide.id, { visual_prompt: e.target.value })} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm" rows={2}/>
                             <div className="grid grid-cols-2 gap-2">
-                                <input type="file" accept="image/*" onChange={(e) => onUploadImageForSlide(e, selectedSlide.id)} ref={slideFileInputRef} className="hidden" />
+                                <input type="file" accept="image/*,video/*" onChange={(e) => onUploadVisualForSlide(e, selectedSlide.id)} ref={slideFileInputRef} className="hidden" />
                                 <button type="button" onClick={() => slideFileInputRef.current?.click()} className="inline-flex items-center justify-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"><UploadIcon className="w-4 h-4 mr-2"/>{t('uploadVisual')}</button>
                                 <button type="button" onClick={() => onGenerateImageForSlide(selectedSlide.id)} className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-accent-500 hover:bg-accent-600" disabled={isGeneratingImageForSlide === selectedSlide.id}><SparklesIcon className="w-4 h-4 mr-2"/>{t('generateImageButton')}</button>
                             </div>
                              {selectedSlide.backgroundImage && (
-                                <button type="button" onClick={() => onRemoveImageForSlide(selectedSlide.id)} className="w-full mt-2 inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200"><TrashIcon className="w-4 h-4 mr-2"/>{t('removeButton')}</button>
+                                <button type="button" onClick={() => onRemoveVisualForSlide(selectedSlide.id)} className="w-full mt-2 inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200"><TrashIcon className="w-4 h-4 mr-2"/>{t('removeButton')}</button>
                              )}
                         </div>
 

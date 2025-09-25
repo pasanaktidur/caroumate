@@ -53,6 +53,8 @@ export interface SlideData {
   backgroundImage?: string;
   headlineStyle?: TextStyle;
   bodyStyle?: TextStyle;
+  headlineColor?: string;
+  bodyColor?: string;
 }
 
 export interface Carousel {
