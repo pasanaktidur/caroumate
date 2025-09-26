@@ -1,7 +1,7 @@
 import * as React from 'react';
 import type { AppView, UserProfile, Carousel, SlideData, DesignPreferences, AppSettings, Language, TextStyle, BrandKit } from './types';
 import { DesignStyle, FontChoice, AspectRatio, AIModel } from './types';
-import { GoogleIcon, SparklesIcon, LoaderIcon, DownloadIcon, SettingsIcon, InstagramIcon, ThreadsIcon, MoonIcon, SunIcon, AvatarIcon, LogoutIcon, HashtagIcon, HomeIcon, BoldIcon, ItalicIcon, UnderlineIcon, StrikethroughIcon, CaseIcon, AlignLeftIcon, AlignCenterIcon, AlignRightIcon, AlignJustifyIcon, LeftArrowIcon, RightArrowIcon, GiftIcon, ImageIcon, TrashIcon, PaletteIcon, UploadIcon, RefreshIcon, PlusIcon } from './components/icons';
+import { GoogleIcon, SparklesIcon, LoaderIcon, DownloadIcon, SettingsIcon, InstagramIcon, ThreadsIcon, MoonIcon, SunIcon, AvatarIcon, LogoutIcon, HashtagIcon, HomeIcon, BoldIcon, ItalicIcon, UnderlineIcon, StrikethroughIcon, CaseIcon, AlignLeftIcon, AlignCenterIcon, AlignRightIcon, AlignJustifyIcon, LeftArrowIcon, RightArrowIcon, GiftIcon, ImageIcon, TrashIcon, PaletteIcon, UploadIcon, RefreshIcon, PlusIcon, ChevronDownIcon } from './components/icons';
 import { generateCarouselContent, getAiAssistance, generateHashtags, generateImage, regenerateSlideContent, generateThreadFromCarousel } from './services/geminiService';
 import html2canvas from 'html2canvas';
 import JSZip from 'jszip';
@@ -549,6 +549,71 @@ const fontClassMap: { [key in FontChoice]: string } = {
   [FontChoice.PATRICK_HAND]: 'font-patrick-hand',
   [FontChoice.PLAYPEN_SANS]: 'font-playpen-sans',
   [FontChoice.BALSAMIQ_SANS]: 'font-balsamiq-sans',
+};
+
+const FontSelector: React.FC<{
+    id: string;
+    value: FontChoice;
+    onChange: (value: FontChoice) => void;
+}> = ({ id, value, onChange }) => {
+    const [isOpen, setIsOpen] = React.useState(false);
+    const dropdownRef = React.useRef<HTMLDivElement>(null);
+
+    const handleSelect = (font: FontChoice) => {
+        onChange(font);
+        setIsOpen(false);
+    };
+
+    React.useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setIsOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [dropdownRef]);
+
+    return (
+        <div className="relative" ref={dropdownRef}>
+            <button
+                type="button"
+                id={id}
+                onClick={() => setIsOpen(!isOpen)}
+                className="mt-1 relative w-full cursor-default rounded-md bg-white dark:bg-gray-700 py-2 pl-3 pr-10 text-left text-gray-900 dark:text-gray-200 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500 sm:text-sm sm:leading-6"
+                aria-haspopup="listbox"
+                aria-expanded={isOpen}
+            >
+                <span className={`block truncate ${fontClassMap[value]}`}>{value}</span>
+                <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
+                    <ChevronDownIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
+                </span>
+            </button>
+
+            {isOpen && (
+                <ul
+                    className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white dark:bg-gray-800 py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm"
+                    role="listbox"
+                    aria-labelledby={id}
+                >
+                    {Object.values(FontChoice).map((font) => (
+                        <li
+                            key={font}
+                            className={`relative cursor-default select-none py-2 pl-3 pr-9 text-gray-900 dark:text-gray-200 hover:bg-primary-100 dark:hover:bg-primary-900/50 ${fontClassMap[font]}`}
+                            id={`option-${id}-${font}`}
+                            role="option"
+                            aria-selected={font === value}
+                            onClick={() => handleSelect(font)}
+                        >
+                            <span className={`block truncate ${font === value ? 'font-semibold' : 'font-normal'}`}>{font}</span>
+                        </li>
+                    ))}
+                </ul>
+            )}
+        </div>
+    );
 };
 
 // FIX: Corrected aspect ratio for Portrait to 3:4 to match the API and prevent distortion.
@@ -2231,7 +2296,7 @@ const Generator: React.FC<{
                                 id="niche-select"
                                 value={selectedNiche}
                                 onChange={e => setSelectedNiche(e.target.value)}
-                                className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-gray-200 dark:bg-gray-700 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md"
+                                className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md"
                             >
                                 {user.niche.length > 0 ? (
                                     user.niche.map(n => <option key={n} value={n}>{n}</option>)
@@ -2249,23 +2314,25 @@ const Generator: React.FC<{
                             {/* Style Select */}
                             <div>
                                 <label htmlFor="style" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorStyleLabel')}</label>
-                                <select id="style" value={preferences.style} onChange={e => onUpdateCarouselPreferences({ style: e.target.value as DesignStyle }, topic)} className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-gray-200 dark:bg-gray-700 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md">
+                                <select id="style" value={preferences.style} onChange={e => onUpdateCarouselPreferences({ style: e.target.value as DesignStyle }, topic)} className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md">
                                     {Object.values(DesignStyle).map(s => <option key={s} value={s}>{s}</option>)}
                                 </select>
                             </div>
                             {/* Aspect Ratio */}
                             <div>
                                 <label htmlFor="aspectRatio" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorAspectRatioLabel')}</label>
-                                <select id="aspectRatio" value={preferences.aspectRatio} onChange={e => onUpdateCarouselPreferences({ aspectRatio: e.target.value as AspectRatio }, topic)} className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-gray-200 dark:bg-gray-700 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md">
+                                <select id="aspectRatio" value={preferences.aspectRatio} onChange={e => onUpdateCarouselPreferences({ aspectRatio: e.target.value as AspectRatio }, topic)} className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md">
                                     {Object.entries(aspectRatioDisplayMap).map(([key, value]) => <option key={key} value={key}>{value}</option>)}
                                 </select>
                             </div>
                             {/* Font Select */}
                             <div>
                                 <label htmlFor="font" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorFontLabel')}</label>
-                                <select id="font" value={preferences.font} onChange={e => onUpdateCarouselPreferences({ font: e.target.value as FontChoice }, topic)} className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-gray-200 dark:bg-gray-700 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md">
-                                    {Object.values(FontChoice).map(f => <option key={f} value={f}>{f}</option>)}
-                                </select>
+                                <FontSelector
+                                    id="font"
+                                    value={preferences.font}
+                                    onChange={font => onUpdateCarouselPreferences({ font }, topic)}
+                                />
                             </div>
                              {/* Branding */}
                             <div>
@@ -2688,7 +2755,7 @@ const SettingsModal: React.FC<{
                                 id="aiModel"
                                 value={settings.aiModel}
                                 onChange={e => setSettings({ ...settings, aiModel: e.target.value as AIModel })}
-                                className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md"
+                                className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md"
                             >
                                 {Object.values(AIModel).map(m => <option key={m} value={m}>{m}</option>)}
                             </select>
@@ -2737,15 +2804,19 @@ const SettingsModal: React.FC<{
                             <div className="grid grid-cols-2 gap-4">
                                <div>
                                     <label htmlFor="headlineFont" className="block text-sm font-medium">{t('brandKitHeadlineFont')}</label>
-                                    <select id="headlineFont" value={settings.brandKit?.fonts.headline ?? FontChoice.POPPINS} onChange={e => handleBrandKitFontChange('headline', e.target.value as FontChoice)} className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md">
-                                        {Object.values(FontChoice).map(f => <option key={f} value={f}>{f}</option>)}
-                                    </select>
+                                    <FontSelector
+                                        id="headlineFont"
+                                        value={settings.brandKit?.fonts.headline ?? FontChoice.POPPINS}
+                                        onChange={font => handleBrandKitFontChange('headline', font)}
+                                    />
                                 </div>
                                 <div>
                                     <label htmlFor="bodyFont" className="block text-sm font-medium">{t('brandKitBodyFont')}</label>
-                                     <select id="bodyFont" value={settings.brandKit?.fonts.body ?? FontChoice.SANS} onChange={e => handleBrandKitFontChange('body', e.target.value as FontChoice)} className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md">
-                                        {Object.values(FontChoice).map(f => <option key={f} value={f}>{f}</option>)}
-                                    </select>
+                                    <FontSelector
+                                        id="bodyFont"
+                                        value={settings.brandKit?.fonts.body ?? FontChoice.SANS}
+                                        onChange={font => handleBrandKitFontChange('body', font)}
+                                    />
                                 </div>
                             </div>
                              <div>
