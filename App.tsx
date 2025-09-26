@@ -184,9 +184,9 @@ const translations = {
             content: [
               { type: 'p', text: 'CarouMate uses the Google Gemini API to power its AI features. To use these features, you\'ll need a free API key from Google AI Studio.' },
               { type: 'ol', items: [
-                'Go to <a href="https://aistudio.google.com/" target="_blank" rel="noopener noreferrer">Google AI Studio</a>.',
+                'Go to <a href="https://aistudio.google.com/" target="_blank" rel="noopener noreferrer" style="color: blue; text-decoration: underline;">Google AI Studio</a>.',
                 'Sign in with your Google account.',
-                'Click on the <strong>"Get API Key"</strong> button (usually on the top left).',
+                'Click on the <strong>"Get API Key"</strong> button (usually on the bottom left).',
                 'Click <strong>"Create API key in new project"</strong>. A new key will be generated for you.',
                 'Copy the generated API key. It\'s a long string of letters and numbers.',
               ]}
@@ -412,9 +412,9 @@ const translations = {
             content: [
               { type: 'p', text: 'CarouMate menggunakan Google Gemini API untuk mendukung fitur AI-nya. Untuk menggunakan fitur ini, Anda memerlukan kunci API gratis dari Google AI Studio.' },
               { type: 'ol', items: [
-                'Buka <a href="https://aistudio.google.com/" target="_blank" rel="noopener noreferrer">Google AI Studio</a>.',
+                'Buka <a href="https://aistudio.google.com/" target="_blank" rel="noopener noreferrer" style="color: blue; text-decoration: underline;">Google AI Studio</a>.',
                 'Masuk dengan akun Google Anda.',
-                'Klik tombol <strong>"Get API Key"</strong> (biasanya di kiri atas).',
+                'Klik tombol <strong>"Get API Key"</strong> (biasanya di kiri bawah).',
                 'Klik <strong>"Create API key in new project"</strong>. Kunci baru akan dibuat untuk Anda.',
                 'Salin kunci API yang dihasilkan. Kunci ini adalah serangkaian huruf dan angka yang panjang.',
               ]}
