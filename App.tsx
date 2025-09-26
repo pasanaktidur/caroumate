@@ -73,6 +73,8 @@ const translations = {
     generatorAspectRatioLabel: 'Aspect Ratio',
     generatorFontLabel: 'Font',
     generatorBrandingLabel: 'Branding (@username)',
+    brandingColorLabel: 'Branding Color',
+    brandingOpacityLabel: 'Branding Opacity',
     generatorBrandingPlaceholder: '@username',
     generatorBgColorLabel: 'BG Color',
     generatorFontColorLabel: 'Font Color',
@@ -301,6 +303,8 @@ const translations = {
     generatorAspectRatioLabel: 'Rasio Aspek',
     generatorFontLabel: 'Font',
     generatorBrandingLabel: 'Branding (@username)',
+    brandingColorLabel: 'Warna Branding',
+    brandingOpacityLabel: 'Opasitas Branding',
     generatorBrandingPlaceholder: '@username',
     generatorBgColorLabel: 'Warna Latar',
     generatorFontColorLabel: 'Warna Font',
@@ -494,7 +498,11 @@ const defaultSettings: AppSettings = {
             body: FontChoice.SANS,
         },
         logo: '',
-        brandingText: ''
+        brandingText: '',
+        brandingStyle: {
+            color: '#111827',
+            opacity: 0.75,
+        }
     }
 };
 
@@ -869,7 +877,10 @@ const SlideCard: React.FC<{
             {/* Branding Text */}
             {finalPrefs.brandingText && (
                 <div className="absolute bottom-4 left-0 right-0 text-center text-xs sm:text-sm z-20 px-4 pointer-events-none">
-                    <p style={{ opacity: 0.75 }}>{finalPrefs.brandingText}</p>
+                    <p style={{ 
+                        color: finalPrefs.brandingStyle?.color ?? finalPrefs.fontColor, 
+                        opacity: finalPrefs.brandingStyle?.opacity ?? 0.75 
+                    }}>{finalPrefs.brandingText}</p>
                 </div>
             )}
         </div>
@@ -1439,6 +1450,7 @@ export default function App() {
                     aspectRatio: AspectRatio.SQUARE,
                     backgroundImage: undefined,
                     brandingText: '',
+                    brandingStyle: { color: '#111827', opacity: 0.75 },
                     headlineStyle: { fontSize: 2.2, fontWeight: 'bold', textAlign: 'center', textStroke: { color: '#000000', width: 0 } },
                     bodyStyle: { fontSize: 1.1, textAlign: 'center', textStroke: { color: '#000000', width: 0 } },
                     ...updates,
@@ -1451,7 +1463,7 @@ export default function App() {
     const handleApplyBrandKit = () => {
         if (!settings.brandKit) return;
     
-        const { colors, fonts, brandingText } = settings.brandKit;
+        const { colors, fonts, brandingText, brandingStyle } = settings.brandKit;
     
         const mainFont = fonts.body || FontChoice.SANS;
     
@@ -1460,6 +1472,7 @@ export default function App() {
             fontColor: colors.text,
             font: mainFont,
             brandingText: brandingText,
+            brandingStyle: brandingStyle,
             headlineStyle: {
                 ...currentCarousel?.preferences.headlineStyle,
             },
@@ -2208,6 +2221,7 @@ const Generator: React.FC<{
         aspectRatio: AspectRatio.SQUARE,
         backgroundImage: undefined,
         brandingText: '',
+        brandingStyle: { color: '#111827', opacity: 0.75 },
         headlineStyle: { fontSize: 2.2, fontWeight: 'bold', textAlign: 'center', textStroke: { color: '#000000', width: 0 } },
         bodyStyle: { fontSize: 1.1, textAlign: 'center', textStroke: { color: '#000000', width: 0 } },
     };
@@ -2335,9 +2349,35 @@ const Generator: React.FC<{
                                 />
                             </div>
                              {/* Branding */}
-                            <div>
+                             <div className="space-y-2">
                                 <label htmlFor="branding" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorBrandingLabel')}</label>
                                 <input id="branding" type="text" value={preferences.brandingText ?? ''} onChange={e => onUpdateCarouselPreferences({ brandingText: e.target.value }, topic)} placeholder={t('generatorBrandingPlaceholder')} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm" />
+                                <div className="grid grid-cols-2 gap-4 items-end">
+                                    <ColorInput 
+                                        id="brandingColor" 
+                                        label={t('brandingColorLabel')}
+                                        value={preferences.brandingStyle?.color ?? '#000000'}
+                                        onChange={v => onUpdateCarouselPreferences({ brandingStyle: { ...(preferences.brandingStyle ?? {}), color: v, opacity: preferences.brandingStyle?.opacity ?? 0.75 } }, topic)}
+                                    />
+                                    <div>
+                                        <label htmlFor="brandingOpacity" className="block text-xs font-medium text-gray-500 dark:text-gray-400">{t('brandingOpacityLabel')}</label>
+                                        <div className="flex items-center space-x-2 mt-1">
+                                            <input
+                                                id="brandingOpacity"
+                                                type="range"
+                                                min="0"
+                                                max="1"
+                                                step="0.05"
+                                                value={preferences.brandingStyle?.opacity ?? 0.75}
+                                                onChange={e => onUpdateCarouselPreferences({ brandingStyle: { ...(preferences.brandingStyle ?? {}), color: preferences.brandingStyle?.color ?? '#000000', opacity: parseFloat(e.target.value) } }, topic)}
+                                                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"
+                                            />
+                                            <span className="text-sm text-gray-600 dark:text-gray-400 w-10 text-center">
+                                                {Math.round((preferences.brandingStyle?.opacity ?? 0.75) * 100)}%
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                             
                             {/* Colors */}
@@ -2834,9 +2874,35 @@ const SettingsModal: React.FC<{
                                     {settings.brandKit?.logo && <button type="button" onClick={() => handleBrandKitChange('logo', '')} className="text-red-500 text-sm">{t('removeButton')}</button>}
                                 </div>
                             </div>
-                            <div>
+                             <div className="space-y-2">
                                 <label htmlFor="brandKitBrandingText" className="block text-sm font-medium">{t('brandKitBrandingText')}</label>
                                 <input id="brandKitBrandingText" type="text" value={settings.brandKit?.brandingText ?? ''} onChange={e => handleBrandKitChange('brandingText', e.target.value)} placeholder={t('settingsBrandingPlaceholder')} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm" />
+                                <div className="grid grid-cols-2 gap-4 items-end">
+                                    <ColorInput 
+                                        id="brandKitBrandingColor" 
+                                        label={t('brandingColorLabel')}
+                                        value={settings.brandKit?.brandingStyle?.color ?? '#000000'}
+                                        onChange={v => handleBrandKitChange('brandingStyle', { ...(settings.brandKit?.brandingStyle || {}), color: v, opacity: settings.brandKit?.brandingStyle?.opacity ?? 0.75 })}
+                                    />
+                                    <div>
+                                        <label htmlFor="brandKitBrandingOpacity" className="block text-xs font-medium text-gray-500 dark:text-gray-400">{t('brandingOpacityLabel')}</label>
+                                        <div className="flex items-center space-x-2 mt-1">
+                                            <input
+                                                id="brandKitBrandingOpacity"
+                                                type="range"
+                                                min="0"
+                                                max="1"
+                                                step="0.05"
+                                                value={settings.brandKit?.brandingStyle?.opacity ?? 0.75}
+                                                onChange={e => handleBrandKitChange('brandingStyle', { ...(settings.brandKit?.brandingStyle || {}), color: settings.brandKit?.brandingStyle?.color ?? '#000000', opacity: parseFloat(e.target.value) })}
+                                                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"
+                                            />
+                                            <span className="text-sm text-gray-600 dark:text-gray-400 w-10 text-center">
+                                                {Math.round((settings.brandKit?.brandingStyle?.opacity ?? 0.75) * 100)}%
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                          </div>
                     </div>

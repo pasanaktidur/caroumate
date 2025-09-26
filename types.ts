@@ -10,6 +10,10 @@ export interface BrandKit {
   };
   logo?: string; // base64 data URL
   brandingText?: string;
+  brandingStyle?: {
+    color: string;
+    opacity: number; // 0 to 1
+  };
 }
 
 export interface TextStyle {
@@ -30,6 +34,10 @@ export interface DesignPreferences {
   font: FontChoice;
   aspectRatio: AspectRatio;
   brandingText?: string;
+  brandingStyle?: {
+    color: string;
+    opacity: number; // 0 to 1
+  };
   headlineStyle: TextStyle;
   bodyStyle: TextStyle;
 }
