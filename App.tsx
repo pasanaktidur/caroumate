@@ -2738,7 +2738,7 @@ const Generator: React.FC<{
             />
 
             {/* Right Panel: Preview */}
-            <div className="flex-grow bg-gray-100 dark:bg-gray-900 flex flex-col items-center justify-center p-4 lg:overflow-hidden relative">
+            <div className="flex-grow bg-gray-100 dark:bg-gray-900 flex flex-col items-center justify-center p-4 lg:overflow-y-auto">
                 {error && (
                     <div className="absolute top-4 left-4 right-4 z-20 max-w-xl mx-auto bg-red-100 dark:bg-red-900/50 border border-red-400 dark:border-red-600 text-red-700 dark:text-red-200 px-4 py-3 rounded-md shadow-lg" role="alert">
                         <strong className="font-bold">{t('errorTitle')}: </strong>
