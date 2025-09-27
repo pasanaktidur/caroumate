@@ -1,3 +1,5 @@
+export type Position = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'top-center' | 'bottom-center';
+
 export interface BrandKit {
   colors: {
     primary: string;
@@ -13,6 +15,7 @@ export interface BrandKit {
   brandingStyle?: {
     color: string;
     opacity: number; // 0 to 1
+    position: Position;
   };
 }
 
@@ -26,6 +29,15 @@ export interface TextStyle {
   textStroke?: { color: string; width: number; };
 }
 
+export interface SlideNumberStyle {
+  show: boolean;
+  textColor: string;
+  backgroundColor: string;
+  style: 'circle' | 'square' | 'none';
+  format: 'current/total' | 'current';
+  position: Position;
+}
+
 export interface DesignPreferences {
   backgroundColor: string;
   fontColor: string;
@@ -34,12 +46,14 @@ export interface DesignPreferences {
   font: FontChoice;
   aspectRatio: AspectRatio;
   brandingText?: string;
-  brandingStyle?: {
+  brandingStyle: {
     color: string;
     opacity: number; // 0 to 1
+    position: Position;
   };
   headlineStyle: TextStyle;
   bodyStyle: TextStyle;
+  slideNumberStyle: SlideNumberStyle;
 }
 
 export interface UserProfile {
