@@ -31,10 +31,8 @@ export interface TextStyle {
 
 export interface SlideNumberStyle {
   show: boolean;
-  textColor: string;
-  backgroundColor: string;
-  style: 'circle' | 'square' | 'none';
-  format: 'current/total' | 'current';
+  color: string;
+  opacity: number; // 0 to 1
   position: Position;
 }
 
@@ -53,7 +51,7 @@ export interface DesignPreferences {
   };
   headlineStyle: TextStyle;
   bodyStyle: TextStyle;
-  slideNumberStyle: SlideNumberStyle;
+  slideNumberStyle?: SlideNumberStyle;
 }
 
 export interface UserProfile {

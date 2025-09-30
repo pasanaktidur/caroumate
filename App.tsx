@@ -1,5 +1,5 @@
 import * as React from 'react';
-import type { AppView, UserProfile, Carousel, SlideData, DesignPreferences, AppSettings, Language, TextStyle, BrandKit, SlideNumberStyle, Position } from './types';
+import type { AppView, UserProfile, Carousel, SlideData, DesignPreferences, AppSettings, Language, TextStyle, BrandKit, Position, SlideNumberStyle } from './types';
 import { DesignStyle, FontChoice, AspectRatio, AIModel } from './types';
 import { GoogleIcon, SparklesIcon, LoaderIcon, DownloadIcon, SettingsIcon, InstagramIcon, ThreadsIcon, MoonIcon, SunIcon, AvatarIcon, LogoutIcon, HashtagIcon, HomeIcon, BoldIcon, ItalicIcon, UnderlineIcon, StrikethroughIcon, CaseIcon, AlignLeftIcon, AlignCenterIcon, AlignRightIcon, AlignJustifyIcon, LeftArrowIcon, RightArrowIcon, GiftIcon, ImageIcon, TrashIcon, PaletteIcon, UploadIcon, RefreshIcon, PlusIcon, ChevronDownIcon } from './components/icons';
 import { generateCarouselContent, getAiAssistance, generateHashtags, generateImage, regenerateSlideContent, generateThreadFromCarousel } from './services/geminiService';
@@ -120,24 +120,10 @@ const translations = {
     removeButton: 'Remove',
     generateImageButton: 'Generate Image',
     applyBrandKit: 'Apply Brand Kit',
-    slideNumbers: 'Slide Numbers',
-    showSlideNumbers: 'Show Slide Numbers',
-    slideNumberShape: 'Shape',
-    slideNumberFormat: 'Format',
-    slideNumberPosition: 'Position',
-    slideNumberNumberColor: 'Number Color',
-    slideNumberShapeColor: 'Shape Color',
-    shapeCircle: 'Circle',
-    shapeSquare: 'Square',
-    shapeNone: 'None',
-    formatCurrentTotal: '1 / 5',
-    formatCurrent: '1',
-    positionTopLeft: 'Top Left',
-    positionTopRight: 'Top Right',
-    positionBottomLeft: 'Bottom Left',
-    positionBottomRight: 'Bottom Right',
-    positionTopCenter: 'Top Center',
-    positionBottomCenter: 'Bottom Center',
+    generatorSlideNumberLabel: 'Slide Number',
+    slideNumberColorLabel: 'Number Color',
+    slideNumberOpacityLabel: 'Opacity',
+    slideNumberPositionLabel: 'Position',
 
 
     // SlideCard
@@ -372,24 +358,10 @@ const translations = {
     removeButton: 'Hapus',
     generateImageButton: 'Hasilkan Gambar',
     applyBrandKit: 'Terapkan Brand Kit',
-    slideNumbers: 'Nomor Slide',
-    showSlideNumbers: 'Tampilkan Nomor Slide',
-    slideNumberShape: 'Bentuk',
-    slideNumberFormat: 'Format',
-    slideNumberPosition: 'Posisi',
-    slideNumberNumberColor: 'Warna Nomor',
-    slideNumberShapeColor: 'Warna Bentuk',
-    shapeCircle: 'Lingkaran',
-    shapeSquare: 'Kotak',
-    shapeNone: 'Tidak ada',
-    formatCurrentTotal: '1 / 5',
-    formatCurrent: '1',
-    positionTopLeft: 'Kiri Atas',
-    positionTopRight: 'Kanan Atas',
-    positionBottomLeft: 'Kiri Bawah',
-    positionBottomRight: 'Kanan Bawah',
-    positionTopCenter: 'Tengah Atas',
-    positionBottomCenter: 'Tengah Bawah',
+    generatorSlideNumberLabel: 'Nomor Slide',
+    slideNumberColorLabel: 'Warna Nomor',
+    slideNumberOpacityLabel: 'Opasitas',
+    slideNumberPositionLabel: 'Posisi',
 
     // SlideCard
     generatingVisual: 'Membuat visual...',
@@ -894,38 +866,6 @@ const SlideCard: React.FC<{
         containerStyle.backgroundColor = finalPrefs.backgroundColor;
     }
     
-    const renderSlideNumber = () => {
-        const { slideNumberStyle } = finalPrefs;
-        if (!slideNumberStyle?.show || totalSlides === 0) return null;
-
-        const numberText = slideNumberStyle.format === 'current/total'
-            ? `${slideIndex + 1} / ${totalSlides}`
-            : `${slideIndex + 1}`;
-
-        const positionClasses = positionClassMap[slideNumberStyle.position] || positionClassMap['top-right'];
-        const baseClasses = "absolute z-20 flex items-center justify-center text-xs font-bold pointer-events-none";
-        
-        const shapeClasses = {
-            circle: "w-6 h-6 rounded-full",
-            square: "w-6 h-6 rounded-md",
-            none: "px-1 py-0.5",
-        }[slideNumberStyle.style];
-        
-        const style: React.CSSProperties = {
-            color: slideNumberStyle.textColor,
-        };
-
-        if (slideNumberStyle.style !== 'none') {
-            style.backgroundColor = slideNumberStyle.backgroundColor;
-        }
-
-        return (
-            <div className={`${baseClasses} ${shapeClasses} ${positionClasses}`} style={style}>
-                {numberText}
-            </div>
-        )
-    };
-
     return (
         <div
             data-carousel-slide={slide.id}
@@ -933,7 +873,6 @@ const SlideCard: React.FC<{
             className={`w-64 sm:w-72 flex-shrink-0 relative rounded-lg cursor-pointer transition-all duration-300 transform overflow-hidden ${styleClasses} ${font} ${aspectRatioClass} ${isSelected ? 'ring-4 ring-primary-500 ring-offset-2 scale-105 shadow-2xl shadow-primary-600/50' : 'hover:scale-102'}`}
             style={containerStyle}
         >
-             {renderSlideNumber()}
             {isGeneratingImage && (
                 <div className="absolute inset-0 bg-black/60 rounded-md z-30 flex flex-col items-center justify-center space-y-2">
                     <LoaderIcon className="w-12 h-12" />
@@ -977,6 +916,18 @@ const SlideCard: React.FC<{
                         color: finalPrefs.brandingStyle.color, 
                         opacity: finalPrefs.brandingStyle.opacity
                     }} className="text-xs sm:text-sm">{finalPrefs.brandingText}</p>
+                </div>
+            )}
+
+            {/* Slide Number */}
+            {finalPrefs.slideNumberStyle?.show && totalSlides > 0 && (
+                <div className={`absolute z-20 pointer-events-none ${positionClassMap[finalPrefs.slideNumberStyle.position]}`}>
+                    <p style={{
+                        color: finalPrefs.slideNumberStyle.color,
+                        opacity: finalPrefs.slideNumberStyle.opacity
+                    }} className="text-xs sm:text-sm font-sans">
+                        {slideIndex + 1} / {totalSlides}
+                    </p>
                 </div>
             )}
         </div>
@@ -1549,7 +1500,7 @@ export default function App() {
                     brandingStyle: { color: '#111827', opacity: 0.75, position: 'bottom-right' },
                     headlineStyle: { fontSize: 2.2, fontWeight: 'bold', textAlign: 'center', textStroke: { color: '#000000', width: 0 } },
                     bodyStyle: { fontSize: 1.1, textAlign: 'center', textStroke: { color: '#000000', width: 0 } },
-                    slideNumberStyle: { show: true, textColor: '#FFFFFF', backgroundColor: '#111827', style: 'circle', format: 'current/total', position: 'top-right' },
+                    slideNumberStyle: { show: false, color: '#FFFFFF', opacity: 0.8, position: 'top-right' },
                     ...updates,
                 },
             };
@@ -2240,12 +2191,12 @@ const PositionSelector: React.FC<{
 }> = ({ label, value, onChange, t }) => {
     const positions: Position[] = ['top-left', 'top-center', 'top-right', 'bottom-left', 'bottom-center', 'bottom-right'];
     const positionLabels: { [key in Position]: string } = {
-        'top-left': t('positionTopLeft'),
-        'top-right': t('positionTopRight'),
-        'bottom-left': t('positionBottomLeft'),
-        'bottom-right': t('positionBottomRight'),
-        'top-center': t('positionTopCenter'),
-        'bottom-center': t('positionBottomCenter'),
+        'top-left': 'Top Left',
+        'top-right': 'Top Right',
+        'bottom-left': 'Bottom Left',
+        'bottom-right': 'Bottom Right',
+        'top-center': 'Top Center',
+        'bottom-center': 'Bottom Center',
     };
 
     return (
@@ -2360,7 +2311,7 @@ const Generator: React.FC<{
         brandingStyle: { color: '#111827', opacity: 0.75, position: 'bottom-right' },
         headlineStyle: { fontSize: 2.2, fontWeight: 'bold', textAlign: 'center', textStroke: { color: '#000000', width: 0 } },
         bodyStyle: { fontSize: 1.1, textAlign: 'center', textStroke: { color: '#000000', width: 0 } },
-        slideNumberStyle: { show: true, textColor: '#FFFFFF', backgroundColor: '#111827', style: 'circle', format: 'current/total', position: 'top-right' },
+        slideNumberStyle: { show: false, color: '#FFFFFF', opacity: 0.8, position: 'top-right' },
     };
 
     React.useEffect(() => {
@@ -2418,12 +2369,11 @@ const Generator: React.FC<{
         }
     };
 
+    const slideNumberPrefs = preferences.slideNumberStyle ?? { show: false, color: '#FFFFFF', opacity: 0.8, position: 'top-right' };
+
     const handleSlideNumberStyleChange = (updates: Partial<SlideNumberStyle>) => {
         onUpdateCarouselPreferences({
-            slideNumberStyle: {
-                ...preferences.slideNumberStyle,
-                ...updates,
-            }
+            slideNumberStyle: { ...slideNumberPrefs, ...updates }
         }, topic);
     };
     
@@ -2440,7 +2390,6 @@ const Generator: React.FC<{
                     {/* Step 1: Idea */}
                     <div>
                         <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">{t('generatorStep1Title')}</h3>
-                        <label htmlFor="topic" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorTopicLabel')}</label>
                         <textarea
                             id="topic"
                             value={topic}
@@ -2495,7 +2444,7 @@ const Generator: React.FC<{
                                 />
                             </div>
                              {/* Branding */}
-                             <div className="space-y-3">
+                             <div className="space-y-3 pt-4 border-t dark:border-gray-600">
                                 <label htmlFor="branding" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorBrandingLabel')}</label>
                                 <input id="branding" type="text" value={preferences.brandingText ?? ''} onChange={e => onUpdateCarouselPreferences({ brandingText: e.target.value }, topic)} placeholder={t('generatorBrandingPlaceholder')} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm" />
                                 <div className="grid grid-cols-2 gap-4 items-end">
@@ -2532,68 +2481,53 @@ const Generator: React.FC<{
                                 />
                             </div>
 
-                             {/* Slide Numbers */}
-                            <div className="space-y-3 pt-3 border-t dark:border-gray-600">
-                                <h4 className="text-md font-medium text-gray-800 dark:text-gray-200">{t('slideNumbers')}</h4>
+                             {/* Slide Number */}
+                            <div className="space-y-3 pt-4 border-t dark:border-gray-600">
                                 <div className="flex items-center justify-between">
-                                    <label htmlFor="showSlideNumbers" className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('showSlideNumbers')}</label>
-                                    <label className="relative inline-flex items-center cursor-pointer">
-                                        <input type="checkbox" id="showSlideNumbers" className="sr-only peer"
-                                            checked={preferences.slideNumberStyle.show}
-                                            onChange={(e) => handleSlideNumberStyleChange({ show: e.target.checked })}
+                                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorSlideNumberLabel')}</label>
+                                    <div
+                                        onClick={() => handleSlideNumberStyleChange({ show: !slideNumberPrefs.show })}
+                                        role="switch"
+                                        aria-checked={slideNumberPrefs.show}
+                                        className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${slideNumberPrefs.show ? 'bg-primary-600' : 'bg-gray-200 dark:bg-gray-600'}`}
+                                    >
+                                        <span
+                                            aria-hidden="true"
+                                            className={`inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${slideNumberPrefs.show ? 'translate-x-5' : 'translate-x-0'}`}
                                         />
-                                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
-                                    </label>
+                                    </div>
                                 </div>
-                                {preferences.slideNumberStyle.show && (
-                                    <div className="space-y-3">
-                                        <div>
-                                            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">{t('slideNumberShape')}</label>
-                                            <div className="flex items-center space-x-2">
-                                                {(['circle', 'square', 'none'] as const).map(shape => (
-                                                    <label key={shape} className="cursor-pointer">
-                                                        <input
-                                                            type="radio"
-                                                            name="slideNumberShape"
-                                                            value={shape}
-                                                            checked={preferences.slideNumberStyle.style === shape}
-                                                            onChange={() => handleSlideNumberStyleChange({ style: shape })}
-                                                            className="sr-only peer"
-                                                        />
-                                                        <div className="px-3 py-1.5 text-sm rounded-md border peer-checked:bg-primary-600 peer-checked:text-white peer-checked:border-primary-600 bg-white dark:bg-gray-700 dark:border-gray-500">
-                                                            {t(`shape${shape.charAt(0).toUpperCase() + shape.slice(1)}` as any)}
-                                                        </div>
-                                                    </label>
-                                                ))}
+                                {slideNumberPrefs.show && (
+                                    <div className="space-y-4">
+                                        <div className="grid grid-cols-2 gap-4 items-end">
+                                            <ColorInput
+                                                id="slideNumberColor"
+                                                label={t('slideNumberColorLabel')}
+                                                value={slideNumberPrefs.color}
+                                                onChange={v => handleSlideNumberStyleChange({ color: v })}
+                                            />
+                                            <div>
+                                                <label htmlFor="slideNumberOpacity" className="block text-xs font-medium text-gray-500 dark:text-gray-400">{t('slideNumberOpacityLabel')}</label>
+                                                <div className="flex items-center space-x-2 mt-1">
+                                                    <input
+                                                        id="slideNumberOpacity"
+                                                        type="range"
+                                                        min="0"
+                                                        max="1"
+                                                        step="0.05"
+                                                        value={slideNumberPrefs.opacity}
+                                                        onChange={e => handleSlideNumberStyleChange({ opacity: parseFloat(e.target.value) })}
+                                                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"
+                                                    />
+                                                    <span className="text-sm text-gray-600 dark:text-gray-400 w-10 text-center">
+                                                        {Math.round(slideNumberPrefs.opacity * 100)}%
+                                                    </span>
+                                                </div>
                                             </div>
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">{t('slideNumberFormat')}</label>
-                                            <div className="flex items-center space-x-2">
-                                                {(['current/total', 'current'] as const).map(format => (
-                                                     <label key={format} className="cursor-pointer">
-                                                        <input
-                                                            type="radio"
-                                                            name="slideNumberFormat"
-                                                            value={format}
-                                                            checked={preferences.slideNumberStyle.format === format}
-                                                            onChange={() => handleSlideNumberStyleChange({ format: format })}
-                                                            className="sr-only peer"
-                                                        />
-                                                        <div className="px-3 py-1.5 text-sm rounded-md border peer-checked:bg-primary-600 peer-checked:text-white peer-checked:border-primary-600 bg-white dark:bg-gray-700 dark:border-gray-500">
-                                                            {format === 'current/total' ? t('formatCurrentTotal') : t('formatCurrent')}
-                                                        </div>
-                                                    </label>
-                                                ))}
-                                            </div>
-                                        </div>
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <ColorInput id="slideNumberTextColor" label={t('slideNumberNumberColor')} value={preferences.slideNumberStyle.textColor} onChange={v => handleSlideNumberStyleChange({ textColor: v })} />
-                                            <ColorInput id="slideNumberBgColor" label={t('slideNumberShapeColor')} value={preferences.slideNumberStyle.backgroundColor} onChange={v => handleSlideNumberStyleChange({ backgroundColor: v })} />
                                         </div>
                                         <PositionSelector
-                                            label={t('slideNumberPosition')}
-                                            value={preferences.slideNumberStyle.position}
+                                            label={t('slideNumberPositionLabel')}
+                                            value={slideNumberPrefs.position}
                                             onChange={v => handleSlideNumberStyleChange({ position: v })}
                                             t={t}
                                         />
@@ -2802,13 +2736,13 @@ const Generator: React.FC<{
                                 <SlideCard
                                     key={slide.id}
                                     slide={slide}
+                                    slideIndex={index}
+                                    totalSlides={currentCarousel.slides.length}
                                     preferences={preferences}
                                     isSelected={slide.id === selectedSlide?.id}
                                     onClick={() => onSelectSlide(slide.id)}
                                     isGeneratingImage={isGeneratingImageForSlide === slide.id}
                                     t={t}
-                                    slideIndex={index}
-                                    totalSlides={currentCarousel.slides.length}
                                 />
                             ))}
                         </div>
