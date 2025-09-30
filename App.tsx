@@ -81,6 +81,8 @@ const translations = {
     generatorFontColorLabel: 'Font Color',
     headlineColorLabel: 'Headline Color',
     bodyColorLabel: 'Body Color',
+    generatorHeadlineSizeLabel: 'Headline Size',
+    generatorBodySizeLabel: 'Body Size',
     generatorCustomBgLabel: 'Background Visual',
     generatorRemoveBgButton: 'Remove visual',
     generatorCreateButton: 'Create Carousel!',
@@ -331,6 +333,8 @@ const translations = {
     generatorFontColorLabel: 'Warna Font',
     headlineColorLabel: 'Warna Judul',
     bodyColorLabel: 'Warna Teks Isi',
+    generatorHeadlineSizeLabel: 'Ukuran Judul',
+    generatorBodySizeLabel: 'Ukuran Teks Isi',
     generatorCustomBgLabel: 'Visual Latar',
     generatorRemoveBgButton: 'Hapus Visual',
     generatorCreateButton: 'Buat Carousel!',
@@ -2602,7 +2606,47 @@ const Generator: React.FC<{
                                 <ColorInput id="bgColor" label={t('generatorBgColorLabel')} value={selectedSlide?.backgroundColor ?? preferences.backgroundColor} onChange={v => handleStyleChange('backgroundColor', v)} />
                                 <ColorInput id="fontColor" label={t('generatorFontColorLabel')} value={selectedSlide?.fontColor ?? preferences.fontColor} onChange={v => handleStyleChange('fontColor', v)} />
                             </div>
-                            <ApplyScopeControl scope={colorScope} setScope={setColorScope} isDisabled={!selectedSlide} t={t} fieldId="colors" />
+                           
+                            {/* Global Font Size Controls */}
+                            <div className="grid grid-cols-2 gap-4 pt-3 border-t dark:border-gray-600">
+                                <div>
+                                    <label htmlFor="globalHeadlineSize" className="block text-xs font-medium text-gray-500 dark:text-gray-400">{t('generatorHeadlineSizeLabel')}</label>
+                                    <input
+                                        type="number"
+                                        id="globalHeadlineSize"
+                                        value={preferences.headlineStyle.fontSize ? preferences.headlineStyle.fontSize * 10 : ''}
+                                        onChange={e => {
+                                            const newSize = parseFloat(e.target.value) / 10;
+                                            onUpdateCarouselPreferences({
+                                                headlineStyle: { ...preferences.headlineStyle, fontSize: newSize }
+                                            }, topic);
+                                        }}
+                                        className="mt-1 block w-full px-2 py-1 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                                        step="1"
+                                        min="10"
+                                        max="100"
+                                    />
+                                </div>
+                                <div>
+                                    <label htmlFor="globalBodySize" className="block text-xs font-medium text-gray-500 dark:text-gray-400">{t('generatorBodySizeLabel')}</label>
+                                    <input
+                                        type="number"
+                                        id="globalBodySize"
+                                        value={preferences.bodyStyle.fontSize ? preferences.bodyStyle.fontSize * 10 : ''}
+                                        onChange={e => {
+                                            const newSize = parseFloat(e.target.value) / 10;
+                                            onUpdateCarouselPreferences({
+                                                bodyStyle: { ...preferences.bodyStyle, fontSize: newSize }
+                                            }, topic);
+                                        }}
+                                        className="mt-1 block w-full px-2 py-1 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                                        step="1"
+                                        min="5"
+                                        max="50"
+                                    />
+                                </div>
+                            </div>
+                             <ApplyScopeControl scope={colorScope} setScope={setColorScope} isDisabled={!selectedSlide} t={t} fieldId="colors" />
                             
                             {/* Background Visual */}
                             <div>
