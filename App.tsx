@@ -76,9 +76,11 @@ const translations = {
     brandingColorLabel: 'Branding Color',
     brandingOpacityLabel: 'Branding Opacity',
     brandingPositionLabel: 'Branding Position',
+    brandingSizeLabel: 'Branding Size',
     generatorBrandingPlaceholder: '@username',
     generatorBgColorLabel: 'BG Color',
     generatorFontColorLabel: 'Font Color',
+    generatorBgOpacityLabel: 'Background Opacity',
     headlineColorLabel: 'Headline Color',
     bodyColorLabel: 'Body Color',
     generatorHeadlineSizeLabel: 'Headline Size',
@@ -124,6 +126,7 @@ const translations = {
     slideNumberColorLabel: 'Number Color',
     slideNumberOpacityLabel: 'Opacity',
     slideNumberPositionLabel: 'Position',
+    slideNumberSizeLabel: 'Number Size',
 
 
     // SlideCard
@@ -314,9 +317,11 @@ const translations = {
     brandingColorLabel: 'Warna Branding',
     brandingOpacityLabel: 'Opasitas Branding',
     brandingPositionLabel: 'Posisi Branding',
+    brandingSizeLabel: 'Ukuran Branding',
     generatorBrandingPlaceholder: '@username',
     generatorBgColorLabel: 'Warna Latar',
     generatorFontColorLabel: 'Warna Font',
+    generatorBgOpacityLabel: 'Opasitas Latar',
     headlineColorLabel: 'Warna Judul',
     bodyColorLabel: 'Warna Teks Isi',
     generatorHeadlineSizeLabel: 'Ukuran Judul',
@@ -362,6 +367,7 @@ const translations = {
     slideNumberColorLabel: 'Warna Nomor',
     slideNumberOpacityLabel: 'Opasitas',
     slideNumberPositionLabel: 'Posisi',
+    slideNumberSizeLabel: 'Ukuran Nomor',
 
     // SlideCard
     generatingVisual: 'Membuat visual...',
@@ -518,6 +524,7 @@ const defaultSettings: AppSettings = {
             color: '#111827',
             opacity: 0.75,
             position: 'bottom-right',
+            fontSize: 0.75,
         }
     }
 };
@@ -761,6 +768,7 @@ const SlideCard: React.FC<{
             backgroundColor: slide.backgroundColor,
             fontColor: slide.fontColor,
             backgroundImage: slide.backgroundImage,
+            backgroundOpacity: slide.backgroundOpacity,
             headlineStyle: slide.headlineStyle,
             bodyStyle: slide.bodyStyle,
             headlineColor: slide.headlineColor,
@@ -775,6 +783,7 @@ const SlideCard: React.FC<{
             backgroundColor: slideOverrides.backgroundColor ?? preferences.backgroundColor,
             fontColor: slideFontColor,
             backgroundImage: slideOverrides.backgroundImage ?? preferences.backgroundImage,
+            backgroundOpacity: slideOverrides.backgroundOpacity ?? preferences.backgroundOpacity,
             headlineStyle: { ...preferences.headlineStyle, ...(slideOverrides.headlineStyle || {}) },
             bodyStyle: { ...preferences.bodyStyle, ...(slideOverrides.bodyStyle || {}) },
             headlineColor: slideOverrides.headlineColor ?? slideFontColor,
@@ -826,51 +835,55 @@ const SlideCard: React.FC<{
     const headlineStyles = getDynamicStyles(finalPrefs.headlineStyle, 'headline');
     const bodyStyles = getDynamicStyles(finalPrefs.bodyStyle, 'body');
 
-
-    const styleClasses = React.useMemo(() => {
+    const backgroundElement = React.useMemo(() => {
+        if (finalPrefs.backgroundImage) {
+            return finalPrefs.backgroundImage.startsWith('data:video')
+                ? <video src={finalPrefs.backgroundImage} autoPlay muted loop playsInline className="absolute inset-0 w-full h-full object-cover" />
+                : <img src={finalPrefs.backgroundImage} alt="Slide background" className="absolute inset-0 w-full h-full object-cover" />;
+        }
+    
+        let styleBgClass = '';
+        switch (finalPrefs.style) {
+            case DesignStyle.COLORFUL: styleBgClass = `bg-gradient-to-br from-pink-300 to-indigo-400`; break;
+            case DesignStyle.VINTAGE: styleBgClass = 'bg-yellow-50 dark:bg-yellow-900/20'; break;
+            case DesignStyle.MODERN: styleBgClass = 'bg-white dark:bg-gray-800'; break;
+            case DesignStyle.CORPORATE: styleBgClass = 'bg-white dark:bg-gray-800'; break;
+            case DesignStyle.ARTISTIC: styleBgClass = 'bg-gradient-to-br from-indigo-800 via-purple-900 to-slate-900'; break;
+        }
+    
+        if (styleBgClass) {
+            return <div className={`absolute inset-0 w-full h-full ${styleBgClass}`}></div>;
+        }
+    
+        return <div className="absolute inset-0 w-full h-full" style={{ backgroundColor: finalPrefs.backgroundColor }}></div>;
+    }, [finalPrefs.backgroundImage, finalPrefs.style, finalPrefs.backgroundColor]);
+    
+    const borderClasses = React.useMemo(() => {
         switch (finalPrefs.style) {
             case DesignStyle.MINIMALIST: return '';
             case DesignStyle.BOLD: return 'border-4 border-gray-900 dark:border-gray-200';
             case DesignStyle.ELEGANT: return 'border border-gray-300 dark:border-gray-600 shadow-md dark:shadow-xl dark:shadow-black/20';
-            case DesignStyle.COLORFUL: return `border-4 border-transparent bg-gradient-to-br from-pink-300 to-indigo-400`;
-            case DesignStyle.VINTAGE: return 'border-2 border-yellow-800 dark:border-yellow-600 bg-yellow-50 dark:bg-yellow-900/20';
-            case DesignStyle.MODERN: return 'bg-white dark:bg-gray-800 border-b-4 border-gray-300 dark:border-gray-600';
-            case DesignStyle.CORPORATE: return 'bg-white dark:bg-gray-800 border-l-4 border-blue-600 dark:border-blue-400';
-            case DesignStyle.ARTISTIC: return 'bg-gradient-to-br from-indigo-800 via-purple-900 to-slate-900 text-white';
+            case DesignStyle.COLORFUL: return `border-4 border-transparent`;
+            case DesignStyle.VINTAGE: return 'border-2 border-yellow-800 dark:border-yellow-600';
+            case DesignStyle.MODERN: return 'border-b-4 border-gray-300 dark:border-gray-600';
+            case DesignStyle.CORPORATE: return 'border-l-4 border-blue-600 dark:border-blue-400';
+            case DesignStyle.ARTISTIC: return '';
             default: return 'border border-gray-200 dark:border-gray-700';
         }
     }, [finalPrefs.style]);
-
-    const finalBackgroundImage = finalPrefs.backgroundImage;
     
-    const stylesThatDefineTheirOwnBackground = [
-        DesignStyle.COLORFUL, 
-        DesignStyle.VINTAGE, 
-        DesignStyle.MODERN, 
-        DesignStyle.CORPORATE, 
-        DesignStyle.ARTISTIC
-    ];
+    const isArtistic = finalPrefs.style === DesignStyle.ARTISTIC;
 
     const containerStyle: React.CSSProperties = {
-        color: finalPrefs.fontColor
+        color: isArtistic ? '#FFFFFF' : finalPrefs.fontColor,
+        backgroundColor: 'transparent',
     };
 
-    if (finalBackgroundImage) {
-        // If there's a background image, we MUST make the container's background transparent
-        // and remove any gradients so the <img> tag is visible. This inline style will override
-        // any background color or gradient utility classes from the 'style' presets.
-        containerStyle.backgroundColor = 'transparent';
-        containerStyle.backgroundImage = 'none';
-    } else if (!stylesThatDefineTheirOwnBackground.includes(finalPrefs.style)) {
-        // Only apply the color picker's background color if the style isn't one that defines its own.
-        containerStyle.backgroundColor = finalPrefs.backgroundColor;
-    }
-    
     return (
         <div
             data-carousel-slide={slide.id}
             onClick={onClick}
-            className={`w-64 sm:w-72 flex-shrink-0 relative rounded-lg cursor-pointer transition-all duration-300 transform overflow-hidden ${styleClasses} ${font} ${aspectRatioClass} ${isSelected ? 'ring-4 ring-primary-500 ring-offset-2 scale-105 shadow-2xl shadow-primary-600/50' : 'hover:scale-102'}`}
+            className={`w-64 sm:w-72 flex-shrink-0 relative rounded-lg cursor-pointer transition-all duration-300 transform overflow-hidden ${borderClasses} ${font} ${aspectRatioClass} ${isSelected ? 'ring-4 ring-primary-500 ring-offset-2 scale-105 shadow-2xl shadow-primary-600/50' : 'hover:scale-102'}`}
             style={containerStyle}
         >
             {isGeneratingImage && (
@@ -880,25 +893,10 @@ const SlideCard: React.FC<{
                 </div>
             )}
             
-            {/* Background Visual Layer */}
-            {finalBackgroundImage && (
-                finalBackgroundImage.startsWith('data:video') ? (
-                    <video
-                        src={finalBackgroundImage}
-                        autoPlay
-                        muted
-                        loop
-                        playsInline
-                        className="absolute inset-0 w-full h-full object-cover rounded-md -z-10"
-                    />
-                ) : (
-                    <img 
-                        src={finalBackgroundImage} 
-                        alt="Slide background" 
-                        className="absolute inset-0 w-full h-full object-cover rounded-md -z-10" 
-                    />
-                )
-            )}
+            {/* Background Layer */}
+            <div className="absolute inset-0 -z-10" style={{ opacity: finalPrefs.backgroundOpacity }}>
+                {backgroundElement}
+            </div>
 
             {/* Content Wrapper */}
             <div className="absolute inset-0 flex flex-col justify-center items-center p-6 text-center overflow-hidden">
@@ -914,8 +912,9 @@ const SlideCard: React.FC<{
                 <div className={`absolute z-20 pointer-events-none ${positionClassMap[finalPrefs.brandingStyle.position]} ${positionAlignmentMap[finalPrefs.brandingStyle.position]}`}>
                     <p style={{ 
                         color: finalPrefs.brandingStyle.color, 
-                        opacity: finalPrefs.brandingStyle.opacity
-                    }} className="text-xs sm:text-sm">{finalPrefs.brandingText}</p>
+                        opacity: finalPrefs.brandingStyle.opacity,
+                        fontSize: `${finalPrefs.brandingStyle.fontSize ?? 0.75}rem`,
+                    }}>{finalPrefs.brandingText}</p>
                 </div>
             )}
 
@@ -924,8 +923,9 @@ const SlideCard: React.FC<{
                 <div className={`absolute z-20 pointer-events-none ${positionClassMap[finalPrefs.slideNumberStyle.position]}`}>
                     <p style={{
                         color: finalPrefs.slideNumberStyle.color,
-                        opacity: finalPrefs.slideNumberStyle.opacity
-                    }} className="text-xs sm:text-sm font-sans">
+                        opacity: finalPrefs.slideNumberStyle.opacity,
+                        fontSize: `${finalPrefs.slideNumberStyle.fontSize ?? 0.75}rem`,
+                    }} className="font-sans">
                         {slideIndex + 1} / {totalSlides}
                     </p>
                 </div>
@@ -1087,7 +1087,8 @@ export default function App() {
                     ...defaultSettings.brandKit,
                     ...(parsedSettings.brandKit || {}),
                     colors: { ...defaultSettings.brandKit!.colors, ...(parsedSettings.brandKit?.colors || {}) },
-                    fonts: { ...defaultSettings.brandKit!.fonts, ...(parsedSettings.brandKit?.fonts || {}) }
+                    fonts: { ...defaultSettings.brandKit!.fonts, ...(parsedSettings.brandKit?.fonts || {}) },
+                    brandingStyle: { ...defaultSettings.brandKit!.brandingStyle, ...(parsedSettings.brandKit?.brandingStyle || {}) },
                 }
             };
         } catch (error) {
@@ -1492,15 +1493,16 @@ export default function App() {
                 preferences: {
                     backgroundColor: '#FFFFFF',
                     fontColor: '#111827',
+                    backgroundOpacity: 1,
                     style: DesignStyle.MINIMALIST,
                     font: FontChoice.MONO,
                     aspectRatio: AspectRatio.SQUARE,
                     backgroundImage: undefined,
                     brandingText: '',
-                    brandingStyle: { color: '#111827', opacity: 0.75, position: 'bottom-right' },
+                    brandingStyle: { color: '#111827', opacity: 0.75, position: 'bottom-right', fontSize: 0.75 },
                     headlineStyle: { fontSize: 2.2, fontWeight: 'bold', textAlign: 'center', textStroke: { color: '#000000', width: 0 } },
                     bodyStyle: { fontSize: 1.1, textAlign: 'center', textStroke: { color: '#000000', width: 0 } },
-                    slideNumberStyle: { show: false, color: '#FFFFFF', opacity: 0.8, position: 'top-right' },
+                    slideNumberStyle: { show: false, color: '#FFFFFF', opacity: 0.8, position: 'top-right', fontSize: 0.75 },
                     ...updates,
                 },
             };
@@ -2303,15 +2305,16 @@ const Generator: React.FC<{
     const preferences = currentCarousel?.preferences ?? {
         backgroundColor: '#FFFFFF',
         fontColor: '#111827',
+        backgroundOpacity: 1,
         style: DesignStyle.MINIMALIST,
         font: FontChoice.MONO,
         aspectRatio: AspectRatio.SQUARE,
         backgroundImage: undefined,
         brandingText: '',
-        brandingStyle: { color: '#111827', opacity: 0.75, position: 'bottom-right' },
+        brandingStyle: { color: '#111827', opacity: 0.75, position: 'bottom-right', fontSize: 0.75 },
         headlineStyle: { fontSize: 2.2, fontWeight: 'bold', textAlign: 'center', textStroke: { color: '#000000', width: 0 } },
         bodyStyle: { fontSize: 1.1, textAlign: 'center', textStroke: { color: '#000000', width: 0 } },
-        slideNumberStyle: { show: false, color: '#FFFFFF', opacity: 0.8, position: 'top-right' },
+        slideNumberStyle: { show: false, color: '#FFFFFF', opacity: 0.8, position: 'top-right', fontSize: 0.75 },
     };
 
     React.useEffect(() => {
@@ -2357,7 +2360,7 @@ const Generator: React.FC<{
             onUpdateSlide(selectedSlide.id, { [key]: value } as Partial<SlideData>);
         } else {
             onUpdateCarouselPreferences({ [key]: value }, topic);
-            if(key === 'backgroundColor' || key === 'fontColor'){
+            if(key === 'backgroundColor' || key === 'fontColor' || key === 'backgroundOpacity'){
                 onClearSlideOverrides(key as keyof SlideData);
             }
         }
@@ -2369,7 +2372,7 @@ const Generator: React.FC<{
         }
     };
 
-    const slideNumberPrefs = preferences.slideNumberStyle ?? { show: false, color: '#FFFFFF', opacity: 0.8, position: 'top-right' };
+    const slideNumberPrefs = preferences.slideNumberStyle ?? { show: false, color: '#FFFFFF', opacity: 0.8, position: 'top-right', fontSize: 0.75 };
 
     const handleSlideNumberStyleChange = (updates: Partial<SlideNumberStyle>) => {
         onUpdateCarouselPreferences({
@@ -2447,7 +2450,7 @@ const Generator: React.FC<{
                              <div className="space-y-3 pt-4 border-t dark:border-gray-600">
                                 <label htmlFor="branding" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorBrandingLabel')}</label>
                                 <input id="branding" type="text" value={preferences.brandingText ?? ''} onChange={e => onUpdateCarouselPreferences({ brandingText: e.target.value }, topic)} placeholder={t('generatorBrandingPlaceholder')} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm" />
-                                <div className="grid grid-cols-2 gap-4 items-end">
+                                <div className="grid grid-cols-3 gap-4 items-end">
                                     <ColorInput 
                                         id="brandingColor" 
                                         label={t('brandingColorLabel')}
@@ -2471,6 +2474,24 @@ const Generator: React.FC<{
                                                 {Math.round(preferences.brandingStyle.opacity * 100)}%
                                             </span>
                                         </div>
+                                    </div>
+                                     <div>
+                                        <label htmlFor="brandingSize" className="block text-xs font-medium text-gray-500 dark:text-gray-400">{t('brandingSizeLabel')}</label>
+                                        <input
+                                            type="number"
+                                            id="brandingSize"
+                                            value={preferences.brandingStyle.fontSize ? preferences.brandingStyle.fontSize * 10 : ''}
+                                            onChange={e => {
+                                                const newSize = parseFloat(e.target.value) / 10;
+                                                onUpdateCarouselPreferences({
+                                                    brandingStyle: { ...preferences.brandingStyle, fontSize: newSize }
+                                                }, topic);
+                                            }}
+                                            className="mt-1 block w-full px-2 py-1 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                                            step="1"
+                                            min="5"
+                                            max="30"
+                                        />
                                     </div>
                                 </div>
                                  <PositionSelector
@@ -2499,7 +2520,7 @@ const Generator: React.FC<{
                                 </div>
                                 {slideNumberPrefs.show && (
                                     <div className="space-y-4">
-                                        <div className="grid grid-cols-2 gap-4 items-end">
+                                        <div className="grid grid-cols-3 gap-4 items-end">
                                             <ColorInput
                                                 id="slideNumberColor"
                                                 label={t('slideNumberColorLabel')}
@@ -2524,6 +2545,22 @@ const Generator: React.FC<{
                                                     </span>
                                                 </div>
                                             </div>
+                                            <div>
+                                                <label htmlFor="slideNumberSize" className="block text-xs font-medium text-gray-500 dark:text-gray-400">{t('slideNumberSizeLabel')}</label>
+                                                <input
+                                                    type="number"
+                                                    id="slideNumberSize"
+                                                    value={slideNumberPrefs.fontSize ? slideNumberPrefs.fontSize * 10 : ''}
+                                                    onChange={e => {
+                                                        const newSize = parseFloat(e.target.value) / 10;
+                                                        handleSlideNumberStyleChange({ fontSize: newSize });
+                                                    }}
+                                                    className="mt-1 block w-full px-2 py-1 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                                                    step="1"
+                                                    min="5"
+                                                    max="30"
+                                                />
+                                            </div>
                                         </div>
                                         <PositionSelector
                                             label={t('slideNumberPositionLabel')}
@@ -2535,10 +2572,28 @@ const Generator: React.FC<{
                                 )}
                             </div>
                             
-                            {/* Colors */}
+                            {/* Colors & Opacity */}
                             <div className="grid grid-cols-2 gap-4">
                                 <ColorInput id="bgColor" label={t('generatorBgColorLabel')} value={selectedSlide?.backgroundColor ?? preferences.backgroundColor} onChange={v => handleStyleChange('backgroundColor', v)} />
                                 <ColorInput id="fontColor" label={t('generatorFontColorLabel')} value={selectedSlide?.fontColor ?? preferences.fontColor} onChange={v => handleStyleChange('fontColor', v)} />
+                            </div>
+                            <div>
+                                <label htmlFor="bgOpacity" className="block text-xs font-medium text-gray-500 dark:text-gray-400">{t('generatorBgOpacityLabel')}</label>
+                                <div className="flex items-center space-x-2 mt-1">
+                                    <input
+                                        id="bgOpacity"
+                                        type="range"
+                                        min="0"
+                                        max="1"
+                                        step="0.05"
+                                        value={selectedSlide?.backgroundOpacity ?? preferences.backgroundOpacity}
+                                        onChange={e => handleStyleChange('backgroundOpacity', parseFloat(e.target.value))}
+                                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"
+                                    />
+                                    <span className="text-sm text-gray-600 dark:text-gray-400 w-10 text-center">
+                                        {Math.round((selectedSlide?.backgroundOpacity ?? preferences.backgroundOpacity) * 100)}%
+                                    </span>
+                                </div>
                             </div>
                            
                             {/* Global Font Size Controls */}
@@ -2974,6 +3029,19 @@ const SettingsModal: React.FC<{
         }
     };
 
+    const handleBrandingStyleChange = (updates: Partial<BrandKit['brandingStyle']>) => {
+        setSettings(prev => ({
+            ...prev,
+            brandKit: { 
+                ...(prev.brandKit || defaultSettings.brandKit!), 
+                brandingStyle: {
+                    ...(prev.brandKit?.brandingStyle || defaultSettings.brandKit!.brandingStyle!),
+                    ...updates
+                }
+            }
+        }));
+    };
+
     return (
         <div className="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 p-4">
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl p-6 max-w-2xl w-full max-h-[90vh] flex flex-col">
@@ -3074,12 +3142,12 @@ const SettingsModal: React.FC<{
                              <div className="space-y-3">
                                 <label htmlFor="brandKitBrandingText" className="block text-sm font-medium">{t('brandKitBrandingText')}</label>
                                 <input id="brandKitBrandingText" type="text" value={settings.brandKit?.brandingText ?? ''} onChange={e => handleBrandKitChange('brandingText', e.target.value)} placeholder={t('settingsBrandingPlaceholder')} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm" />
-                                <div className="grid grid-cols-2 gap-4 items-end">
+                                <div className="grid grid-cols-3 gap-4 items-end">
                                     <ColorInput 
                                         id="brandKitBrandingColor" 
                                         label={t('brandingColorLabel')}
                                         value={settings.brandKit?.brandingStyle?.color ?? '#000000'}
-                                        onChange={v => handleBrandKitChange('brandingStyle', { ...(settings.brandKit?.brandingStyle || {}), color: v, opacity: settings.brandKit?.brandingStyle?.opacity ?? 0.75 })}
+                                        onChange={v => handleBrandingStyleChange({ color: v })}
                                     />
                                     <div>
                                         <label htmlFor="brandKitBrandingOpacity" className="block text-xs font-medium text-gray-500 dark:text-gray-400">{t('brandingOpacityLabel')}</label>
@@ -3091,7 +3159,7 @@ const SettingsModal: React.FC<{
                                                 max="1"
                                                 step="0.05"
                                                 value={settings.brandKit?.brandingStyle?.opacity ?? 0.75}
-                                                onChange={e => handleBrandKitChange('brandingStyle', { ...(settings.brandKit?.brandingStyle || {}), color: settings.brandKit?.brandingStyle?.color ?? '#000000', opacity: parseFloat(e.target.value) })}
+                                                onChange={e => handleBrandingStyleChange({ opacity: parseFloat(e.target.value) })}
                                                 className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"
                                             />
                                             <span className="text-sm text-gray-600 dark:text-gray-400 w-10 text-center">
@@ -3099,11 +3167,24 @@ const SettingsModal: React.FC<{
                                             </span>
                                         </div>
                                     </div>
+                                     <div>
+                                        <label htmlFor="brandKitBrandingSize" className="block text-xs font-medium text-gray-500 dark:text-gray-400">{t('brandingSizeLabel')}</label>
+                                        <input
+                                            type="number"
+                                            id="brandKitBrandingSize"
+                                            value={settings.brandKit?.brandingStyle?.fontSize ? settings.brandKit.brandingStyle.fontSize * 10 : ''}
+                                            onChange={e => handleBrandingStyleChange({ fontSize: parseFloat(e.target.value) / 10 })}
+                                            className="mt-1 block w-full px-2 py-1 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                                            step="1"
+                                            min="5"
+                                            max="30"
+                                        />
+                                    </div>
                                 </div>
                                 <PositionSelector
                                     label={t('brandingPositionLabel')}
                                     value={settings.brandKit?.brandingStyle?.position ?? 'bottom-right'}
-                                    onChange={v => handleBrandKitChange('brandingStyle', { ...(settings.brandKit?.brandingStyle || defaultSettings.brandKit!.brandingStyle), position: v })}
+                                    onChange={v => handleBrandingStyleChange({ position: v })}
                                     t={t}
                                 />
                             </div>

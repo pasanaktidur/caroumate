@@ -16,6 +16,7 @@ export interface BrandKit {
     color: string;
     opacity: number; // 0 to 1
     position: Position;
+    fontSize?: number; // in rem
   };
 }
 
@@ -34,12 +35,14 @@ export interface SlideNumberStyle {
   color: string;
   opacity: number; // 0 to 1
   position: Position;
+  fontSize?: number; // in rem
 }
 
 export interface DesignPreferences {
   backgroundColor: string;
   fontColor: string;
   backgroundImage?: string;
+  backgroundOpacity: number;
   style: DesignStyle;
   font: FontChoice;
   aspectRatio: AspectRatio;
@@ -48,6 +51,7 @@ export interface DesignPreferences {
     color: string;
     opacity: number; // 0 to 1
     position: Position;
+    fontSize?: number; // in rem
   };
   headlineStyle: TextStyle;
   bodyStyle: TextStyle;
@@ -71,6 +75,7 @@ export interface SlideData {
   backgroundColor?: string;
   fontColor?: string;
   backgroundImage?: string;
+  backgroundOpacity?: number;
   headlineStyle?: TextStyle;
   bodyStyle?: TextStyle;
   headlineColor?: string;
