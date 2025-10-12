@@ -524,7 +524,7 @@ const defaultSettings: AppSettings = {
             color: '#111827',
             opacity: 0.75,
             position: 'bottom-right',
-            fontSize: 0.75,
+            fontSize: 0.7,
         }
     }
 };
@@ -913,7 +913,7 @@ const SlideCard: React.FC<{
                     <p style={{ 
                         color: finalPrefs.brandingStyle.color, 
                         opacity: finalPrefs.brandingStyle.opacity,
-                        fontSize: `${finalPrefs.brandingStyle.fontSize ?? 0.75}rem`,
+                        fontSize: `${finalPrefs.brandingStyle.fontSize ?? 0.7}rem`,
                     }}>{finalPrefs.brandingText}</p>
                 </div>
             )}
@@ -924,7 +924,7 @@ const SlideCard: React.FC<{
                     <p style={{
                         color: finalPrefs.slideNumberStyle.color,
                         opacity: finalPrefs.slideNumberStyle.opacity,
-                        fontSize: `${finalPrefs.slideNumberStyle.fontSize ?? 0.75}rem`,
+                        fontSize: `${finalPrefs.slideNumberStyle.fontSize ?? 0.7}rem`,
                     }} className="font-sans">
                         {slideIndex + 1} / {totalSlides}
                     </p>
@@ -1499,10 +1499,10 @@ export default function App() {
                     aspectRatio: AspectRatio.SQUARE,
                     backgroundImage: undefined,
                     brandingText: '',
-                    brandingStyle: { color: '#111827', opacity: 0.75, position: 'bottom-right', fontSize: 0.75 },
+                    brandingStyle: { color: '#111827', opacity: 0.75, position: 'bottom-right', fontSize: 0.7 },
                     headlineStyle: { fontSize: 2.2, fontWeight: 'bold', textAlign: 'center', textStroke: { color: '#000000', width: 0 } },
                     bodyStyle: { fontSize: 1.1, textAlign: 'center', textStroke: { color: '#000000', width: 0 } },
-                    slideNumberStyle: { show: false, color: '#FFFFFF', opacity: 0.8, position: 'top-right', fontSize: 0.75 },
+                    slideNumberStyle: { show: false, color: '#FFFFFF', opacity: 0.8, position: 'top-right', fontSize: 0.7 },
                     ...updates,
                 },
             };
@@ -2311,10 +2311,10 @@ const Generator: React.FC<{
         aspectRatio: AspectRatio.SQUARE,
         backgroundImage: undefined,
         brandingText: '',
-        brandingStyle: { color: '#111827', opacity: 0.75, position: 'bottom-right', fontSize: 0.75 },
+        brandingStyle: { color: '#111827', opacity: 0.75, position: 'bottom-right', fontSize: 0.7 },
         headlineStyle: { fontSize: 2.2, fontWeight: 'bold', textAlign: 'center', textStroke: { color: '#000000', width: 0 } },
         bodyStyle: { fontSize: 1.1, textAlign: 'center', textStroke: { color: '#000000', width: 0 } },
-        slideNumberStyle: { show: false, color: '#FFFFFF', opacity: 0.8, position: 'top-right', fontSize: 0.75 },
+        slideNumberStyle: { show: false, color: '#FFFFFF', opacity: 0.8, position: 'top-right', fontSize: 0.7 },
     };
 
     React.useEffect(() => {
@@ -2372,7 +2372,7 @@ const Generator: React.FC<{
         }
     };
 
-    const slideNumberPrefs = preferences.slideNumberStyle ?? { show: false, color: '#FFFFFF', opacity: 0.8, position: 'top-right', fontSize: 0.75 };
+    const slideNumberPrefs = preferences.slideNumberStyle ?? { show: false, color: '#FFFFFF', opacity: 0.8, position: 'top-right', fontSize: 0.7 };
 
     const handleSlideNumberStyleChange = (updates: Partial<SlideNumberStyle>) => {
         onUpdateCarouselPreferences({
