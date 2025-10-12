@@ -1,5 +1,5 @@
 const express = require('express');
-const { GoogleGenAI, Type } = require('@google/genai');
+const { GoogleGenAI, Type, Modality } = require('@google/genai');
 const cors = require('cors');
 require('dotenv').config();
 
@@ -89,23 +89,26 @@ app.post('/api/generate-image', async (req, res) => {
             return res.status(400).json({ error: 'Missing prompt or aspectRatio.' });
         }
 
-        // FIX: Using generateImages with imagen-4.0-generate-001 for image generation as per guidelines.
-        const response = await ai.models.generateImages({
-            model: 'imagen-4.0-generate-001',
-            prompt: prompt,
+        const fullPrompt = `${prompt}. The image should have an aspect ratio of ${aspectRatio}.`;
+
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash-image',
+            contents: {
+                parts: [{ text: fullPrompt }]
+            },
             config: {
-                numberOfImages: 1,
-                outputMimeType: 'image/png',
-                aspectRatio: aspectRatio,
+                responseModalities: [Modality.IMAGE, Modality.TEXT], // Must include both Modality.IMAGE and Modality.TEXT
             },
         });
 
-        if (!response.generatedImages || response.generatedImages.length === 0 || !response.generatedImages[0].image.imageBytes) {
-            console.warn('AI did not return a valid image', response);
-            return res.status(500).json({ error: "AI did not return an image from your prompt." });
+        for (const part of response.candidates[0].content.parts) {
+            if (part.inlineData) {
+                return res.json({ imageBase64: part.inlineData.data });
+            }
         }
-
-        res.json({ imageBase64: response.generatedImages[0].image.imageBytes });
+        
+        console.warn('AI did not return a valid image', response);
+        return res.status(500).json({ error: "AI did not return an image from your prompt." });
 
     } catch (error) {
         console.error('Error in /api/generate-image:', error);
