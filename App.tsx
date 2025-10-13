@@ -3,7 +3,7 @@ import type { AppView, UserProfile, Carousel, SlideData, DesignPreferences, AppS
 import { AIModel } from './types';
 import html2canvas from 'html2canvas';
 import JSZip from 'jszip';
-import { generateCarouselContent, getAiAssistance, generateHashtags, generateImage, regenerateSlideContent, generateThreadFromCarousel } from './services/geminiService';
+import { generateCarouselContent, getAiAssistance, generateCaption, generateImage, regenerateSlideContent, generateThreadFromCarousel } from './services/geminiService';
 
 import { translations } from './lib/translations';
 import { SETTINGS_STORAGE_KEY, USER_STORAGE_KEY, HISTORY_STORAGE_KEY, DOWNLOADS_STORAGE_KEY, defaultSettings } from './lib/constants';
@@ -18,7 +18,7 @@ import { Generator } from './components/Generator';
 import { SettingsModal } from './components/SettingsModal';
 import { TutorialScreen } from './components/TutorialScreen';
 import { AiAssistantModal } from './components/AiAssistantModal';
-import { HashtagModal } from './components/HashtagModal';
+import { CaptionModal } from './components/CaptionModal';
 import { ThreadModal } from './components/ThreadModal';
 
 export type TFunction = (key: string, params?: { [key: string]: any }) => string;
@@ -94,9 +94,9 @@ export default function App() {
     const [error, setError] = React.useState<string | null>(null);
     const [isAssistantOpen, setIsAssistantOpen] = React.useState(false);
     const [isSettingsOpen, setIsSettingsOpen] = React.useState(false);
-    const [isHashtagModalOpen, setIsHashtagModalOpen] = React.useState(false);
-    const [isGeneratingHashtags, setIsGeneratingHashtags] = React.useState(false);
-    const [generatedHashtags, setGeneratedHashtags] = React.useState<string[]>([]);
+    const [isCaptionModalOpen, setIsCaptionModalOpen] = React.useState(false);
+    const [isGeneratingCaption, setIsGeneratingCaption] = React.useState(false);
+    const [generatedCaption, setGeneratedCaption] = React.useState<string>('');
     const [currentTopic, setCurrentTopic] = React.useState('');
     const [regeneratingPart, setRegeneratingPart] = React.useState<{ slideId: string; part: 'headline' | 'body' } | null>(null);
     const [isThreadModalOpen, setIsThreadModalOpen] = React.useState(false);
@@ -291,14 +291,39 @@ export default function App() {
             setCarouselHistory([]);
         }
     };
+    
+    const executeImageGenerationForAllSlides = async (carousel: Carousel): Promise<Carousel> => {
+        let updatedCarousel = carousel;
+        for (let i = 0; i < carousel.slides.length; i++) {
+            const slide = carousel.slides[i];
+            setGenerationMessage(t('generatingImageMessage', { current: i + 1, total: carousel.slides.length }));
+            setIsGeneratingImageForSlide(slide.id);
+            try {
+                const imageUrl = await generateImage(slide.visual_prompt, carousel.preferences.aspectRatio, settings);
+                // Create new slides array with the new image
+                const newSlides = updatedCarousel.slides.map(s => s.id === slide.id ? { ...s, backgroundImage: imageUrl } : s);
+                // Update the local carousel variable for the next iteration
+                updatedCarousel = { ...updatedCarousel, slides: newSlides };
+                // Update the state to reflect changes in the UI
+                setCurrentCarousel(updatedCarousel);
+            } catch (imageErr) {
+                console.error(`Failed to generate image for slide ${i + 1}:`, imageErr);
+                // Optionally set an error state on the slide itself, for now we just log and continue
+            }
+        }
+        return updatedCarousel;
+    };
 
-    const handleGenerateCarousel = React.useCallback(async (topic: string, niche: string, preferences: DesignPreferences) => {
+
+    const handleGenerateCarousel = React.useCallback(async (topic: string, niche: string, preferences: DesignPreferences, magicCreate: boolean) => {
         if (!user) return;
         setIsGenerating(true);
         setError(null);
         setCurrentCarousel(null);
         setCurrentTopic(topic);
         
+        let newCarousel: Carousel | null = null;
+
         try {
             setGenerationMessage(t('generatingContentMessage'));
             const nicheToUse = niche || (user.niche.length > 0 ? user.niche[0] : 'General');
@@ -306,7 +331,7 @@ export default function App() {
 
             const initialSlides: SlideData[] = slidesContent.map(s => ({ ...s, id: crypto.randomUUID() }));
             
-            const newCarousel: Carousel = {
+            newCarousel = {
                 id: crypto.randomUUID(),
                 title: topic,
                 createdAt: new Date().toISOString(),
@@ -317,13 +342,20 @@ export default function App() {
             
             setCurrentCarousel(newCarousel);
             setSelectedSlideId(initialSlides[0]?.id ?? null);
-            setCarouselHistory(prev => [newCarousel, ...prev]);
+
+            if (magicCreate) {
+                const finalCarousel = await executeImageGenerationForAllSlides(newCarousel);
+                setCarouselHistory(prev => [finalCarousel, ...prev]);
+            } else {
+                 setCarouselHistory(prev => [newCarousel!, ...prev]);
+            }
 
         } catch (err: any) {
             setError(parseAndDisplayError(err));
         } finally {
             setIsGenerating(false);
             setGenerationMessage('');
+            setIsGeneratingImageForSlide(null);
         }
     }, [user, settings, t, parseAndDisplayError]);
 
@@ -341,6 +373,31 @@ export default function App() {
         } catch (err: any) {
             setError(parseAndDisplayError(err));
         } finally {
+            setIsGeneratingImageForSlide(null);
+        }
+    };
+    
+    const handleGenerateAllImages = async () => {
+        if (!currentCarousel) return;
+        setIsGenerating(true);
+        setError(null);
+        try {
+            const finalCarousel = await executeImageGenerationForAllSlides(currentCarousel);
+            // Update history with the newly generated images
+            setCarouselHistory(prev => {
+                const index = prev.findIndex(c => c.id === finalCarousel.id);
+                if (index > -1) {
+                    const newHistory = [...prev];
+                    newHistory[index] = finalCarousel;
+                    return newHistory;
+                }
+                return prev; // Should not happen if carousel is current
+            });
+        } catch(err: any) {
+            setError(parseAndDisplayError(err));
+        } finally {
+            setIsGenerating(false);
+            setGenerationMessage('');
             setIsGeneratingImageForSlide(null);
         }
     };
@@ -364,19 +421,20 @@ export default function App() {
         }
     };
 
-    const handleGenerateHashtags = async () => {
-        if (!currentTopic) return;
-        setIsHashtagModalOpen(true);
-        setIsGeneratingHashtags(true);
-        setGeneratedHashtags([]);
+    const handleGenerateCaption = async () => {
+        if (!currentCarousel) return;
+        setIsCaptionModalOpen(true);
+        setIsGeneratingCaption(true);
+        setGeneratedCaption('');
         setError(null);
         try {
-            const hashtags = await generateHashtags(currentTopic, settings);
-            setGeneratedHashtags(hashtags);
+            const caption = await generateCaption(currentCarousel, settings);
+            setGeneratedCaption(caption);
         } catch (err: any) {
             setError(parseAndDisplayError(err));
+            // Also set error inside the modal if needed
         } finally {
-            setIsGeneratingHashtags(false);
+            setIsGeneratingCaption(false);
         }
     };
 
@@ -589,6 +647,17 @@ export default function App() {
         setCurrentCarousel({ ...currentCarousel, slides });
     };
 
+    const handleApplyAssistantSuggestion = (suggestion: string, type: 'hook' | 'cta') => {
+        if (!selectedSlideId) {
+            console.warn("No slide selected to apply suggestion.");
+            return;
+        }
+
+        const fieldToUpdate = type === 'hook' ? 'headline' : 'body';
+        handleUpdateSlide(selectedSlideId, { [fieldToUpdate]: suggestion });
+        setIsAssistantOpen(false); // Close modal after applying.
+    };
+
     const selectedSlide = React.useMemo(() => {
         return currentCarousel?.slides.find(s => s.id === selectedSlideId);
     }, [currentCarousel, selectedSlideId]);
@@ -626,6 +695,7 @@ export default function App() {
                     isGenerating={isGenerating}
                     generationMessage={generationMessage}
                     error={error}
+                    onErrorDismiss={() => setError(null)}
                     onGenerate={handleGenerateCarousel}
                     currentCarousel={currentCarousel}
                     setCurrentCarousel={setCurrentCarousel}
@@ -636,12 +706,13 @@ export default function App() {
                     onClearSlideOverrides={handleClearSlideOverrides}
                     onMoveSlide={handleMoveSlide}
                     onOpenAssistant={() => setIsAssistantOpen(true)}
-                    onOpenHashtag={handleGenerateHashtags}
+                    onOpenCaption={handleGenerateCaption}
                     onOpenThread={handleGenerateThread}
                     onDownload={handleDownloadCarousel}
                     isDownloading={isDownloading}
                     isGeneratingImageForSlide={isGeneratingImageForSlide}
                     onGenerateImageForSlide={handleGenerateImageForSlide}
+                    onGenerateAllImages={handleGenerateAllImages}
                     onRegenerateContent={handleRegenerateContent}
                     onUploadVisualForSlide={handleUploadVisualForSlide}
                     onRemoveVisualForSlide={handleRemoveVisualForSlide}
@@ -697,14 +768,16 @@ export default function App() {
                     settings={settings}
                     t={t}
                     parseError={parseAndDisplayError}
+                    onApplySuggestion={handleApplyAssistantSuggestion}
+                    selectedSlideId={selectedSlideId}
                 />
             )}
-            {isHashtagModalOpen && (
-                <HashtagModal
+            {isCaptionModalOpen && (
+                <CaptionModal
                     topic={currentTopic}
-                    onClose={() => setIsHashtagModalOpen(false)}
-                    isLoading={isGeneratingHashtags}
-                    hashtags={generatedHashtags}
+                    onClose={() => setIsCaptionModalOpen(false)}
+                    isLoading={isGeneratingCaption}
+                    caption={generatedCaption}
                     error={error}
                     t={t}
                 />

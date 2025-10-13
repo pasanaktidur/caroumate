@@ -43,7 +43,8 @@ export const generateCarouselContent = async (
 };
 
 export const generateImage = async (prompt: string, aspectRatio: AspectRatio, settings: AppSettings): Promise<string> => {
-    const ai = getAiClient(settings.apiKey);
+    // Per user request, use a specific system API key for all visual generation.
+    const ai = new GoogleGenAI({ apiKey: "AIzaSyBCTIl3_5qMhSVqhlMKiA5-KON5PdioeA4" });
 
     // FIX: Switched to the correct generateImages API with the 'imagen-4.0-generate-001' model for image generation as per guidelines.
     const response = await ai.models.generateImages({
@@ -81,18 +82,12 @@ export const getAiAssistance = async (topic: string, type: 'hook' | 'cta', setti
     return JSON.parse(response.text.trim());
 };
 
-export const generateHashtags = async (topic: string, settings: AppSettings): Promise<string[]> => {
+export const generateCaption = async (carousel: Carousel, settings: AppSettings): Promise<string> => {
     const ai = getAiClient(settings.apiKey);
-    const prompt = `Generate a list of 20 relevant hashtags for a post about "${topic}". Do not include the '#' symbol.`;
-    const response = await ai.models.generateContent({
-        model: settings.aiModel,
-        contents: prompt,
-        config: {
-            responseMimeType: "application/json",
-            responseSchema: { type: Type.ARRAY, items: { type: Type.STRING } },
-        },
-    });
-    return JSON.parse(response.text.trim());
+    const carouselContent = carousel.slides.map((s, i) => `Slide ${i+1}: Headline: ${s.headline}, Body: ${s.body}`).join('\n');
+    const prompt = `You are an expert social media manager. Based on the following carousel content, write an engaging and compelling caption for a social media post (like Instagram or LinkedIn). The caption should summarize the key points and encourage engagement (e.g., asking a question). After the main caption, add a blank line, and then provide exactly 3 relevant, viral hashtags on a new line.\n\nCarousel Content:\n${carouselContent}`;
+    const response = await ai.models.generateContent({ model: settings.aiModel, contents: prompt });
+    return response.text.trim();
 };
 
 export const regenerateSlideContent = async (topic: string, slide: SlideData, partToRegenerate: 'headline' | 'body', settings: AppSettings): Promise<string> => {

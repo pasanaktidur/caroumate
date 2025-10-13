@@ -56,17 +56,19 @@ export const SlideCard: React.FC<{
             textTransform: style.textTransform,
         };
         if (style.fontSize) {
-            const baseRem = style.fontSize;
+            const maxRem = style.fontSize;
 
-            // Based on user request for mobile, let's set a floor.
+            // Set a hard minimum font size for mobile readability.
             const minRem = type === 'headline' ? 0.75 : 0.6; // 12px for headline, 9.6px for body
 
-            // A simple, scalable preferred value that grows with viewport width.
-            const preferredVw = type === 'headline' ? '2.5vw' : '1.5vw';
-            const preferredValue = `calc(${minRem}rem + ${preferredVw})`;
+            // Calculate a responsive preferred value. 
+            // This is designed to scale the font size smoothly between the min and max rems,
+            // typically reaching the max size around a 1200px viewport width.
+            // The formula is derived from (maxRem * 16px/rem) / 1200px-viewport * 100vw = (maxRem * 4/3)vw
+            const preferredVw = maxRem * (4 / 3);
             
-            // Use clamp() to smoothly scale the font size between a mobile-friendly minimum, a responsive preferred value, and the user's configured maximum size.
-            cssStyle.fontSize = `clamp(${minRem}rem, ${preferredValue}, ${baseRem}rem)`;
+            // Use clamp() to ensure the font size is fluid but stays within the defined min/max bounds.
+            cssStyle.fontSize = `clamp(${minRem}rem, ${preferredVw.toFixed(2)}vw, ${maxRem}rem)`;
         }
         if (style.textStroke && style.textStroke.width > 0 && style.textStroke.color) {
             const w = style.textStroke.width;

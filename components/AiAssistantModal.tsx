@@ -10,7 +10,9 @@ export const AiAssistantModal: React.FC<{
     settings: AppSettings;
     t: TFunction;
     parseError: (e: any) => string;
-}> = ({ topic, onClose, settings, t, parseError }) => {
+    onApplySuggestion: (suggestion: string, type: 'hook' | 'cta') => void;
+    selectedSlideId: string | null;
+}> = ({ topic, onClose, settings, t, parseError, onApplySuggestion, selectedSlideId }) => {
     const [isLoading, setIsLoading] = React.useState(false);
     const [suggestions, setSuggestions] = React.useState<string[]>([]);
     const [category, setCategory] = React.useState<'hook' | 'cta' | null>(null);
@@ -48,11 +50,27 @@ export const AiAssistantModal: React.FC<{
                     ) : error ? (
                          <div className="text-red-600 dark:text-red-400">{error}</div>
                     ) : suggestions.length > 0 ? (
-                        <ul className="space-y-3">
-                            {suggestions.map((s, i) => (
-                                <li key={i} className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-md text-gray-700 dark:text-gray-300">{s}</li>
-                            ))}
-                        </ul>
+                        <>
+                            <ul className="space-y-3">
+                                {suggestions.map((s, i) => (
+                                    <li key={i} className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-md text-gray-700 dark:text-gray-300 flex items-center justify-between gap-4">
+                                        <span className="flex-grow">{s}</span>
+                                        <button
+                                            onClick={() => onApplySuggestion(s, category!)}
+                                            disabled={!selectedSlideId}
+                                            className="flex-shrink-0 ml-4 px-3 py-1 text-xs font-semibold text-primary-700 dark:text-primary-200 bg-primary-100 dark:bg-primary-900/50 rounded-md hover:bg-primary-200 dark:hover:bg-primary-800/50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            {t('assistantApplyButton')}
+                                        </button>
+                                    </li>
+                                ))}
+                            </ul>
+                            {!selectedSlideId && (
+                                <p className="mt-4 text-xs text-center text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/20 p-2 rounded-md">
+                                    {t('assistantApplyHint')}
+                                </p>
+                            )}
+                        </>
                     ) : (
                         <div className="text-center py-8 text-gray-500 dark:text-gray-400">{t('assistantEmpty')}</div>
                     )}

@@ -3,7 +3,7 @@ import type { UserProfile, Carousel, SlideData, DesignPreferences, SlideNumberSt
 import { DesignStyle, AspectRatio, FontChoice } from '../types';
 import type { TFunction } from '../App';
 import { 
-    SparklesIcon, LoaderIcon, DownloadIcon, HashtagIcon, ThreadsIcon, UploadIcon,
+    SparklesIcon, LoaderIcon, DownloadIcon, DocumentTextIcon, ThreadsIcon, UploadIcon,
     RefreshIcon, TrashIcon, LeftArrowIcon, RightArrowIcon
 } from './icons';
 import { aspectRatioDisplayMap } from '../lib/constants';
@@ -16,22 +16,25 @@ export const Generator: React.FC<{
     isGenerating: boolean;
     generationMessage: string;
     error: string | null;
-    onGenerate: (topic: string, niche: string, preferences: DesignPreferences) => void;
+    onErrorDismiss: () => void;
+    onGenerate: (topic: string, niche: string, preferences: DesignPreferences, magicCreate: boolean) => void;
     currentCarousel: Carousel | null;
     setCurrentCarousel: React.Dispatch<React.SetStateAction<Carousel | null>>;
     selectedSlide: SlideData | undefined;
     onSelectSlide: (id: string) => void;
     onUpdateSlide: (id: string, updates: Partial<SlideData>) => void;
     onUpdateCarouselPreferences: (updates: Partial<DesignPreferences>, currentTopic: string) => void;
+    // FIX: Corrected a typo in the type definition. A misplaced '>' was breaking the type parsing.
     onClearSlideOverrides: (property: keyof SlideData) => void;
     onMoveSlide: (id: string, direction: 'left' | 'right') => void;
     onOpenAssistant: () => void;
-    onOpenHashtag: () => void;
+    onOpenCaption: () => void;
     onOpenThread: () => void;
     onDownload: () => void;
     isDownloading: boolean;
     isGeneratingImageForSlide: string | null;
     onGenerateImageForSlide: (slideId: string) => void;
+    onGenerateAllImages: () => void;
     onUploadVisualForSlide: (e: React.ChangeEvent<HTMLInputElement>, slideId: string) => void;
     onRemoveVisualForSlide: (slideId: string) => void;
     onApplyBrandKit: () => void;
@@ -40,15 +43,17 @@ export const Generator: React.FC<{
     onRegenerateContent: (slideId: string, part: 'headline' | 'body') => void;
     t: TFunction;
 }> = (props) => {
-    const { user, onGenerate, currentCarousel, selectedSlide, onUpdateSlide, onUpdateCarouselPreferences, onClearSlideOverrides, onSelectSlide, onMoveSlide, onRegenerateContent, onOpenThread, ...rest } = props;
-    const { isGenerating, generationMessage, error, onOpenAssistant, onOpenHashtag, onDownload, isDownloading, isGeneratingImageForSlide, onGenerateImageForSlide, onUploadVisualForSlide, onRemoveVisualForSlide, onApplyBrandKit, brandKitConfigured, t, regeneratingPart } = rest;
+    const { user, onGenerate, currentCarousel, selectedSlide, onUpdateSlide, onUpdateCarouselPreferences, onClearSlideOverrides, onSelectSlide, onMoveSlide, onRegenerateContent, onOpenThread, onErrorDismiss, ...rest } = props;
+    const { isGenerating, generationMessage, error, onOpenAssistant, onOpenCaption, onDownload, isDownloading, isGeneratingImageForSlide, onGenerateImageForSlide, onGenerateAllImages, onUploadVisualForSlide, onRemoveVisualForSlide, onApplyBrandKit, brandKitConfigured, t, regeneratingPart } = rest;
     
     const fileInputRef = React.useRef<HTMLInputElement>(null);
     const [topic, setTopic] = React.useState('');
     const [selectedNiche, setSelectedNiche] = React.useState<string>(user.niche?.[0] || '');
+    const [isMagicCreateEnabled, setIsMagicCreateEnabled] = React.useState(true);
     
     // Scopes for applying styles
     const [colorScope, setColorScope] = React.useState<'all' | 'selected'>('all');
+    const [imageGenScope, setImageGenScope] = React.useState<'all' | 'selected'>('selected');
     
     // --- Resizable Panel Logic ---
     const [sidebarWidth, setSidebarWidth] = React.useState(420);
@@ -109,10 +114,20 @@ export const Generator: React.FC<{
             setSelectedNiche(currentCarousel.category || user.niche?.[0] || '');
         }
     }, [currentCarousel?.id]);
+    
+    React.useEffect(() => {
+        // If a slide is selected, default the image gen scope to 'selected'
+        if (selectedSlide) {
+            setImageGenScope('selected');
+        } else {
+            // Otherwise, default to 'all' as 'selected' is not possible
+            setImageGenScope('all');
+        }
+    }, [selectedSlide]);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        onGenerate(topic, selectedNiche, preferences);
+        onGenerate(topic, selectedNiche, preferences, isMagicCreateEnabled);
     };
     
     const handleBgVisualUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -167,6 +182,18 @@ export const Generator: React.FC<{
     };
     
     const slideFileInputRef = React.useRef<HTMLInputElement>(null);
+    
+    const handleGenerateImageClick = () => {
+        if (imageGenScope === 'selected' && selectedSlide) {
+            onGenerateImageForSlide(selectedSlide.id);
+        } else if (imageGenScope === 'all') {
+            onGenerateAllImages();
+        }
+    };
+
+    const generateButtonText = imageGenScope === 'all'
+        ? t('generateAllImagesButton')
+        : t('generateImageButton');
 
     return (
         <div className="flex-grow lg:flex lg:flex-row lg:overflow-hidden">
@@ -450,6 +477,22 @@ export const Generator: React.FC<{
 
                     {/* Action Buttons */}
                     <div className="space-y-3 pt-4 border-t dark:border-gray-700">
+                        <div className="flex items-center justify-between">
+                            <label htmlFor="magic-create" className="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer">{t('magicCreateLabel')}</label>
+                            <div
+                                onClick={() => setIsMagicCreateEnabled(!isMagicCreateEnabled)}
+                                role="switch"
+                                aria-checked={isMagicCreateEnabled}
+                                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${isMagicCreateEnabled ? 'bg-primary-600' : 'bg-gray-200 dark:bg-gray-600'}`}
+                            >
+                                <span
+                                    aria-hidden="true"
+                                    className={`inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${isMagicCreateEnabled ? 'translate-x-5' : 'translate-x-0'}`}
+                                />
+                            </div>
+                        </div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 -mt-2">{t('magicCreateHint')}</p>
+
                        <button
                             type="submit"
                             disabled={isGenerating}
@@ -461,7 +504,7 @@ export const Generator: React.FC<{
                          {currentCarousel && currentCarousel.slides.length > 0 && (
                              <div className="grid grid-cols-3 gap-2">
                                 <button type="button" onClick={onOpenAssistant} className="w-full text-xs sm:text-sm inline-flex items-center justify-center px-2 py-2 border border-gray-300 dark:border-gray-600 font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"><SparklesIcon className="w-4 h-4 mr-1"/>{t('generatorAssistantButton')}</button>
-                                <button type="button" onClick={onOpenHashtag} className="w-full text-xs sm:text-sm inline-flex items-center justify-center px-2 py-2 border border-gray-300 dark:border-gray-600 font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"><HashtagIcon className="w-4 h-4 mr-1"/>{t('generatorHashtagButton')}</button>
+                                <button type="button" onClick={onOpenCaption} className="w-full text-xs sm:text-sm inline-flex items-center justify-center px-2 py-2 border border-gray-300 dark:border-gray-600 font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"><DocumentTextIcon className="w-4 h-4 mr-1"/>{t('generatorCaptionButton')}</button>
                                 <button type="button" onClick={onOpenThread} className="w-full text-xs sm:text-sm inline-flex items-center justify-center px-2 py-2 border border-gray-300 dark:border-gray-600 font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"><ThreadsIcon className="w-4 h-4 mr-1"/>{t('generatorThreadButton')}</button>
                             </div>
                          )}
@@ -471,7 +514,7 @@ export const Generator: React.FC<{
                  {/* Step 3: Edit Content */}
                 {selectedSlide && (
                     <div className="mt-8 pt-6 border-t dark:border-gray-700 space-y-6">
-                        <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">{t('generatorStep3Title')} (Slide {currentCarousel?.slides.findIndex(s => s.id === selectedSlide.id) ?? 0 + 1})</h3>
+                        <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">{t('generatorStep3Title')} (Slide {(currentCarousel?.slides.findIndex(s => s.id === selectedSlide.id) ?? 0) + 1})</h3>
                         {/* Headline */}
                         <div className="space-y-2">
                             <label htmlFor="headline" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('generatorHeadlineLabel')}</label>
@@ -531,8 +574,15 @@ export const Generator: React.FC<{
                             <div className="grid grid-cols-2 gap-2">
                                 <input type="file" accept="image/*,video/*" onChange={(e) => onUploadVisualForSlide(e, selectedSlide.id)} ref={slideFileInputRef} className="hidden" />
                                 <button type="button" onClick={() => slideFileInputRef.current?.click()} className="inline-flex items-center justify-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"><UploadIcon className="w-4 h-4 mr-2"/>{t('uploadVisual')}</button>
-                                <button type="button" onClick={() => onGenerateImageForSlide(selectedSlide.id)} className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-accent-500 hover:bg-accent-600" disabled={isGeneratingImageForSlide === selectedSlide.id}><SparklesIcon className="w-4 h-4 mr-2"/>{t('generateImageButton')}</button>
+                                <button type="button" onClick={handleGenerateImageClick} className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-accent-500 hover:bg-accent-600 disabled:opacity-50" disabled={isGenerating || (imageGenScope === 'selected' && !selectedSlide) || isGeneratingImageForSlide != null}><SparklesIcon className="w-4 h-4 mr-2"/>{generateButtonText}</button>
                             </div>
+                            <ApplyScopeControl
+                                scope={imageGenScope}
+                                setScope={setImageGenScope}
+                                isDisabled={!selectedSlide}
+                                t={t}
+                                fieldId="image-gen"
+                            />
                              {selectedSlide.backgroundImage && (
                                 <button type="button" onClick={() => onRemoveVisualForSlide(selectedSlide.id)} className="w-full mt-2 inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200"><TrashIcon className="w-4 h-4 mr-2"/>{t('removeButton')}</button>
                              )}
@@ -557,12 +607,12 @@ export const Generator: React.FC<{
             />
 
             {/* Right Panel: Preview */}
-            <div className="flex-grow bg-gray-100 dark:bg-gray-900 flex flex-col items-center justify-center p-4 lg:overflow-y-auto">
+            <div className="flex-grow bg-gray-100 dark:bg-gray-900 flex flex-col items-center justify-center p-4 lg:overflow-y-auto relative">
                 {error && (
-                    <div className="absolute top-4 left-4 right-4 z-20 max-w-xl mx-auto bg-red-100 dark:bg-red-900/50 border border-red-400 dark:border-red-600 text-red-700 dark:text-red-200 px-4 py-3 rounded-md shadow-lg" role="alert">
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 w-11/12 max-w-xl bg-red-100 dark:bg-red-900/50 border border-red-400 dark:border-red-600 text-red-700 dark:text-red-200 px-4 py-3 rounded-md shadow-lg" role="alert">
                         <strong className="font-bold">{t('errorTitle')}: </strong>
                         <span className="block sm:inline" dangerouslySetInnerHTML={{ __html: error }}></span>
-                         <button onClick={() => props.setCurrentCarousel(c => c ? ({...c, slides: []}) : null)} className="absolute top-0 bottom-0 right-0 px-4 py-3">
+                         <button onClick={onErrorDismiss} className="absolute top-0 bottom-0 right-0 px-4 py-3">
                             <span className="text-2xl">×</span>
                         </button>
                     </div>

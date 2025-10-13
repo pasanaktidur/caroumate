@@ -139,28 +139,30 @@ app.post('/api/get-assistance', async (req, res) => {
     res.json(JSON.parse(response.text.trim()));
 });
 
-// 4. Generate Hashtags
-app.post('/api/generate-hashtags', async (req, res) => {
-    const { topic, settings } = req.body;
-    if (!topic || !settings) {
-        return res.status(400).json({ error: 'Missing topic or settings.' });
+// 4. Generate Caption from Carousel
+app.post('/api/generate-caption', async (req, res) => {
+    const { carousel, settings } = req.body;
+    if (!carousel || !settings) {
+        return res.status(400).json({ error: 'Missing carousel or settings.' });
     }
 
-    const prompt = `Generate a list of 20 relevant and effective social media hashtags for a post about "${topic}". Include a mix of broad, niche, and community-specific hashtags. Do not include the '#' symbol in your response.`;
+    const carouselContent = carousel.slides.map((s, i) => `Slide ${i+1}: Headline: ${s.headline}, Body: ${s.body}`).join('\n');
+    const prompt = `You are an expert social media manager. Based on the following carousel content, write an engaging and compelling caption for a social media post (like Instagram or LinkedIn). The caption should summarize the key points and encourage engagement (e.g., asking a question). After the main caption, add a blank line, and then provide exactly 3 relevant, viral hashtags on a new line.\n\nCarousel Content:\n${carouselContent}`;
     
     const response = await ai.models.generateContent({
         model: settings.aiModel,
         contents: prompt,
         config: {
             systemInstruction: settings.systemPrompt,
-            responseMimeType: "application/json",
-            responseSchema: {
-                type: Type.ARRAY,
-                items: { type: Type.STRING }
-            },
         },
     });
-    res.json(JSON.parse(response.text.trim()));
+
+    const text = response.text;
+    if (!text) {
+        return res.status(500).json({ error: 'AI returned an empty response for caption generation.', details: response });
+    }
+
+    res.json({ caption: text.trim() });
 });
 
 // 5. Regenerate Slide Content
