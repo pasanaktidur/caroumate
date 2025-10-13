@@ -89,22 +89,19 @@ app.post('/api/generate-image', async (req, res) => {
             return res.status(400).json({ error: 'Missing prompt or aspectRatio.' });
         }
 
-        const fullPrompt = `${prompt}. The image should have an aspect ratio of ${aspectRatio}.`;
-
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash-image',
-            contents: {
-                parts: [{ text: fullPrompt }]
-            },
+        // FIX: Switched to the correct generateImages API with the 'imagen-4.0-generate-001' model for image generation.
+        const response = await ai.models.generateImages({
+            model: 'imagen-4.0-generate-001',
+            prompt: prompt,
             config: {
-                responseModalities: [Modality.IMAGE, Modality.TEXT], // Must include both Modality.IMAGE and Modality.TEXT
+              numberOfImages: 1,
+              outputMimeType: 'image/png',
+              aspectRatio: aspectRatio,
             },
         });
 
-        for (const part of response.candidates[0].content.parts) {
-            if (part.inlineData) {
-                return res.json({ imageBase64: part.inlineData.data });
-            }
+        if (response.generatedImages && response.generatedImages.length > 0) {
+            return res.json({ imageBase64: response.generatedImages[0].image.imageBytes });
         }
         
         console.warn('AI did not return a valid image', response);

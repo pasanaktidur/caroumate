@@ -45,23 +45,20 @@ export const generateCarouselContent = async (
 export const generateImage = async (prompt: string, aspectRatio: AspectRatio, settings: AppSettings): Promise<string> => {
     const ai = getAiClient(settings.apiKey);
 
-    const fullPrompt = `${prompt}. The image should have an aspect ratio of ${aspectRatio}.`;
-
-    const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash-image',
-        contents: {
-            parts: [{ text: fullPrompt }]
-        },
+    // FIX: Switched to the correct generateImages API with the 'imagen-4.0-generate-001' model for image generation as per guidelines.
+    const response = await ai.models.generateImages({
+        model: 'imagen-4.0-generate-001',
+        prompt: prompt,
         config: {
-            responseModalities: [Modality.IMAGE, Modality.TEXT], // Must include both Modality.IMAGE and Modality.TEXT
+          numberOfImages: 1,
+          outputMimeType: 'image/png',
+          aspectRatio: aspectRatio,
         },
     });
 
-    for (const part of response.candidates[0].content.parts) {
-        if (part.inlineData) {
-            const base64ImageBytes: string = part.inlineData.data;
-            return `data:image/png;base64,${base64ImageBytes}`;
-        }
+    if (response.generatedImages && response.generatedImages.length > 0) {
+        const base64ImageBytes: string = response.generatedImages[0].image.imageBytes;
+        return `data:image/png;base64,${base64ImageBytes}`;
     }
 
     throw new Error("AI did not return an image from your prompt.");
