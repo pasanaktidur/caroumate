@@ -42,27 +42,26 @@ export const generateCarouselContent = async (
     return json;
 };
 
-export const generateImage = async (prompt: string, aspectRatio: AspectRatio, settings: AppSettings): Promise<string> => {
-    // Per user request, use a specific system API key for all visual generation.
-    const ai = new GoogleGenAI({ apiKey: "AIzaSyBCTIl3_5qMhSVqhlMKiA5-KON5PdioeA4" });
-
-    // FIX: Switched to the correct generateImages API with the 'imagen-4.0-generate-001' model for image generation as per guidelines.
-    const response = await ai.models.generateImages({
-        model: 'imagen-4.0-generate-001',
-        prompt: prompt,
-        config: {
-          numberOfImages: 1,
-          outputMimeType: 'image/png',
-          aspectRatio: aspectRatio,
+export const generateImage = async (prompt: string, aspectRatio: AspectRatio): Promise<string> => {
+    const response = await fetch('http://localhost:3001/api/generate-image', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
         },
+        body: JSON.stringify({ prompt, aspectRatio }),
     });
 
-    if (response.generatedImages && response.generatedImages.length > 0) {
-        const base64ImageBytes: string = response.generatedImages[0].image.imageBytes;
-        return `data:image/png;base64,${base64ImageBytes}`;
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to generate image from backend.');
     }
 
-    throw new Error("AI did not return an image from your prompt.");
+    const data = await response.json();
+    if (data.imageBase64) {
+        return `data:image/png;base64,${data.imageBase64}`;
+    }
+
+    throw new Error("Backend did not return a valid image.");
 };
 
 export const getAiAssistance = async (topic: string, type: 'hook' | 'cta', settings: AppSettings): Promise<string[]> => {

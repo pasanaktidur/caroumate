@@ -299,7 +299,7 @@ export default function App() {
             setGenerationMessage(t('generatingImageMessage', { current: i + 1, total: carousel.slides.length }));
             setIsGeneratingImageForSlide(slide.id);
             try {
-                const imageUrl = await generateImage(slide.visual_prompt, carousel.preferences.aspectRatio, settings);
+                const imageUrl = await generateImage(slide.visual_prompt, carousel.preferences.aspectRatio);
                 // Create new slides array with the new image
                 const newSlides = updatedCarousel.slides.map(s => s.id === slide.id ? { ...s, backgroundImage: imageUrl } : s);
                 // Update the local carousel variable for the next iteration
@@ -368,7 +368,7 @@ export default function App() {
         setError(null);
     
         try {
-            const imageUrl = await generateImage(slide.visual_prompt, currentCarousel.preferences.aspectRatio, settings);
+            const imageUrl = await generateImage(slide.visual_prompt, currentCarousel.preferences.aspectRatio);
             handleUpdateSlide(slideId, { backgroundImage: imageUrl });
         } catch (err: any) {
             setError(parseAndDisplayError(err));
