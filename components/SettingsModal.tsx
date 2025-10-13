@@ -75,12 +75,12 @@ export const SettingsModal: React.FC<{
 
     return (
         <div className="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 p-4">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl p-6 max-w-2xl w-full max-h-[90vh] flex flex-col">
-                <div className="flex justify-between items-center mb-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden">
+                <div className="flex justify-between items-center px-6 pt-4 pb-4 flex-shrink-0">
                     <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200">{t('settingsTitle')}</h2>
                     <button onClick={onClose} className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">&times;</button>
                 </div>
-                <div className="flex-grow overflow-y-auto pr-2 space-y-6">
+                <div className="flex-grow overflow-y-auto px-6 space-y-6">
                     {/* AI Settings */}
                     <div>
                         <h3 className="text-lg font-semibold border-b pb-2 mb-3">AI</h3>
@@ -223,7 +223,7 @@ export const SettingsModal: React.FC<{
                     </div>
 
                 </div>
-                <div className="flex justify-end items-center mt-6 pt-4 border-t dark:border-gray-600">
+                <div className="flex justify-end items-center px-6 pt-4 pb-4 border-t dark:border-gray-600 flex-shrink-0">
                     <div className="flex space-x-2">
                         <button onClick={onClose} className="px-4 py-2 border rounded-md">{t('cancelButton')}</button>
                         <button onClick={handleSave} className="px-4 py-2 border border-transparent rounded-md text-white bg-primary-600 hover:bg-primary-700">
