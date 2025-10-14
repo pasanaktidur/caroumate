@@ -1,8 +1,10 @@
 import type { DesignPreferences, SlideData, AppSettings, AspectRatio, Carousel } from '../types';
 
+const BACKEND_URL = 'http://localhost:3001';
+
 // --- Helper function for backend calls ---
 async function fetchFromBackend(endpoint: string, body: object) {
-    const response = await fetch(endpoint, {
+    const response = await fetch(`${BACKEND_URL}${endpoint}`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
