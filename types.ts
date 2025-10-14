@@ -93,9 +93,9 @@ export interface Carousel {
 
 export type AppView = 'LOGIN' | 'PROFILE_SETUP' | 'DASHBOARD' | 'GENERATOR' | 'SETTINGS' | 'TUTORIAL';
 
-// FIX: Removed gemini-2.5-pro as it's not in the approved model list.
 export enum AIModel {
     GEMINI_2_5_FLASH = 'gemini-2.5-flash', // Fast and cost-effective for most tasks.
+    GEMINI_2_5_PRO = 'gemini-2.5-pro',     // The most capable model for complex tasks.
 }
 
 export interface AppSettings {
@@ -103,7 +103,6 @@ export interface AppSettings {
   apiKey: string;
   systemPrompt: string;
   brandKit?: BrandKit;
-  backendUrl?: string;
 }
 
 export type Language = 'en' | 'id';
