@@ -137,7 +137,7 @@ export const SettingsModal: React.FC<{
                                 className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
                             />
                             <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                                Only needed if you run the backend server separately. Leave blank if your hosting provider uses a proxy (e.g., Netlify redirects).
+                                For local development, this should typically be 'http://localhost:3001'. For deployed apps, leave blank if your hosting provider uses a proxy (e.g., Netlify redirects).
                             </p>
                         </div>
                     </div>
