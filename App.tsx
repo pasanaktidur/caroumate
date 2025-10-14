@@ -317,6 +317,12 @@ export default function App() {
 
     const handleGenerateCarousel = React.useCallback(async (topic: string, niche: string, preferences: DesignPreferences, magicCreate: boolean) => {
         if (!user) return;
+        
+        if (!settings.apiKey) {
+            setError(t('errorApiKeyNotConfigured'));
+            return;
+        }
+
         setIsGenerating(true);
         setError(null);
         setCurrentCarousel(null);
@@ -407,6 +413,11 @@ export default function App() {
     
         const slide = currentCarousel.slides.find(s => s.id === slideId);
         if (!slide) return;
+
+        if (!settings.apiKey) {
+            setError(t('errorApiKeyNotConfigured'));
+            return;
+        }
     
         setRegeneratingPart({ slideId, part });
         setError(null);
@@ -424,6 +435,14 @@ export default function App() {
     const handleGenerateCaption = async () => {
         if (!currentCarousel) return;
         setIsCaptionModalOpen(true);
+        
+        if (!settings.apiKey) {
+            setError(t('errorApiKeyNotConfigured'));
+            setIsGeneratingCaption(false);
+            setGeneratedCaption('');
+            return;
+        }
+
         setIsGeneratingCaption(true);
         setGeneratedCaption('');
         setError(null);
@@ -441,6 +460,14 @@ export default function App() {
     const handleGenerateThread = async () => {
         if (!currentCarousel) return;
         setIsThreadModalOpen(true);
+        
+        if (!settings.apiKey) {
+            setError(t('errorApiKeyNotConfigured'));
+            setIsGeneratingThread(false);
+            setGeneratedThread('');
+            return;
+        }
+
         setIsGeneratingThread(true);
         setGeneratedThread('');
         setError(null);

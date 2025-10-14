@@ -1,10 +1,24 @@
 import type { DesignPreferences, SlideData, AppSettings, AspectRatio, Carousel } from '../types';
 
 // --- Helper function for backend calls ---
+
+// Determine backend URL based on environment
+const isLocalhost = Boolean(
+  window.location.hostname === 'localhost' ||
+    // [::1] is the IPv6 localhost address.
+    window.location.hostname === '[::1]' ||
+    // 127.0.0.0/8 are considered localhost for IPv4.
+    window.location.hostname.match(
+      /^127(?:\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}$/
+    )
+);
+
+// If developing locally, point to the backend server. Otherwise, use a relative path.
+const BACKEND_URL = isLocalhost ? 'http://localhost:3001' : '';
+
 async function fetchFromBackend(endpoint: string, body: object) {
-    // The endpoint now starts with '/', making it a relative path from the domain root.
-    // This works for both local development (with a proxy) and deployed environments.
-    const response = await fetch(endpoint, {
+    const url = `${BACKEND_URL}${endpoint}`;
+    const response = await fetch(url, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -13,6 +27,10 @@ async function fetchFromBackend(endpoint: string, body: object) {
     });
 
     if (!response.ok) {
+        // Provide a more specific error for 404, which is common if the backend isn't running
+        if (response.status === 404) {
+            throw new Error(`Server endpoint not found at ${url}. Please ensure the backend server is running correctly.`);
+        }
         try {
             const errorData = await response.json();
             throw new Error(errorData.error || `Failed request to ${endpoint}`);
@@ -24,6 +42,7 @@ async function fetchFromBackend(endpoint: string, body: object) {
 
     return response.json();
 }
+
 
 // --- Service Functions (Frontend to Backend) ---
 

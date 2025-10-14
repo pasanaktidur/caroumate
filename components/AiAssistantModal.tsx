@@ -19,6 +19,11 @@ export const AiAssistantModal: React.FC<{
     const [error, setError] = React.useState<string | null>(null);
 
     const getSuggestions = async (type: 'hook' | 'cta') => {
+        if (!settings.apiKey) {
+            setError(t('errorApiKeyNotConfigured'));
+            return;
+        }
+
         setIsLoading(true);
         setError(null);
         setCategory(type);
