@@ -44,8 +44,8 @@ export const generateCarouselContent = async (
     return fetchFromBackend('/api/generate-content', { topic, niche, preferences, settings }, settings.backendUrl);
 };
 
-export const generateImage = async (prompt: string, aspectRatio: AspectRatio, backendUrl?: string): Promise<string> => {
-    const data = await fetchFromBackend('/api/generate-image', { prompt, aspectRatio }, backendUrl);
+export const generateImage = async (prompt: string, aspectRatio: AspectRatio, settings: AppSettings): Promise<string> => {
+    const data = await fetchFromBackend('/api/generate-image', { prompt, aspectRatio, settings }, settings.backendUrl);
     if (data.imageBase64) {
         return `data:image/png;base64,${data.imageBase64}`;
     }

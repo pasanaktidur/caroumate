@@ -299,7 +299,7 @@ export default function App() {
             setGenerationMessage(t('generatingImageMessage', { current: i + 1, total: carousel.slides.length }));
             setIsGeneratingImageForSlide(slide.id);
             try {
-                const imageUrl = await generateImage(slide.visual_prompt, carousel.preferences.aspectRatio, settings.backendUrl);
+                const imageUrl = await generateImage(slide.visual_prompt, carousel.preferences.aspectRatio, settings);
                 // Create new slides array with the new image
                 const newSlides = updatedCarousel.slides.map(s => s.id === slide.id ? { ...s, backgroundImage: imageUrl } : s);
                 // Update the local carousel variable for the next iteration
@@ -374,7 +374,7 @@ export default function App() {
         setError(null);
     
         try {
-            const imageUrl = await generateImage(slide.visual_prompt, currentCarousel.preferences.aspectRatio, settings.backendUrl);
+            const imageUrl = await generateImage(slide.visual_prompt, currentCarousel.preferences.aspectRatio, settings);
             handleUpdateSlide(slideId, { backgroundImage: imageUrl });
         } catch (err: any) {
             setError(parseAndDisplayError(err));
@@ -624,6 +624,19 @@ export default function App() {
         });
     };
     
+    // FIX: Moved handleClearSlideOverrides before handleApplyBrandKit to fix a hoisting-related reference error.
+    const handleClearSlideOverrides = (property: keyof SlideData) => {
+        setCurrentCarousel(prev => {
+            if (!prev) return null;
+            const updatedSlides = prev.slides.map(slide => {
+                const newSlide = { ...slide };
+                delete newSlide[property];
+                return newSlide;
+            });
+            return { ...prev, slides: updatedSlides };
+        });
+    };
+
     const handleApplyBrandKit = () => {
         if (!settings.brandKit) return;
     
@@ -647,18 +660,6 @@ export default function App() {
         
         handleClearSlideOverrides('backgroundColor');
         handleClearSlideOverrides('fontColor');
-    };
-
-    const handleClearSlideOverrides = (property: keyof SlideData) => {
-        setCurrentCarousel(prev => {
-            if (!prev) return null;
-            const updatedSlides = prev.slides.map(slide => {
-                const newSlide = { ...slide };
-                delete newSlide[property];
-                return newSlide;
-            });
-            return { ...prev, slides: updatedSlides };
-        });
     };
 
     const handleMoveSlide = (slideId: string, direction: 'left' | 'right') => {

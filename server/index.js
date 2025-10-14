@@ -33,14 +33,6 @@ const handleGeminiError = (error, res) => {
 };
 
 
-// --- Secure Image Generation API Key Pool ---
-const imageApiKeys = (process.env.IMAGE_API_KEYS || "").split(',').filter(Boolean);
-if (imageApiKeys.length === 0) {
-    console.error("FATAL ERROR: IMAGE_API_KEYS not found or empty in .env file. Image generation will fail. Please add at least one key.");
-}
-let currentImageApiKeyIndex = 0;
-
-
 // --- API Endpoints ---
 
 // 1. Generate Carousel Content (uses user's key)
@@ -83,24 +75,17 @@ app.post('/api/generate-content', async (req, res) => {
     }
 });
 
-// 2. Generate Image (uses server-side keys)
+// 2. Generate Image (uses user's key)
 app.post('/api/generate-image', async (req, res) => {
     try {
-        if (imageApiKeys.length === 0) {
-             return res.status(500).json({ error: 'Image generation is not configured on the server. Missing IMAGE_API_KEYS in .env file.' });
+        const { prompt, aspectRatio, settings } = req.body;
+        if (!prompt || !aspectRatio || !settings || !settings.apiKey) {
+            return res.status(400).json({ error: 'Missing prompt, aspectRatio, or API Key in settings.' });
         }
         
-        const apiKeyToUse = imageApiKeys[currentImageApiKeyIndex];
-        currentImageApiKeyIndex = (currentImageApiKeyIndex + 1) % imageApiKeys.length;
-        
-        const imageGenerationAi = new GoogleGenAI({ apiKey: apiKeyToUse });
+        const userAi = new GoogleGenAI({ apiKey: settings.apiKey });
 
-        const { prompt, aspectRatio } = req.body;
-        if (!prompt || !aspectRatio) {
-            return res.status(400).json({ error: 'Missing prompt or aspectRatio.' });
-        }
-
-        const response = await imageGenerationAi.models.generateImages({
+        const response = await userAi.models.generateImages({
             model: 'imagen-4.0-generate-001',
             prompt: prompt,
             config: {
@@ -118,9 +103,7 @@ app.post('/api/generate-image', async (req, res) => {
         return res.status(500).json({ error: "AI did not return an image from your prompt." });
 
     } catch (error) {
-        // This endpoint uses server keys, so the error is more generic to the user
-        console.error('Error in /api/generate-image:', error);
-        res.status(500).json({ error: 'Failed to generate image due to a server-side issue.', details: error.message });
+        handleGeminiError(error, res);
     }
 });
 
@@ -247,9 +230,4 @@ app.post('/api/generate-thread', async (req, res) => {
 
 app.listen(port, () => {
     console.log(`CarouMate backend server listening on http://localhost:${port}`);
-    if (imageApiKeys.length > 0) {
-        console.log(`Successfully loaded ${imageApiKeys.length} API key(s) for image generation.`);
-    } else {
-        console.log('WARNING: No API keys for image generation were found. Please create a .env file with your IMAGE_API_KEYS.');
-    }
 });

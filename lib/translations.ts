@@ -154,7 +154,8 @@ export const translations = {
     // SettingsModal
     settingsTitle: 'Settings',
     aiModelLabel: 'AI Model',
-    aiModelHint: "Choose the AI model. 'gemini-2.5-flash' is fast, while 'gemini-2.5-pro' is more powerful for complex content.",
+    // FIX: Updated hint to reflect that only one model is available.
+    aiModelHint: "The model 'gemini-2.5-flash' will be used for generation.",
     apiKeyLabel: 'Google AI API Key',
     apiKeyPlaceholder: 'Enter your Google AI API key',
     apiKeyHint: 'Your API key is stored securely in your browser and is required for all AI features.',
@@ -400,7 +401,8 @@ export const translations = {
     // SettingsModal
     settingsTitle: 'Pengaturan',
     aiModelLabel: 'Model AI',
-    aiModelHint: "Pilih model AI. 'gemini-2.5-flash' cepat, sedangkan 'gemini-2.5-pro' lebih kuat untuk konten yang kompleks.",
+    // FIX: Updated hint to reflect that only one model is available.
+    aiModelHint: "Model 'gemini-2.5-flash' akan digunakan untuk pembuatan konten.",
     apiKeyLabel: 'Kunci API Google AI',
     apiKeyPlaceholder: 'Masukkan kunci API Google AI Anda',
     apiKeyHint: 'Kunci API Anda disimpan dengan aman di browser Anda dan diperlukan untuk semua fitur AI.',
