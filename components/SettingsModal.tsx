@@ -83,7 +83,7 @@ export const SettingsModal: React.FC<{
                 <div className="flex-grow overflow-y-auto px-6 space-y-6">
                     {/* AI Settings */}
                     <div>
-                        <h3 className="text-lg font-semibold border-b pb-2 mb-3">AI</h3>
+                        <h3 className="text-lg font-semibold border-b pb-2 mb-3">AI & Server</h3>
                         {/* AI Model */}
                         <div>
                             <label htmlFor="aiModel" className="block text-sm font-medium">{t('aiModelLabel')}</label>
@@ -124,6 +124,21 @@ export const SettingsModal: React.FC<{
                                 rows={3}
                             />
                             <button onClick={() => setSettings({...settings, systemPrompt: defaultSettings.systemPrompt})} className="mt-1 text-xs text-primary-600 hover:underline">{t('setDefaultButton')}</button>
+                        </div>
+                        {/* Backend URL */}
+                        <div className="mt-4">
+                            <label htmlFor="backendUrl" className="block text-sm font-medium">Backend URL (Optional)</label>
+                            <input
+                                type="url"
+                                id="backendUrl"
+                                value={settings.backendUrl || ''}
+                                onChange={e => setSettings({ ...settings, backendUrl: e.target.value })}
+                                placeholder="http://localhost:3001"
+                                className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                            />
+                            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                Only needed if you run the backend server separately. Leave blank if your hosting provider uses a proxy (e.g., Netlify redirects).
+                            </p>
                         </div>
                     </div>
 

@@ -103,6 +103,7 @@ export interface AppSettings {
   apiKey: string;
   systemPrompt: string;
   brandKit?: BrandKit;
+  backendUrl?: string;
 }
 
 export type Language = 'en' | 'id';

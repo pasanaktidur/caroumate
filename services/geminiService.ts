@@ -2,22 +2,11 @@ import type { DesignPreferences, SlideData, AppSettings, AspectRatio, Carousel }
 
 // --- Helper function for backend calls ---
 
-// Determine backend URL based on environment
-const isLocalhost = Boolean(
-  window.location.hostname === 'localhost' ||
-    // [::1] is the IPv6 localhost address.
-    window.location.hostname === '[::1]' ||
-    // 127.0.0.0/8 are considered localhost for IPv4.
-    window.location.hostname.match(
-      /^127(?:\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}$/
-    )
-);
+async function fetchFromBackend(endpoint: string, body: object, backendUrl?: string) {
+    // Use the provided URL from settings, or a relative path as a fallback for proxy setups.
+    // The endpoint should always start with a '/'
+    const url = backendUrl ? `${backendUrl}${endpoint}` : endpoint;
 
-// If developing locally, point to the backend server. Otherwise, use a relative path.
-const BACKEND_URL = isLocalhost ? 'http://localhost:3001' : '';
-
-async function fetchFromBackend(endpoint: string, body: object) {
-    const url = `${BACKEND_URL}${endpoint}`;
     const response = await fetch(url, {
         method: 'POST',
         headers: {
@@ -29,7 +18,7 @@ async function fetchFromBackend(endpoint: string, body: object) {
     if (!response.ok) {
         // Provide a more specific error for 404, which is common if the backend isn't running
         if (response.status === 404) {
-            throw new Error(`Server endpoint not found at ${url}. Please ensure the backend server is running correctly.`);
+            throw new Error(`Server endpoint not found at ${url}. Please ensure the backend server is running correctly and the Backend URL in Settings is correct.`);
         }
         try {
             const errorData = await response.json();
@@ -52,11 +41,11 @@ export const generateCarouselContent = async (
     preferences: DesignPreferences,
     settings: AppSettings,
 ): Promise<Omit<SlideData, 'id'>[]> => {
-    return fetchFromBackend('/api/generate-content', { topic, niche, preferences, settings });
+    return fetchFromBackend('/api/generate-content', { topic, niche, preferences, settings }, settings.backendUrl);
 };
 
-export const generateImage = async (prompt: string, aspectRatio: AspectRatio): Promise<string> => {
-    const data = await fetchFromBackend('/api/generate-image', { prompt, aspectRatio });
+export const generateImage = async (prompt: string, aspectRatio: AspectRatio, backendUrl?: string): Promise<string> => {
+    const data = await fetchFromBackend('/api/generate-image', { prompt, aspectRatio }, backendUrl);
     if (data.imageBase64) {
         return `data:image/png;base64,${data.imageBase64}`;
     }
@@ -64,20 +53,20 @@ export const generateImage = async (prompt: string, aspectRatio: AspectRatio): P
 };
 
 export const getAiAssistance = async (topic: string, type: 'hook' | 'cta', settings: AppSettings): Promise<string[]> => {
-    return fetchFromBackend('/api/get-assistance', { topic, type, settings });
+    return fetchFromBackend('/api/get-assistance', { topic, type, settings }, settings.backendUrl);
 };
 
 export const generateCaption = async (carousel: Carousel, settings: AppSettings): Promise<string> => {
-    const data = await fetchFromBackend('/api/generate-caption', { carousel, settings });
+    const data = await fetchFromBackend('/api/generate-caption', { carousel, settings }, settings.backendUrl);
     return data.caption;
 };
 
 export const regenerateSlideContent = async (topic: string, slide: SlideData, partToRegenerate: 'headline' | 'body', settings: AppSettings): Promise<string> => {
-    const data = await fetchFromBackend('/api/regenerate-slide', { topic, slide, partToRegenerate, settings });
+    const data = await fetchFromBackend('/api/regenerate-slide', { topic, slide, partToRegenerate, settings }, settings.backendUrl);
     return data.newText;
 };
 
 export const generateThreadFromCarousel = async (carousel: Carousel, settings: AppSettings): Promise<string> => {
-    const data = await fetchFromBackend('/api/generate-thread', { carousel, settings });
+    const data = await fetchFromBackend('/api/generate-thread', { carousel, settings }, settings.backendUrl);
     return data.thread;
 };

@@ -292,14 +292,14 @@ export default function App() {
         }
     };
     
-    const executeImageGenerationForAllSlides = async (carousel: Carousel): Promise<Carousel> => {
+    const executeImageGenerationForAllSlides = async (carousel: Carousel, settings: AppSettings): Promise<Carousel> => {
         let updatedCarousel = carousel;
         for (let i = 0; i < carousel.slides.length; i++) {
             const slide = carousel.slides[i];
             setGenerationMessage(t('generatingImageMessage', { current: i + 1, total: carousel.slides.length }));
             setIsGeneratingImageForSlide(slide.id);
             try {
-                const imageUrl = await generateImage(slide.visual_prompt, carousel.preferences.aspectRatio);
+                const imageUrl = await generateImage(slide.visual_prompt, carousel.preferences.aspectRatio, settings.backendUrl);
                 // Create new slides array with the new image
                 const newSlides = updatedCarousel.slides.map(s => s.id === slide.id ? { ...s, backgroundImage: imageUrl } : s);
                 // Update the local carousel variable for the next iteration
@@ -350,7 +350,7 @@ export default function App() {
             setSelectedSlideId(initialSlides[0]?.id ?? null);
 
             if (magicCreate) {
-                const finalCarousel = await executeImageGenerationForAllSlides(newCarousel);
+                const finalCarousel = await executeImageGenerationForAllSlides(newCarousel, settings);
                 setCarouselHistory(prev => [finalCarousel, ...prev]);
             } else {
                  setCarouselHistory(prev => [newCarousel!, ...prev]);
@@ -374,7 +374,7 @@ export default function App() {
         setError(null);
     
         try {
-            const imageUrl = await generateImage(slide.visual_prompt, currentCarousel.preferences.aspectRatio);
+            const imageUrl = await generateImage(slide.visual_prompt, currentCarousel.preferences.aspectRatio, settings.backendUrl);
             handleUpdateSlide(slideId, { backgroundImage: imageUrl });
         } catch (err: any) {
             setError(parseAndDisplayError(err));
@@ -388,7 +388,7 @@ export default function App() {
         setIsGenerating(true);
         setError(null);
         try {
-            const finalCarousel = await executeImageGenerationForAllSlides(currentCarousel);
+            const finalCarousel = await executeImageGenerationForAllSlides(currentCarousel, settings);
             // Update history with the newly generated images
             setCarouselHistory(prev => {
                 const index = prev.findIndex(c => c.id === finalCarousel.id);

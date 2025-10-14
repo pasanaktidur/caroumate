@@ -12,6 +12,7 @@ export const defaultSettings: AppSettings = {
     aiModel: AIModel.GEMINI_2_5_FLASH,
     apiKey: '',
     systemPrompt: 'You are an expert social media content strategist specializing in creating viral carousels.',
+    backendUrl: '',
     brandKit: {
         colors: {
             primary: '#FFFFFF',
