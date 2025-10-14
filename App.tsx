@@ -125,23 +125,7 @@ export default function App() {
         }
     });
 
-    // --- Data Persistence Effects ---
-    React.useEffect(() => {
-        try {
-            if (user) {
-                localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
-            } else {
-                localStorage.removeItem(USER_STORAGE_KEY);
-            }
-        } catch (error) { console.error("Could not save user profile:", error); }
-    }, [user]);
-
-    React.useEffect(() => {
-        try {
-            localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(carouselHistory));
-        } catch (error) { console.error("Could not save carousel history:", error); }
-    }, [carouselHistory]);
-    
+    // FIX: Moved translation function `t` before the useEffect hooks that use it to prevent a "used before declaration" error.
     const handleLanguageChange = () => {
         setLanguage(lang => lang === 'en' ? 'id' : 'en');
     };
@@ -157,6 +141,69 @@ export default function App() {
         return text;
     }, [language]);
 
+    // --- Data Persistence Effects ---
+    React.useEffect(() => {
+        try {
+            if (user) {
+                localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
+            } else {
+                localStorage.removeItem(USER_STORAGE_KEY);
+            }
+        } catch (error) { console.error("Could not save user profile:", error); }
+    }, [user]);
+
+    React.useEffect(() => {
+        /**
+         * Saves the carousel history to localStorage.
+         * If a QuotaExceededError occurs, it recursively tries to save the history
+         * after removing the oldest carousel, ensuring the user's most recent work
+         * is preserved without crashing the app.
+         */
+        const saveHistoryWithAutoTrim = (historyToSave: Carousel[]) => {
+            // If nothing to save, just ensure the storage is cleared/empty array.
+            if (historyToSave.length === 0) {
+                try {
+                    localStorage.setItem(HISTORY_STORAGE_KEY, '[]');
+                } catch (e) {
+                    console.error("Could not clear carousel history:", e);
+                }
+                return;
+            }
+
+            try {
+                localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(historyToSave));
+            } catch (error: any) {
+                // Check for Quota Exceeded error in a cross-browser compatible way
+                if (
+                    error.name === 'QuotaExceededError' ||
+                    (error.code && (error.code === 22 || error.code === 1014)) || // DOMException codes for quota errors
+                    (error.message && error.message.toLowerCase().includes('quota'))
+                ) {
+                    console.warn(
+                        `LocalStorage quota exceeded. History has ${historyToSave.length} items. ` +
+                        `Removing the oldest carousel and retrying...`
+                    );
+                    // If there are still items to remove, recurse with a smaller array.
+                    if (historyToSave.length > 1) {
+                        // The history is prepended, so the oldest is at the end.
+                        saveHistoryWithAutoTrim(historyToSave.slice(0, -1)); 
+                    } else {
+                        // We are down to one item and it's still too big.
+                        console.error(
+                            "Could not save carousel history: The single most recent carousel is too large to fit in localStorage.",
+                            error
+                        );
+                        setError(t('errorHistoryTooLarge'));
+                    }
+                } else {
+                    console.error("Could not save carousel history due to an unknown error:", error);
+                }
+            }
+        };
+
+        saveHistoryWithAutoTrim(carouselHistory);
+    }, [carouselHistory, t]);
+    
     const parseAndDisplayError = React.useCallback((error: any): string => {
         let errorMessage = error.message || t('errorUnknown');
 
