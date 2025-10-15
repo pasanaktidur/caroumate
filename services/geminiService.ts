@@ -1,4 +1,4 @@
-import { GoogleGenAI, Type } from '@google/genai';
+import { GoogleGenAI, Type, Modality } from '@google/genai';
 import type { DesignPreferences, SlideData, AppSettings, AspectRatio, Carousel } from '../types';
 
 // --- Service Functions (Direct to Gemini API) ---
@@ -54,19 +54,29 @@ export const generateImage = async (prompt: string, aspectRatio: AspectRatio, se
     }
     const ai = new GoogleGenAI({ apiKey: settings.apiKey });
 
-    const response = await ai.models.generateImages({
-        model: 'imagen-4.0-generate-001',
-        prompt: prompt,
-        config: {
-            numberOfImages: 1,
-            outputMimeType: 'image/png',
-            aspectRatio: aspectRatio,
-        },
+    // Instruct the model on the desired aspect ratio within the prompt itself
+    const generationPrompt = `${prompt}. The image should have an aspect ratio of ${aspectRatio}.`;
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash-image',
+      contents: {
+        parts: [
+          {
+            text: generationPrompt,
+          },
+        ],
+      },
+      config: {
+          responseModalities: [Modality.IMAGE],
+      },
     });
 
-    if (response.generatedImages && response.generatedImages.length > 0) {
-        const imageBase64 = response.generatedImages[0].image.imageBytes;
-        return `data:image/png;base64,${imageBase64}`;
+    for (const part of response.candidates[0].content.parts) {
+      if (part.inlineData) {
+        const imageBase64 = part.inlineData.data;
+        const mimeType = part.inlineData.mimeType || 'image/png';
+        return `data:${mimeType};base64,${imageBase64}`;
+      }
     }
     
     throw new Error("AI did not return an image from your prompt.");
