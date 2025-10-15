@@ -49,7 +49,7 @@ export const Generator: React.FC<{
     const fileInputRef = React.useRef<HTMLInputElement>(null);
     const [topic, setTopic] = React.useState('');
     const [selectedNiche, setSelectedNiche] = React.useState<string>(user.niche?.[0] || '');
-    const [isMagicCreateEnabled, setIsMagicCreateEnabled] = React.useState(true);
+    const [isMagicCreateEnabled, setIsMagicCreateEnabled] = React.useState(false);
     
     // Scopes for applying styles
     const [colorScope, setColorScope] = React.useState<'all' | 'selected'>('all');
