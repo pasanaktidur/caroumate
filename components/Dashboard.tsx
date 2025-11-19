@@ -82,7 +82,7 @@ export const Dashboard: React.FC<{
     downloadCount: number;
     mostUsedCategory: string;
 }> = ({ onNewCarousel, onShowTutorial, history, onEdit, onDelete, onClearHistory, t, downloadCount, mostUsedCategory }) => (
-    <div className="container mx-auto p-4 sm:p-6 lg:p-8 max-w-7xl">
+    <div className="container mx-auto p-4 sm:p-6 lg:p-8 max-w-7xl pb-24 md:pb-8">
         {/* Header Section */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6">
             <div>
