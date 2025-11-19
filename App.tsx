@@ -3,7 +3,10 @@ import type { AppView, UserProfile, Carousel, SlideData, DesignPreferences, AppS
 import { AIModel } from './types';
 import html2canvas from 'html2canvas';
 import JSZip from 'jszip';
-import { generateCarouselContent, getAiAssistance, generateCaption, generateImage, regenerateSlideContent, generateThreadFromCarousel } from './services/geminiService';
+import { 
+    generateCarouselContent, getAiAssistance, generateCaption, generateImage, 
+    regenerateSlideContent, generateThreadFromCarousel, generateVideo, editImage, getDesignSuggestion 
+} from './services/geminiService';
 
 import { translations } from './lib/translations';
 import { SETTINGS_STORAGE_KEY, USER_STORAGE_KEY, HISTORY_STORAGE_KEY, DOWNLOADS_STORAGE_KEY, defaultSettings } from './lib/constants';
@@ -89,6 +92,7 @@ export default function App() {
     const [selectedSlideId, setSelectedSlideId] = React.useState<string | null>(null);
     const [isGenerating, setIsGenerating] = React.useState(false);
     const [isGeneratingImageForSlide, setIsGeneratingImageForSlide] = React.useState<string | null>(null);
+    const [isGeneratingVideoForSlide, setIsGeneratingVideoForSlide] = React.useState<string | null>(null);
     const [isDownloading, setIsDownloading] = React.useState(false);
     const [generationMessage, setGenerationMessage] = React.useState('');
     const [error, setError] = React.useState<string | null>(null);
@@ -102,6 +106,7 @@ export default function App() {
     const [isThreadModalOpen, setIsThreadModalOpen] = React.useState(false);
     const [isGeneratingThread, setIsGeneratingThread] = React.useState(false);
     const [generatedThread, setGeneratedThread] = React.useState('');
+    const [isSuggestingDesign, setIsSuggestingDesign] = React.useState(false);
 
     const [settings, setSettings] = React.useState<AppSettings>(() => {
         try {
@@ -125,7 +130,6 @@ export default function App() {
         }
     });
 
-    // FIX: Moved translation function `t` before the useEffect hooks that use it to prevent a "used before declaration" error.
     const handleLanguageChange = () => {
         setLanguage(lang => lang === 'en' ? 'id' : 'en');
     };
@@ -153,42 +157,43 @@ export default function App() {
     }, [user]);
 
     React.useEffect(() => {
-        /**
-         * Saves the carousel history to localStorage.
-         * If a QuotaExceededError occurs, it recursively tries to save the history
-         * after removing the oldest carousel, ensuring the user's most recent work
-         * is preserved without crashing the app.
-         */
         const saveHistoryWithAutoTrim = (historyToSave: Carousel[]) => {
-            // If nothing to save, just ensure the storage is cleared/empty array.
             if (historyToSave.length === 0) {
                 try {
                     localStorage.setItem(HISTORY_STORAGE_KEY, '[]');
-                } catch (e) {
-                    console.error("Could not clear carousel history:", e);
-                }
+                } catch (e) { console.error("Could not clear carousel history:", e); }
                 return;
             }
 
+            // Sanitize history to remove large base64 data before saving.
+            // This prevents localStorage quota errors from videos and large images.
+            // The user will need to regenerate these visuals when editing from history.
+            const sanitizedHistory = historyToSave.map(carousel => ({
+                ...carousel,
+                slides: carousel.slides.map(slide => {
+                    const newSlide = { ...slide };
+                    if (newSlide.backgroundImage && newSlide.backgroundImage.startsWith('data:video')) {
+                        delete newSlide.backgroundImage;
+                    }
+                    return newSlide;
+                })
+            }));
+
             try {
-                localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(historyToSave));
+                localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(sanitizedHistory));
             } catch (error: any) {
-                // Check for Quota Exceeded error in a cross-browser compatible way
                 if (
                     error.name === 'QuotaExceededError' ||
-                    (error.code && (error.code === 22 || error.code === 1014)) || // DOMException codes for quota errors
+                    (error.code && (error.code === 22 || error.code === 1014)) ||
                     (error.message && error.message.toLowerCase().includes('quota'))
                 ) {
                     console.warn(
-                        `LocalStorage quota exceeded. History has ${historyToSave.length} items. ` +
+                        `LocalStorage quota exceeded even after sanitization. History has ${historyToSave.length} items. ` +
                         `Removing the oldest carousel and retrying...`
                     );
-                    // If there are still items to remove, recurse with a smaller array.
                     if (historyToSave.length > 1) {
-                        // The history is prepended, so the oldest is at the end.
                         saveHistoryWithAutoTrim(historyToSave.slice(0, -1)); 
                     } else {
-                        // We are down to one item and it's still too big.
                         console.error(
                             "Could not save carousel history: The single most recent carousel is too large to fit in localStorage.",
                             error
@@ -360,6 +365,50 @@ export default function App() {
         }
         return updatedCarousel;
     };
+    
+    const executeVideoGenerationForAllSlides = async (carousel: Carousel, settings: AppSettings): Promise<void> => {
+        try {
+            const hasKey = await (window as any).aistudio?.hasSelectedApiKey();
+            if (!hasKey) {
+                await (window as any).aistudio?.openSelectKey();
+            }
+        } catch (e) {
+            console.error("AI Studio helper not available.", e);
+        }
+
+        let updatedCarousel = carousel;
+        for (let i = 0; i < carousel.slides.length; i++) {
+            const slide = carousel.slides[i];
+            setGenerationMessage(t('generatingVideoMessage') + ` (${i + 1}/${carousel.slides.length})`);
+            setIsGeneratingVideoForSlide(slide.id);
+            
+            try {
+                const videoUrl = await generateVideo(slide.visual_prompt, carousel.preferences.aspectRatio, settings);
+                
+                updatedCarousel = {
+                    ...updatedCarousel,
+                    slides: updatedCarousel.slides.map(s => s.id === slide.id ? { ...s, backgroundImage: videoUrl } : s)
+                };
+                setCurrentCarousel(updatedCarousel);
+                
+                setCarouselHistory(prev => {
+                    const index = prev.findIndex(c => c.id === updatedCarousel.id);
+                    if (index !== -1) {
+                        const newHistory = [...prev];
+                        newHistory[index] = updatedCarousel;
+                        return newHistory;
+                    }
+                    return prev;
+                });
+
+            } catch (err: any) {
+                 console.error(`Failed to generate video for slide ${i + 1}:`, err);
+            } finally {
+                setIsGeneratingVideoForSlide(null);
+            }
+        }
+        setGenerationMessage('');
+    };
 
 
     const handleGenerateCarousel = React.useCallback(async (topic: string, niche: string, preferences: DesignPreferences, magicCreate: boolean) => {
@@ -455,6 +504,26 @@ export default function App() {
         }
     };
 
+    const handleGenerateAllVideos = async () => {
+        if (!currentCarousel) return;
+        setIsGenerating(true);
+        setError(null);
+        try {
+            await executeVideoGenerationForAllSlides(currentCarousel, settings);
+        } catch (err: any) {
+             const parsedError = parseAndDisplayError(err);
+             if (parsedError.includes("Requested entity was not found.")) {
+                setError(t('errorVeoKeyNotFound'));
+            } else {
+                setError(parsedError);
+            }
+        } finally {
+            setIsGenerating(false);
+            setGenerationMessage('');
+            setIsGeneratingVideoForSlide(null);
+        }
+    };
+
     const handleRegenerateContent = async (slideId: string, part: 'headline' | 'body') => {
         if (!currentCarousel || regeneratingPart) return;
     
@@ -528,6 +597,76 @@ export default function App() {
         }
     };
 
+    const handleGenerateVideoForSlide = async (slideId: string) => {
+        if (!currentCarousel) return;
+        const slide = currentCarousel.slides.find(s => s.id === slideId);
+        if (!slide) return;
+
+        try {
+            const hasKey = await (window as any).aistudio?.hasSelectedApiKey();
+            if (!hasKey) {
+                await (window as any).aistudio?.openSelectKey();
+            }
+        } catch (e) {
+            console.error("AI Studio helper not available.", e);
+        }
+    
+        setIsGeneratingVideoForSlide(slideId);
+        setGenerationMessage(t('generatingVideoMessage'));
+        setError(null);
+    
+        try {
+            const videoUrl = await generateVideo(slide.visual_prompt, currentCarousel.preferences.aspectRatio, settings);
+            handleUpdateSlide(slideId, { backgroundImage: videoUrl });
+        } catch (err: any) {
+             const parsedError = parseAndDisplayError(err);
+            if (parsedError.includes("Requested entity was not found.")) {
+                setError(t('errorVeoKeyNotFound'));
+            } else {
+                setError(parsedError);
+            }
+        } finally {
+            setIsGeneratingVideoForSlide(null);
+            setGenerationMessage('');
+        }
+    };
+
+    const handleEditImageForSlide = async (slideId: string, editPrompt: string) => {
+        if (!currentCarousel || !editPrompt) return;
+        const slide = currentCarousel.slides.find(s => s.id === slideId);
+        if (!slide?.backgroundImage || !slide.backgroundImage.startsWith('data:image')) return;
+
+        setIsGeneratingImageForSlide(slideId);
+        setError(null);
+        
+        try {
+            const [meta, base64Data] = slide.backgroundImage.split(',');
+            const mimeType = meta.match(/:(.*?);/)?.[1] || 'image/png';
+            const newImageUrl = await editImage(base64Data, mimeType, editPrompt, settings);
+            handleUpdateSlide(slideId, { backgroundImage: newImageUrl });
+        } catch (err: any) {
+            setError(parseAndDisplayError(err));
+        } finally {
+            setIsGeneratingImageForSlide(null);
+        }
+    };
+    
+    const handleGetDesignSuggestion = async () => {
+        if (!currentCarousel) return;
+        
+        setIsSuggestingDesign(true);
+        setError(null);
+        
+        try {
+            const suggestion = await getDesignSuggestion(currentCarousel.title, currentCarousel.category, settings);
+            handleUpdateCarouselPreferences({ ...suggestion }, currentTopic);
+        } catch (err: any) {
+            setError(parseAndDisplayError(err));
+        } finally {
+            setIsSuggestingDesign(false);
+        }
+    };
+
     const handleDownloadCarousel = async () => {
         if (!currentCarousel) return;
         setIsDownloading(true);
@@ -549,47 +688,72 @@ export default function App() {
                 const slide = currentCarousel.slides.find(s => s.id === slideId);
                 if (!slide) continue;
 
+                // Store original styles to restore after capture
+                const originalTransform = element.style.transform;
+                const originalTransition = element.style.transition;
+                const originalBoxShadow = element.style.boxShadow;
+                const originalBorderRadius = element.style.borderRadius;
+
+                // Temporarily reset visual styles that shouldn't be in the download
+                // 1. transform: removes the hover/selection scale effect
+                // 2. boxShadow: removes the selection ring and drop shadows
+                // 3. borderRadius: ensures the exported image has square corners (professional standard)
+                // 4. transition: prevents capture of any active animations
+                element.style.transform = 'none';
+                element.style.transition = 'none';
+                element.style.boxShadow = 'none';
+                element.style.borderRadius = '0px';
+
                 const visualUrl = slide.backgroundImage ?? currentCarousel.preferences.backgroundImage;
                 const isVideo = visualUrl?.startsWith('data:video');
                 
                 if (isVideo) {
                     // Handle video slide
-                    // 1. Add video file to zip
                     const videoResponse = await fetch(visualUrl);
                     const videoBlob = await videoResponse.blob();
                     const extension = videoBlob.type.split('/')[1] || 'mp4';
                     zip.file(`slide-${i + 1}.${extension}`, videoBlob);
 
-                    // 2. Add transparent overlay PNG to zip
                     const videoElement = element.querySelector('video');
-                    if (videoElement) videoElement.style.visibility = 'hidden'; // Use visibility to keep layout
+                    if (videoElement) videoElement.style.visibility = 'hidden';
 
                     const overlayCanvas = await html2canvas(element, {
                         allowTaint: true,
                         useCORS: true,
-                        backgroundColor: null, // Transparent background
-                        scale: 8,
+                        backgroundColor: null,
+                        scale: 2,
                     });
                     const overlayBlob = await new Promise<Blob | null>(resolve => overlayCanvas.toBlob(resolve, 'image/png'));
                     if (overlayBlob) {
                         zip.file(`slide-${i + 1}_overlay.png`, overlayBlob);
                     }
 
-                    if (videoElement) videoElement.style.visibility = 'visible'; // Restore video visibility
+                    if (videoElement) videoElement.style.visibility = 'visible';
                 } else {
                     // Handle image slide
+                    // Use 1080px width as standard for FHD social media content
+                    const elementWidth = element.offsetWidth;
+                    const targetWidth = 1080; 
+                    const scaleFactor = targetWidth / elementWidth;
+
                     const finalBgColor = slide?.backgroundColor ?? currentCarousel.preferences.backgroundColor;
                     const canvas = await html2canvas(element, {
                         allowTaint: true,
                         useCORS: true,
                         backgroundColor: visualUrl ? null : finalBgColor,
-                        scale: 8,
+                        scale: scaleFactor, 
                     });
                     const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/png'));
                     if (blob) {
                         zip.file(`slide-${i + 1}.png`, blob);
                     }
                 }
+
+                // Restore original styles
+                element.style.transform = originalTransform;
+                element.style.transition = originalTransition;
+                element.style.boxShadow = originalBoxShadow;
+                element.style.borderRadius = originalBorderRadius;
             }
 
             const zipBlob = await zip.generateAsync({ type: "blob" });
@@ -618,7 +782,19 @@ export default function App() {
         setCurrentCarousel(prev => {
             if (!prev) return null;
             const updatedSlides = prev.slides.map(s => s.id === slideId ? { ...s, ...updates } : s);
-            return { ...prev, slides: updatedSlides };
+            const newCarousel = { ...prev, slides: updatedSlides };
+
+            setCarouselHistory(prevHistory => {
+                const index = prevHistory.findIndex(c => c.id === newCarousel.id);
+                if (index !== -1) {
+                    const newHistory = [...prevHistory];
+                    newHistory[index] = newCarousel;
+                    return newHistory;
+                }
+                return prevHistory;
+            });
+
+            return newCarousel;
         });
     };
     
@@ -641,7 +817,17 @@ export default function App() {
     const handleUpdateCarouselPreferences = (updates: Partial<DesignPreferences>, topicValue: string) => {
         setCurrentCarousel(prev => {
             if (prev) {
-                return { ...prev, preferences: { ...prev.preferences, ...updates } };
+                const newCarousel = { ...prev, preferences: { ...prev.preferences, ...updates } };
+                 setCarouselHistory(prevHistory => {
+                    const index = prevHistory.findIndex(c => c.id === newCarousel.id);
+                    if (index !== -1) {
+                        const newHistory = [...prevHistory];
+                        newHistory[index] = newCarousel;
+                        return newHistory;
+                    }
+                    return prevHistory;
+                });
+                return newCarousel;
             }
             return {
                 id: 'temp-' + crypto.randomUUID(),
@@ -650,7 +836,7 @@ export default function App() {
                 slides: [],
                 category: user?.niche[0] || 'General',
                 preferences: {
-                    ...defaultSettings.brandKit!, // This is not right, should be preferences.
+                    ...defaultSettings.brandKit!,
                     ...{
                         backgroundColor: '#FFFFFF',
                         fontColor: '#111827',
@@ -671,7 +857,6 @@ export default function App() {
         });
     };
     
-    // FIX: Moved handleClearSlideOverrides before handleApplyBrandKit to fix a hoisting-related reference error.
     const handleClearSlideOverrides = (property: keyof SlideData) => {
         setCurrentCarousel(prev => {
             if (!prev) return null;
@@ -786,8 +971,14 @@ export default function App() {
                     onDownload={handleDownloadCarousel}
                     isDownloading={isDownloading}
                     isGeneratingImageForSlide={isGeneratingImageForSlide}
+                    isGeneratingVideoForSlide={isGeneratingVideoForSlide}
                     onGenerateImageForSlide={handleGenerateImageForSlide}
+                    onGenerateVideoForSlide={handleGenerateVideoForSlide}
+                    onGenerateAllVideos={handleGenerateAllVideos}
+                    onEditImageForSlide={handleEditImageForSlide}
                     onGenerateAllImages={handleGenerateAllImages}
+                    onGetDesignSuggestion={handleGetDesignSuggestion}
+                    isSuggestingDesign={isSuggestingDesign}
                     onRegenerateContent={handleRegenerateContent}
                     onUploadVisualForSlide={handleUploadVisualForSlide}
                     onRemoveVisualForSlide={handleRemoveVisualForSlide}

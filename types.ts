@@ -41,7 +41,7 @@ export interface SlideNumberStyle {
 export interface DesignPreferences {
   backgroundColor: string;
   fontColor: string;
-  backgroundImage?: string;
+  backgroundImage?: string; // Can be an image or video data URL
   backgroundOpacity: number;
   style: DesignStyle;
   font: FontChoice;
@@ -74,7 +74,7 @@ export interface SlideData {
   // Per-slide style overrides
   backgroundColor?: string;
   fontColor?: string;
-  backgroundImage?: string;
+  backgroundImage?: string; // Can be an image or video data URL
   backgroundOpacity?: number;
   headlineStyle?: TextStyle;
   bodyStyle?: TextStyle;

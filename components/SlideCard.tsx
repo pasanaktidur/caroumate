@@ -100,9 +100,9 @@ export const SlideCard: React.FC<{
         let styleBgClass = '';
         switch (finalPrefs.style) {
             case DesignStyle.COLORFUL: styleBgClass = `bg-gradient-to-br from-pink-300 to-indigo-400`; break;
-            case DesignStyle.VINTAGE: styleBgClass = 'bg-yellow-50 dark:bg-yellow-900/20'; break;
-            case DesignStyle.MODERN: styleBgClass = 'bg-white dark:bg-gray-800'; break;
-            case DesignStyle.CORPORATE: styleBgClass = 'bg-white dark:bg-gray-800'; break;
+            case DesignStyle.VINTAGE: styleBgClass = 'bg-[#FDF6E3]'; break; // Explicit hex instead of utility
+            case DesignStyle.MODERN: styleBgClass = 'bg-white'; break;
+            case DesignStyle.CORPORATE: styleBgClass = 'bg-white'; break;
             case DesignStyle.ARTISTIC: styleBgClass = 'bg-gradient-to-br from-indigo-800 via-purple-900 to-slate-900'; break;
         }
     
@@ -113,38 +113,43 @@ export const SlideCard: React.FC<{
         return <div className="absolute inset-0 w-full h-full" style={{ backgroundColor: finalPrefs.backgroundColor }}></div>;
     }, [finalPrefs.backgroundImage, finalPrefs.style, finalPrefs.backgroundColor]);
     
-    const borderClasses = React.useMemo(() => {
+    const borderStyle = React.useMemo(() => {
         switch (finalPrefs.style) {
-            case DesignStyle.MINIMALIST: return '';
-            case DesignStyle.BOLD: return 'border-4 border-gray-900 dark:border-gray-200';
-            case DesignStyle.ELEGANT: return 'border border-gray-300 dark:border-gray-600 shadow-md dark:shadow-xl dark:shadow-black/20';
-            case DesignStyle.COLORFUL: return `border-4 border-transparent`;
-            case DesignStyle.VINTAGE: return 'border-2 border-yellow-800 dark:border-yellow-600';
-            case DesignStyle.MODERN: return 'border-b-4 border-gray-300 dark:border-gray-600';
-            case DesignStyle.CORPORATE: return 'border-l-4 border-blue-600 dark:border-blue-400';
-            case DesignStyle.ARTISTIC: return '';
-            default: return 'border border-gray-200 dark:border-gray-700';
+            case DesignStyle.BOLD: return { borderWidth: '4px', borderColor: finalPrefs.fontColor, borderStyle: 'solid' };
+            case DesignStyle.ELEGANT: return { borderWidth: '1px', borderColor: '#e5e7eb', borderStyle: 'solid' };
+            case DesignStyle.VINTAGE: return { borderWidth: '2px', borderColor: '#854d0e', borderStyle: 'solid' };
+            case DesignStyle.MODERN: return { borderBottomWidth: '4px', borderColor: '#d1d5db', borderStyle: 'solid' };
+            case DesignStyle.CORPORATE: return { borderLeftWidth: '4px', borderColor: '#2563eb', borderStyle: 'solid' };
+            default: return { borderWidth: '0px' };
         }
-    }, [finalPrefs.style]);
+    }, [finalPrefs.style, finalPrefs.fontColor]);
     
     const isArtistic = finalPrefs.style === DesignStyle.ARTISTIC;
 
     const containerStyle: React.CSSProperties = {
         color: isArtistic ? '#FFFFFF' : finalPrefs.fontColor,
         backgroundColor: 'transparent',
+        ...borderStyle
     };
 
     return (
         <div
             data-carousel-slide={slide.id}
             onClick={onClick}
-            className={`w-64 sm:w-72 flex-shrink-0 relative rounded-lg cursor-pointer transition-all duration-300 transform overflow-hidden ${borderClasses} ${font} ${aspectRatioClass} ${isSelected ? 'ring-4 ring-primary-500 ring-offset-2 scale-105 shadow-2xl shadow-primary-600/50' : 'hover:scale-102'}`}
+            className={`
+                w-64 sm:w-72 flex-shrink-0 relative rounded-2xl cursor-pointer transition-all duration-300 transform overflow-hidden 
+                ${font} ${aspectRatioClass} 
+                ${isSelected 
+                    ? 'ring-[6px] ring-primary-500/50 ring-offset-2 ring-offset-gray-100 dark:ring-offset-gray-900 scale-105 shadow-2xl shadow-primary-900/20 z-10' 
+                    : 'hover:scale-102 hover:shadow-xl shadow-md'
+                }
+            `}
             style={containerStyle}
         >
             {isGeneratingImage && (
-                <div className="absolute inset-0 bg-black/60 rounded-md z-30 flex flex-col items-center justify-center space-y-2">
-                    <LoaderIcon className="w-12 h-12" />
-                    <span className="text-sm text-white">{t('generatingVisual')}</span>
+                <div className="absolute inset-0 bg-black/60 backdrop-blur-sm z-30 flex flex-col items-center justify-center space-y-2">
+                    <LoaderIcon className="w-12 h-12 text-white" />
+                    <span className="text-sm font-medium text-white">{t('generatingVisual')}</span>
                 </div>
             )}
             
@@ -156,8 +161,8 @@ export const SlideCard: React.FC<{
             {/* Content Wrapper */}
             <div className="absolute inset-0 flex flex-col justify-center items-center p-6 text-center overflow-hidden">
                 {/* Content Layer */}
-                <div className="z-10 flex flex-col items-center">
-                    <h2 className="font-bold leading-tight mb-4" style={{...headlineStyles, color: finalPrefs.headlineColor, lineHeight: '1.2' }}>{slide.headline}</h2>
+                <div className="z-10 flex flex-col items-center w-full">
+                    <h2 className="leading-tight mb-4" style={{...headlineStyles, color: finalPrefs.headlineColor, lineHeight: '1.2' }}>{slide.headline}</h2>
                     <p className="" style={{ ...bodyStyles, color: finalPrefs.bodyColor, lineHeight: '1.5', whiteSpace: 'pre-wrap' }}>{slide.body}</p>
                 </div>
             </div>
