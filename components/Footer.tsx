@@ -1,8 +1,8 @@
 import * as React from 'react';
 import { InstagramIcon, ThreadsIcon } from './icons';
 
-export const Footer: React.FC = () => (
-    <footer className="hidden md:block bg-gray-100 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 mt-auto">
+export const Footer: React.FC<{ className?: string }> = ({ className }) => (
+    <footer className={`${className ?? 'hidden md:block'} bg-gray-100 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 mt-auto flex-shrink-0 z-10 relative`}>
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <div className="flex justify-between items-center">
                 <p className="text-sm text-gray-500 dark:text-gray-400">&copy; {new Date().getFullYear()} CarouMate. All rights reserved.</p>

@@ -634,7 +634,7 @@ export const Generator: React.FC<{
             />
 
             {/* Right Panel: Preview */}
-            <div className="flex-grow bg-gray-100/50 dark:bg-gray-950 flex flex-col items-center justify-center p-6 lg:overflow-y-auto relative">
+            <div className="flex-grow bg-gray-100/50 dark:bg-gray-950 flex flex-col items-center justify-center p-6 pb-24 lg:pb-6 lg:overflow-y-auto relative">
                 {/* Canvas Background Pattern */}
                 <div className="absolute inset-0 bg-grid-pattern dark:bg-grid-pattern-dark opacity-[0.4] dark:opacity-[0.1] pointer-events-none"></div>
                 

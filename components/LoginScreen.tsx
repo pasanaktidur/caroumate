@@ -53,7 +53,7 @@ const SampleCarouselPreview: React.FC = () => {
 
 export const LoginScreen: React.FC<{ onLogin: () => void; t: TFunction; }> = ({ onLogin, t }) => {
     return (
-        <div className="bg-white dark:bg-gray-950 min-h-screen flex flex-col">
+        <div className="bg-white dark:bg-gray-950 min-h-full flex flex-col">
             <main className="flex-grow">
                 {/* Hero Section */}
                 <div className="relative overflow-hidden">
