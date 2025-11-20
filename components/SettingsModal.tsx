@@ -1,3 +1,4 @@
+
 import * as React from 'react';
 import type { AppSettings, BrandKit } from '../types';
 import { AIModel, FontChoice } from '../types';
@@ -73,6 +74,17 @@ export const SettingsModal: React.FC<{
         }));
     };
 
+    const getModelDisplayName = (model: string) => {
+        switch (model) {
+            case AIModel.GEMINI_2_5_FLASH:
+                return 'Gemini 2.5 Flash (Fast & Efficient)';
+            case AIModel.GEMINI_3_PRO:
+                return 'Gemini 3.0 Pro (Best Quality)';
+            default:
+                return model;
+        }
+    };
+
     return (
         <div className="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 p-4">
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl max-w-2xl w-full max-h-[75vh] flex flex-col overflow-hidden">
@@ -93,7 +105,7 @@ export const SettingsModal: React.FC<{
                                 onChange={e => setSettings({ ...settings, aiModel: e.target.value as AIModel })}
                                 className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md"
                             >
-                                {Object.values(AIModel).map(m => <option key={m} value={m}>{m}</option>)}
+                                {Object.values(AIModel).map(m => <option key={m} value={m}>{getModelDisplayName(m)}</option>)}
                             </select>
                             <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{t('aiModelHint')}</p>
                         </div>

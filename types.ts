@@ -1,3 +1,4 @@
+
 export type Position = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'top-center' | 'bottom-center';
 
 export interface BrandKit {
@@ -95,7 +96,7 @@ export type AppView = 'LOGIN' | 'PROFILE_SETUP' | 'DASHBOARD' | 'GENERATOR' | 'S
 
 export enum AIModel {
     GEMINI_2_5_FLASH = 'gemini-2.5-flash', // Fast and cost-effective for most tasks.
-    GEMINI_2_5_PRO = 'gemini-2.5-pro',     // The most capable model for complex tasks.
+    GEMINI_3_PRO = 'gemini-3-pro-preview', // The most capable model for complex tasks.
 }
 
 export interface AppSettings {
