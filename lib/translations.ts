@@ -1,3 +1,4 @@
+
 // --- TRANSLATIONS & I1N ---
 export const translations = {
   en: {
@@ -55,11 +56,11 @@ export const translations = {
 
     // Generator
     generator: 'Generator',
-    generatorStep1Title: '1. Enter Your Idea',
+    generatorStep1Title: 'Enter Your Idea',
     generatorTopicLabel: "What's your carousel about?",
     generatorTopicPlaceholder: "e.g., '5 tips for growing on Instagram in 2025'",
     generatorNicheGeneral: 'General',
-    generatorStep2Title: '2. Customize Your Design',
+    generatorStep2Title: 'Customize Your Design',
     generatorStyleLabel: 'Style',
     generatorAspectRatioLabel: 'Aspect Ratio',
     generatorFontLabel: 'Font',
@@ -83,7 +84,7 @@ export const translations = {
     generatorAssistantButton: 'AI Assistant',
     generatorCaptionButton: 'Generate Caption',
     generatorThreadButton: 'Convert to Thread',
-    generatorStep3Title: '3. Edit Your Content',
+    generatorStep3Title: 'Edit Your Content',
     generatorHeadlineLabel: 'Headline',
     generatorBodyLabel: 'Body Text',
     generatorVisualPromptLabel: 'Visual Prompt',
@@ -310,11 +311,11 @@ export const translations = {
 
     // Generator
     generator: 'Generator',
-    generatorStep1Title: '1. Masukkan Ide Anda',
+    generatorStep1Title: 'Masukkan Ide Anda',
     generatorTopicLabel: 'Tentang apa carousel Anda?',
     generatorTopicPlaceholder: "cth., '5 tips untuk berkembang di Instagram pada 2025'",
     generatorNicheGeneral: 'Umum',
-    generatorStep2Title: '2. Sesuaikan Desain Anda',
+    generatorStep2Title: 'Sesuaikan Desain Anda',
     generatorStyleLabel: 'Gaya',
     generatorAspectRatioLabel: 'Rasio Aspek',
     generatorFontLabel: 'Font',
@@ -338,7 +339,7 @@ export const translations = {
     generatorAssistantButton: 'Asisten AI',
     generatorCaptionButton: 'Buat Caption',
     generatorThreadButton: 'Ubah jadi Thread',
-    generatorStep3Title: '3. Edit Konten Anda',
+    generatorStep3Title: 'Edit Konten Anda',
     generatorHeadlineLabel: 'Judul',
     generatorBodyLabel: 'Teks Isi',
     generatorVisualPromptLabel: 'Prompt Visual',
