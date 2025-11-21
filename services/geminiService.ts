@@ -56,31 +56,31 @@ export const generateImage = async (prompt: string, aspectRatio: AspectRatio, se
     }
     const ai = new GoogleGenAI({ apiKey: settings.apiKey });
 
+    // Using Gemini 3.0 Pro Image (Banana Pro)
     const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-image-preview',
-      contents: {
-        parts: [
-          {
-            text: prompt,
-          },
-        ],
-      },
-      config: {
-          imageConfig: {
-              aspectRatio: aspectRatio,
-              imageSize: '1K',
-          }
-      },
+        model: 'gemini-3-pro-image-preview',
+        contents: {
+            parts: [{ text: prompt }],
+        },
+        config: {
+            imageConfig: {
+                aspectRatio: aspectRatio,
+                imageSize: '1K', // Default to 1K resolution
+            }
+        },
     });
 
-    for (const part of response.candidates[0].content.parts) {
-      if (part.inlineData) {
-        const imageBase64 = part.inlineData.data;
-        const mimeType = part.inlineData.mimeType || 'image/png';
-        return `data:${mimeType};base64,${imageBase64}`;
-      }
+    if (response.candidates && response.candidates.length > 0) {
+        for (const part of response.candidates[0].content.parts) {
+            if (part.inlineData) {
+                const imageBase64 = part.inlineData.data;
+                const mimeType = part.inlineData.mimeType || 'image/png';
+                return `data:${mimeType};base64,${imageBase64}`;
+            }
+        }
     }
     
+    console.warn('AI did not return a valid image', response);
     throw new Error("AI did not return an image from your prompt.");
 };
 
@@ -133,6 +133,7 @@ export const editImage = async (base64ImageData: string, mimeType: string, promp
     if (!settings.apiKey) throw new Error("API Key is not configured.");
     const ai = new GoogleGenAI({ apiKey: settings.apiKey });
 
+    // Using Gemini 3.0 Pro Image (Banana Pro) for editing
     const response = await ai.models.generateContent({
         model: 'gemini-3-pro-image-preview',
         contents: {
