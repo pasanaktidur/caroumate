@@ -56,20 +56,20 @@ export const generateImage = async (prompt: string, aspectRatio: AspectRatio, se
     }
     const ai = new GoogleGenAI({ apiKey: settings.apiKey });
 
-    // Instruct the model on the desired aspect ratio within the prompt itself
-    const generationPrompt = `${prompt}. The image should have an aspect ratio of ${aspectRatio}.`;
-
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash-image',
+      model: 'gemini-3-pro-image-preview',
       contents: {
         parts: [
           {
-            text: generationPrompt,
+            text: prompt,
           },
         ],
       },
       config: {
-          responseModalities: [Modality.IMAGE],
+          imageConfig: {
+              aspectRatio: aspectRatio,
+              imageSize: '1K',
+          }
       },
     });
 
@@ -134,15 +134,12 @@ export const editImage = async (base64ImageData: string, mimeType: string, promp
     const ai = new GoogleGenAI({ apiKey: settings.apiKey });
 
     const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash-image',
+        model: 'gemini-3-pro-image-preview',
         contents: {
             parts: [
                 { inlineData: { data: base64ImageData, mimeType: mimeType } },
                 { text: prompt },
             ],
-        },
-        config: {
-            responseModalities: [Modality.IMAGE],
         },
     });
 
