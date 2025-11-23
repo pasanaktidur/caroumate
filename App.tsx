@@ -12,7 +12,6 @@ import { translations } from './lib/translations';
 import { SETTINGS_STORAGE_KEY, USER_STORAGE_KEY, HISTORY_STORAGE_KEY, DOWNLOADS_STORAGE_KEY, defaultSettings } from './lib/constants';
 
 import { Header } from './components/Header';
-import { Sidebar } from './components/Sidebar';
 import { MobileFooter } from './components/MobileFooter';
 import { Footer } from './components/Footer';
 import { LoginScreen } from './components/LoginScreen';
@@ -1023,35 +1022,25 @@ export default function App() {
                 theme={theme}
                 onToggleTheme={toggleTheme}
                 t={t}
+                currentView={view}
+                onNavigate={(v) => {
+                    if (v === 'DASHBOARD') goToDashboard();
+                    else setView(v);
+                }}
             />
             
-            {/* Main Layout Container */}
-            <div className="flex flex-grow overflow-hidden relative">
+            {/* Main Layout Container - Flex Column to manage Header/Content/Footer */}
+            <div className="flex flex-col flex-grow overflow-hidden relative">
                 
-                {/* Sidebar - Desktop only */}
-                {user && user.profileComplete && (
-                    <Sidebar 
-                        currentView={view} 
-                        onNavigate={(v) => {
-                            if (v === 'DASHBOARD') goToDashboard();
-                            else setView(v);
-                        }}
-                        t={t} 
-                    />
+                {/* Scrollable Content Area */}
+                <main className={`flex-grow w-full relative flex flex-col transition-all duration-300 overflow-y-auto custom-scrollbar ${view === 'GENERATOR' ? 'lg:overflow-hidden' : ''}`}>
+                    {renderContent()}
+                </main>
+                
+                {/* Footer - Fixed at bottom of layout via Flexbox */}
+                {view !== 'GENERATOR' && (
+                    <Footer className={!user ? "block" : "hidden md:block"} />
                 )}
-
-                {/* Main Content Wrapper - Flex Column to manage Footer position */}
-                <div className="flex flex-col flex-grow w-full min-w-0 relative bg-gray-50 dark:bg-gray-950">
-                    {/* Scrollable Content Area */}
-                    <main className={`flex-grow w-full relative transition-all duration-300 overflow-y-auto custom-scrollbar ${view === 'GENERATOR' ? 'lg:overflow-hidden' : ''}`}>
-                        {renderContent()}
-                    </main>
-                    
-                    {/* Footer - Fixed at bottom of layout via Flexbox */}
-                    {view !== 'GENERATOR' && (
-                        <Footer className={!user ? "block" : "hidden md:block"} />
-                    )}
-                </div>
             </div>
 
             {/* Modals */}

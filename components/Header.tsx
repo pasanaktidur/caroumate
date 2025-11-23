@@ -1,7 +1,7 @@
 import * as React from 'react';
-import type { UserProfile, Language } from '../types';
+import type { UserProfile, Language, AppView } from '../types';
 import type { TFunction } from '../App';
-import { SparklesIcon, SettingsIcon, GiftIcon, LogoutIcon, MoonIcon, SunIcon } from './icons';
+import { SparklesIcon, SettingsIcon, GiftIcon, LogoutIcon, MoonIcon, SunIcon, HomeIcon } from './icons';
 
 export const Header: React.FC<{
     user: UserProfile | null;
@@ -13,7 +13,9 @@ export const Header: React.FC<{
     theme: 'light' | 'dark';
     onToggleTheme: () => void;
     t: TFunction;
-}> = ({ user, onLogout, onDashboard, onOpenSettings, language, onLanguageChange, theme, onToggleTheme, t }) => (
+    currentView?: AppView;
+    onNavigate?: (view: AppView) => void;
+}> = ({ user, onLogout, onDashboard, onOpenSettings, language, onLanguageChange, theme, onToggleTheme, t, currentView, onNavigate }) => (
     <header className="bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl border-b border-gray-200 dark:border-gray-800 sticky top-0 z-40 transition-all duration-300">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-16">
@@ -23,9 +25,37 @@ export const Header: React.FC<{
                     </div>
                     <h1 className="text-xl sm:text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-300 tracking-tight">CarouMate</h1>
                 </div>
+                
+                {user && onNavigate && (
+                    <div className="hidden md:flex items-center space-x-2 mx-auto">
+                        <button
+                            onClick={() => onNavigate('DASHBOARD')}
+                            className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 flex items-center space-x-2 ${
+                                currentView === 'DASHBOARD'
+                                    ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/20 dark:text-primary-400 ring-1 ring-primary-200 dark:ring-primary-800/50'
+                                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'
+                            }`}
+                        >
+                            <HomeIcon className="w-4 h-4" />
+                            <span>{t('dashboardTitle')}</span>
+                        </button>
+                        <button
+                            onClick={() => onNavigate('GENERATOR')}
+                            className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 flex items-center space-x-2 ${
+                                currentView === 'GENERATOR'
+                                    ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/20 dark:text-primary-400 ring-1 ring-primary-200 dark:ring-primary-800/50'
+                                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'
+                            }`}
+                        >
+                            <SparklesIcon className="w-4 h-4" />
+                            <span>{t('generator')}</span>
+                        </button>
+                    </div>
+                )}
+
                 {user && (
                     <div className="flex items-center space-x-2 sm:space-x-3">
-                        <span className="text-sm font-medium text-gray-600 dark:text-gray-400 hidden md:block mr-2">
+                        <span className="text-sm font-medium text-gray-600 dark:text-gray-400 hidden lg:block mr-2">
                             {t('welcome', { name: user.name.split(' ')[0] })}
                         </span>
                         
@@ -59,7 +89,7 @@ export const Header: React.FC<{
                             href="http://lynk.id/pasanaktidur/s/re2yoep3v6r0"
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="hidden md:inline-flex items-center text-xs font-semibold text-white bg-gradient-to-r from-accent-500 to-accent-600 rounded-full hover:from-accent-600 hover:to-accent-700 shadow-md shadow-accent-500/20 transition-all duration-200 px-4 py-2"
+                            className="hidden lg:inline-flex items-center text-xs font-semibold text-white bg-gradient-to-r from-accent-500 to-accent-600 rounded-full hover:from-accent-600 hover:to-accent-700 shadow-md shadow-accent-500/20 transition-all duration-200 px-4 py-2"
                             aria-label={t('donate')}
                         >
                             <GiftIcon className="w-4 h-4 mr-1.5" />
